@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tracktiv - Portal</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ LOGIN ═══════════════════════════════════════════ -->
+<div id="loginScreen" class="login-screen">
+    <div class="login-card">
+        <aside class="login-aside">
+            <div class="brand">
+                <div class="brand-crest">T</div>
+                <div class="brand-title">
+                    <strong>Tracktiv</strong>
+                    <span>Portal</span>
+                </div>
+            </div>
+            <div>
+                <h1>Gestão integrada de consultores e instaladores</h1>
+                <p>Funil de vendas, comissões, instalações e treinamentos. 100% offline em localStorage.</p>
+            </div>
+            <div class="info-box">
+                Gestor: gestor@tracktiv.com / Gestor123<br>
+                Consultor: consultor@tracktiv.com / Consultor123<br>
+                Instalador: instalador@tracktiv.com / Instalador123
+            </div>
+        </aside>
+        <form id="loginForm" class="login-form">
+            <h2>Entrar</h2>
+            <div id="loginMessage" class="info-box">Use seu usuário para acessar o portal.</div>
+            <div class="field">
+                <label for="emailInput">E-mail</label>
+                <input id="emailInput" type="email" placeholder="nome@empresa.com" required autocomplete="username" />
+            </div>
+            <div class="field">
+                <label for="passwordInput">Senha</label>
+                <input id="passwordInput" type="password" placeholder="Sua senha" required autocomplete="current-password" />
+            </div>
+            <div id="loginError" class="error-text" aria-live="polite"></div>
+            <div class="actions">
+                <button type="submit" class="primary-btn">Entrar</button>
+                <button type="button" id="demoButton" class="secondary-btn">Demo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════ APP ════════════════════════════════════════════ -->
+<div id="appScreen" class="app-screen hidden">
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-crest">T</div>
+            <div class="brand-title">
+                <strong>Tracktiv</strong>
+                <span id="pageRoleLabel">Portal</span>
+            </div>
+        </div>
+        <div class="user-panel">
+            <div class="user-chip"><strong id="userNameLabel">Usuário</strong></div>
+            <button id="logoutBtn" class="logout-btn">Sair</button>
+        </div>
+    </header>
+
+    <div class="main-grid">
+        <div class="tabs" id="navigationTabs"></div>
+
+        <!-- ──────────────── GESTOR: DASHBOARD ──────────────── -->
+        <section id="gestorDashboard" class="section">
+            <div class="section-header">
+                <div>
+                    <h2>Visão geral</h2>
+                    <p>Consultores, instaladores, clientes e comissões consolidadas do mês.</p>
+                </div>
+            </div>
+            <div class="cards-grid" id="gestorStats"></div>
+
+            <div class="card" style="margin-top:8px;">
+                <h3>Ranking do mês</h3>
+                <p class="text-muted">Consultores ordenados por comissão gerada no mês.</p>
+                <div class="ranking-list" id="gestorRanking"></div>
+            </div>
+
+            <div class="card" style="margin-top:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:18px;">
+                    <div><h3>Consultores</h3><p class="text-muted">Desempenho mensal resumido.</p></div>
+                    <button id="openConsultorModalBtn" class="primary-btn">+ Novo consultor</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Consultor</th><th>Clientes</th><th>Vendas mês</th><th>Recorrência</th><th>Comissão prevista</th><th>Badge</th></tr></thead>
+                        <tbody id="consultorTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:18px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:18px;">
+                    <div><h3>Instaladores</h3><p class="text-muted">Instalações e comissões do mês.</p></div>
+                    <button id="openInstaladorModalBtnDash" class="primary-btn">+ Novo instalador</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Instalador</th><th>Loja</th><th>Instal. mês</th><th>Clientes loja</th><th>Recorrência</th><th>Total a pagar</th></tr></thead>
+                        <tbody id="instaladorDashTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ──────────────── GESTOR: CONSULTORES ──────────────── -->
+        <section id="gestorConsultores" class="section">
+            <div class="section-header">
+                <div><h2>Gerenciar consultores</h2><p>Adicione, edite ou exclua consultores da base.</p></div>
+                <button id="openConsultorModalBtn2" class="primary-btn">+ Cadastrar consultor</button>
+            </div>
+            <div class="card" style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Nome</th><th>WhatsApp</th><th>Clientes</th><th>Vendas mês</th><th>Recorrência</th><th>Badge</th><th>Ações</th></tr></thead>
+                    <tbody id="manageConsultorTable"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ──────────────── GESTOR: INSTALADORES ──────────────── -->
+        <section id="gestorInstaladores" class="section">
+            <div class="section-header">
+                <div><h2>Instaladores</h2><p>Cadastre instaladores e registre instalações de veículos.</p></div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <button id="openInstallationModalBtn" class="secondary-btn">+ Registrar instalação</button>
+                    <button id="openInstaladorModalBtn" class="primary-btn">+ Novo instalador</button>
+                </div>
+            </div>
+            <div class="card" style="overflow-x:auto;margin-bottom:24px;">
+                <table>
+                    <thead><tr><th>Instalador</th><th>Loja</th><th>Clientes loja</th><th>Instal. mês</th><th>Comissão instal.</th><th>Recorrência</th><th>Ações</th></tr></thead>
+                    <tbody id="instaladorTableBody"></tbody>
+                </table>
+            </div>
+            <div class="card">
+                <h3 style="margin:0 0 16px;">Instalações registradas</h3>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Data</th><th>Instalador</th><th>Cliente</th><th>Placa</th><th>Comissão</th><th>Ações</th></tr></thead>
+                        <tbody id="installationTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ──────────────── GESTOR: CUPONS ──────────────── -->
+        <section id="gestorCupons" class="section">
+            <div class="section-header">
+                <div><h2>Cupons de desconto</h2><p>Crie e gerencie cupons para clientes.</p></div>
+                <button id="openCouponModalBtn" class="primary-btn">+ Novo cupom</button>
+            </div>
+            <div class="card" style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Código</th><th>Desconto</th><th>Descrição</th><th>Status</th><th>Ações</th></tr></thead>
+                    <tbody id="couponTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ──────────────── CONSULTOR: DASHBOARD ──────────────── -->
+        <section id="consultorDashboard" class="section">
+            <div class="section-header">
+                <div><h2>Dashboard pessoal</h2><p>Resumo em tempo real de clientes, vendas, recorrência e comissão.</p></div>
+            </div>
+            <div class="cards-grid">
+                <div class="card"><h3>Clientes na base</h3><div class="metric" id="clientCount">0</div></div>
+                <div class="card"><h3>Vendas no mês</h3><div class="metric" id="salesCount">0</div></div>
+                <div class="card">
+                    <h3>Recorrência</h3>
+                    <div class="metric" id="recurrenceStatus">-</div>
+                    <small id="recurrenceHint"></small>
+                </div>
+                <div class="card">
+                    <h3>Comissão prevista</h3>
+                    <div class="metric">R$&nbsp;<span id="commissionValue">0,00</span></div>
+                    <small id="commissionPercent"></small>
+                </div>
+                <div class="card">
+                    <h3>Posição no ranking</h3>
+                    <div class="metric" id="myRankPos">-</div>
+                    <small id="myRankHint"></small>
+                </div>
+                <div class="card">
+                    <h3>Badge do mês</h3>
+                    <div class="metric" id="myRankBadge" style="font-size:1.5rem;">-</div>
+                </div>
+            </div>
+            <div class="card"><h3>Status em tempo real</h3><p class="text-muted" id="realtimeStatus"></p></div>
+        </section>
+
+        <!-- ──────────────── CONSULTOR: FUNIL ──────────────── -->
+        <section id="consultorCRM" class="section">
+            <div class="section-header">
+                <div><h2>Funil de vendas</h2><p>Arraste clientes entre etapas ou use os botões rápidos.</p></div>
+                <button id="openClientModalBtn" class="primary-btn">+ Cadastrar cliente</button>
+            </div>
+            <div class="funnel-board" id="funnelBoard"></div>
+        </section>
+
+        <!-- ──────────────── CONSULTOR: CLIENTES ──────────────── -->
+        <section id="consultorClientes" class="section">
+            <div class="section-header">
+                <div><h2>Clientes cadastrados</h2><p>Sua base completa de clientes.</p></div>
+                <button id="openClientModalBtn2" class="primary-btn">+ Novo cliente</button>
+            </div>
+            <div class="card" style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Cliente</th><th>Telefone</th><th>Plano</th><th>Mensalidade</th><th>Etapa</th><th>Ações</th></tr></thead>
+                    <tbody id="clientTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ──────────────── CONSULTOR: PRODUTOS ──────────────── -->
+        <section id="consultorProdutos" class="section">
+            <div class="section-header">
+                <div><h2>Produtos</h2><p>Portfólio disponível para apresentação e proposta.</p></div>
+            </div>
+            <div class="product-grid" id="productsGrid"></div>
+        </section>
+
+        <!-- ──────────────── CONSULTOR: TREINAMENTOS ──────────────── -->
+        <section id="consultorTreinamento" class="section">
+            <div class="section-header">
+                <div><h2>Treinamentos</h2><p>Módulo 1 completo. Demais em breve.</p></div>
+            </div>
+            <div class="product-grid" id="trainingModules"></div>
+            <div id="trainingDetail" class="hidden"></div>
+        </section>
+
+        <!-- ──────────────── CONSULTOR: INFORMATIVOS ──────────────── -->
+        <section id="consultorInformativos" class="section">
+            <div class="section-header">
+                <div><h2>Informativos</h2><p>Regras, políticas e informações importantes para consultores.</p></div>
+            </div>
+            <div id="consultorInformativosArea"></div>
+        </section>
+
+        <!-- ──────────────── INSTALADOR: DASHBOARD ──────────────── -->
+        <section id="instaladorDashboard" class="section">
+            <div class="section-header">
+                <div><h2>Dashboard do Instalador</h2><p>Instalações, comissões e clientes da sua loja em tempo real.</p></div>
+            </div>
+            <div class="cards-grid" id="instaladorStats"></div>
+            <div class="card" style="margin-top:8px;">
+                <h3 style="margin:0 0 14px;">Instalações do mês</h3>
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead><tr><th>Data</th><th>Cliente</th><th>Placa</th><th>Comissão</th></tr></thead>
+                        <tbody id="instDashTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ──────────────── INSTALADOR: CLIENTES DA LOJA ──────────────── -->
+        <section id="instaladorClientes" class="section">
+            <div class="section-header">
+                <div><h2>Clientes da Loja</h2><p>Clientes captados pela sua loja. Contribuem para a recorrência.</p></div>
+                <button id="openInstaladorClientModalBtn" class="primary-btn">+ Novo cliente</button>
+            </div>
+            <div class="card" style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Cliente</th><th>Telefone</th><th>Plano</th><th>Mensalidade</th><th>Etapa</th><th>Ações</th></tr></thead>
+                    <tbody id="instaladorClientTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ──────────────── INSTALADOR: EXTRATO ──────────────── -->
+        <section id="instaladorExtrato" class="section">
+            <div class="section-header">
+                <div><h2>Extrato Mensal</h2><p>Detalhamento da comissão do mês atual.</p></div>
+            </div>
+            <div id="extratoContent"></div>
+        </section>
+
+    </div><!-- /main-grid -->
+</div><!-- /appScreen -->
+
+<!-- ═══════════════════════════════════════════ MODAL ═══════════════════════════════════════════ -->
+<div id="modalBackdrop" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-header">
+            <h3 id="modalTitle">Modal</h3>
+            <button id="closeModalBtn" class="close-modal" aria-label="Fechar">×</button>
+        </div>
+        <div id="modalContent"></div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

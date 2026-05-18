@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracktiv — Comissões Recorrentes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+        }
+
+        .login-page {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .login-page.active {
+            display: flex;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .login-box h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .login-box p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="email"],
+        input[type="password"],
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button.secondary {
+            background: #e0e0e0;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        button.secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .app-container {
+            display: none;
+            height: 100vh;
+            flex-direction: column;
+            background: white;
+        }
+
+        .app-container.active {
+            display: flex;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 20px;
+        }
+
+        .header .user-info {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            font-size: 12px;
+            width: auto;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 16px 24px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-btn:hover {
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .card h3 {
+            margin-bottom: 12px;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 4px 0;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .list-item-info {
+            flex: 1;
+        }
+
+        .list-item-info strong {
+            display: block;
+            color: #333;
+        }
+
+        .list-item-info small {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .list-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            width: auto;
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .btn-small:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .btn-danger:hover {
+            background: #f5c6cb;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-card .label {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            color: #333;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            color: #333;
+        }
+
+        .close-modal {
+            float: right;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .commission-breakdown {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+
+        .commission-breakdown div {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        /* ============ TREINAMENTO ============ */
+        .modulo-grid { display: grid; gap: 16px; margin-top: 16px; }
+
+        .modulo-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: box-shadow 0.2s, border-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .modulo-card:hover { box-shadow: 0 4px 12px rgba(102,126,234,0.15); border-color: #667eea; }
+        .modulo-card.bloqueado { opacity: 0.5; cursor: not-allowed; }
+        .modulo-card.bloqueado:hover { box-shadow: none; border-color: #e0e0e0; }
+        .modulo-card.concluido { border-color: #28a745; background: #f8fff9; }
+        .modulo-icone { font-size: 40px; flex-shrink: 0; }
+        .modulo-info { flex: 1; }
+        .modulo-info h3 { font-size: 16px; color: #333; margin-bottom: 4px; }
+        .modulo-info p { font-size: 13px; color: #666; margin-bottom: 8px; }
+        .modulo-meta { display: flex; gap: 12px; font-size: 12px; color: #999; align-items: center; flex-wrap: wrap; }
+        .modulo-arrow { font-size: 20px; color: #ccc; flex-shrink: 0; }
+
+        .conteudo-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .btn-voltar {
+            background: none;
+            color: #667eea;
+            border: 1px solid #667eea;
+            padding: 8px 16px;
+            width: auto;
+            font-size: 13px;
+        }
+        .btn-voltar:hover { background: #f0f3ff; }
+
+        .secao-treinamento { background: white; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+        .secao-header {
+            padding: 16px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            background: #fafafa;
+            transition: background 0.2s;
+        }
+        .secao-header:hover { background: #f0f3ff; }
+        .secao-header h3 { font-size: 15px; color: #333; }
+        .secao-toggle { font-size: 16px; color: #999; }
+        .secao-body { padding: 20px; border-top: 1px solid #e0e0e0; font-size: 14px; line-height: 1.75; color: #444; }
+        .secao-body h4 { color: #333; margin: 14px 0 6px; font-size: 14px; }
+        .secao-body ul { margin: 8px 0; padding-left: 22px; }
+        .secao-body li { margin-bottom: 6px; }
+        .secao-body .destaque { background: #f0f3ff; border-left: 3px solid #667eea; padding: 12px 16px; border-radius: 0 4px 4px 0; margin: 14px 0; }
+        .secao-body .caso-real { background: #f8fff9; border: 1px solid #c3e6cb; border-radius: 6px; padding: 12px 16px; margin: 10px 0; }
+        .secao-body .caso-real strong { color: #155724; display: block; margin-bottom: 4px; }
+        .secao-body .curiosidade { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 12px 16px; margin: 10px 0; }
+        .secao-body .curiosidade strong { color: #856404; display: block; margin-bottom: 4px; }
+
+        .quiz-inicio { text-align: center; padding: 32px 20px; background: white; border: 1px solid #e0e0e0; border-radius: 8px; margin-top: 16px; }
+        .quiz-inicio h3 { font-size: 20px; color: #333; margin-bottom: 8px; }
+        .quiz-inicio p { color: #666; margin-bottom: 24px; font-size: 14px; line-height: 1.6; }
+
+        .quiz-container { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 24px; margin-top: 16px; }
+        .quiz-progresso { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .quiz-progresso-texto { font-size: 13px; color: #666; }
+        .quiz-progresso-bar { height: 5px; background: #e0e0e0; border-radius: 3px; margin-bottom: 24px; }
+        .quiz-progresso-fill { height: 100%; background: #667eea; border-radius: 3px; transition: width 0.4s; }
+        .quiz-pergunta { font-size: 16px; font-weight: 600; color: #333; margin-bottom: 20px; line-height: 1.5; }
+        .quiz-opcoes { display: grid; gap: 10px; margin-bottom: 20px; }
+        .quiz-opcao {
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 14px 16px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            transition: all 0.2s;
+            width: 100%;
+            line-height: 1.5;
+        }
+        .quiz-opcao:hover:not(:disabled) { border-color: #667eea; background: #f0f3ff; }
+        .quiz-opcao.correta { border-color: #28a745; background: #d4edda; color: #155724; font-weight: 600; }
+        .quiz-opcao.errada { border-color: #dc3545; background: #f8d7da; color: #721c24; }
+        .quiz-opcao:disabled { cursor: default; }
+        .quiz-feedback { padding: 16px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; line-height: 1.6; }
+        .quiz-feedback.acerto { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .quiz-feedback.erro { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .quiz-feedback strong { display: block; margin-bottom: 6px; font-size: 15px; }
+
+        .quiz-resultado { text-align: center; padding: 32px 20px; background: white; border: 1px solid #e0e0e0; border-radius: 8px; margin-top: 16px; }
+        .resultado-score { font-size: 64px; font-weight: bold; color: #667eea; line-height: 1; margin: 16px 0 8px; }
+        .resultado-percentual { font-size: 22px; color: #666; margin-bottom: 16px; }
+        .resultado-badge { display: inline-block; padding: 10px 28px; border-radius: 20px; font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+        .resultado-badge.aprovado { background: #d4edda; color: #155724; }
+        .resultado-badge.reprovado { background: #f8d7da; color: #721c24; }
+        .resultado-revisao { text-align: left; margin-top: 24px; border-top: 1px solid #e0e0e0; padding-top: 20px; }
+        .resultado-revisao h4 { font-size: 15px; color: #333; margin-bottom: 16px; }
+        .revisao-item { padding: 12px; border-radius: 6px; margin-bottom: 10px; font-size: 13px; }
+        .revisao-item.acerto { background: #f8fff9; border: 1px solid #c3e6cb; }
+        .revisao-item.erro { background: #fff8f8; border: 1px solid #f5c6cb; }
+        .revisao-item .revisao-explicacao { color: #555; font-size: 12px; margin-top: 6px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <!-- LOGIN PAGE -->
+    <div id="loginPage" class="login-page active">
+        <div class="login-box">
+            <h1>Comissões Recorrentes</h1>
+            <p>Tracktiv</p>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginUsuario">Usuário</label>
+                    <input type="text" id="loginUsuario" placeholder="seu.usuario" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="loginSenha">Senha</label>
+                    <input type="password" id="loginSenha" placeholder="••••••" required autocomplete="current-password">
+                </div>
+                <div id="loginErro" style="margin-bottom: 12px;"></div>
+                <button type="submit" class="btn-primary" id="loginBtn">Entrar</button>
+                <button type="button" class="secondary" id="demoBtn">Modo Demo</button>
+            </form>
+        </div>
+    </div>
+    <!-- Campo proxy oculto — sempre usa localhost:3001 -->
+    <input type="hidden" id="loginProxy" value="http://localhost:3001">
+
+    <!-- APP CONTAINER -->
+    <div id="appContainer" class="app-container">
+        <div class="header">
+            <div>
+                <h1>💰 Comissões Recorrentes</h1>
+            </div>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div class="user-info">
+                    Consultor: <strong id="vendedorNome">-</strong>
+                </div>
+                <button type="button" class="logout-btn" id="logoutBtn">Sair</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="carteira">Carteira</button>
+            <button class="tab-btn" data-tab="clientes">Clientes</button>
+            <button class="tab-btn" data-tab="pedidos">Pedidos</button>
+            <button class="tab-btn" data-tab="configuracoes">Configurações</button>
+            <button class="tab-btn" data-tab="treinamento">Treinamento</button>
+        </div>
+
+        <!-- CARTEIRA TAB -->
+        <div id="carteira" class="tab-content active">
+            <h2>Carteira de Comissões</h2>
+            <div id="carteiraAlert"></div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="label">Status Recorrência</div>
+                    <div class="value" id="statusRecorrencia">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Clientes Ativos Verificados</div>
+                    <div class="value" id="totalClientes">0/0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Vendas este mês</div>
+                    <div class="value" id="vendasMes">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Comissão Mês</div>
+                    <div class="value">R$ <span id="comissaoMes">0.00</span></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Meta Ativação</h3>
+                <p style="font-size: 14px; margin-bottom: 12px;">
+                    ✓ 5 clientes cadastrados<br>
+                    ✓ 2 vendas pagas neste mês<br>
+                    = Recorrência ativada
+                </p>
+                <div id="metaProgress" style="font-size: 13px; color: #666;">
+                    Carregando...
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Faixas de Comissão</h3>
+                <div style="display: grid; gap: 8px; font-size: 14px;">
+                    <div>2 vendas: <strong>5%</strong></div>
+                    <div>5 vendas: <strong>8%</strong></div>
+                    <div>10+ vendas: <strong>12%</strong></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Comissão Detalhada (Este Mês)</h3>
+                <div id="comissaoDetalhes" style="font-size: 14px;">
+                    Carregando...
+                </div>
+            </div>
+
+            <button type="button" id="syncBtn" class="btn-primary" style="width: auto; margin-top: 16px;">
+                🔄 Sincronizar com Tracktiv
+            </button>
+        </div>
+
+        <!-- CLIENTES TAB -->
+        <div id="clientes" class="tab-content">
+            <h2>Clientes</h2>
+            <div class="toolbar">
+                <button type="button" id="addClienteBtn" class="btn-primary">+ Novo Cliente</button>
+            </div>
+            <div id="clientesList"></div>
+        </div>
+
+        <!-- PEDIDOS TAB -->
+        <div id="pedidos" class="tab-content">
+            <h2>Pedidos</h2>
+            <div class="toolbar">
+                <button type="button" id="addPedidoBtn" class="btn-primary">+ Novo Pedido</button>
+            </div>
+            <div id="pedidosList"></div>
+        </div>
+
+        <!-- CONFIGURAÇÕES TAB -->
+        <div id="configuracoes" class="tab-content">
+            <h2>Configurações</h2>
+            <div class="card">
+                <h3>Sessão Tracktiv</h3>
+                <div id="conexaoStatus"></div>
+                <div id="tokenAlert" style="margin-top: 8px;"></div>
+            </div>
+
+            <div class="card">
+                <h3>Dados</h3>
+                <p style="font-size: 14px; margin-bottom: 12px; color: #666;">
+                    PROTOTYPE - Tudo armazenado em localStorage
+                </p>
+                <button type="button" id="exportBtn" class="btn-primary">📥 Exportar Dados</button>
+                <button type="button" id="limparBtn" class="btn-danger" style="margin-top: 8px;">🗑️ Limpar Tudo (irreversível)</button>
+            </div>
+        </div>
+
+        <!-- TREINAMENTO TAB -->
+        <div id="treinamento" class="tab-content">
+            <h2 style="margin-bottom: 4px;">Treinamentos</h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Capacitação para consultores Tracktiv</p>
+            <div id="treinamentoLista">
+                <div id="treinamentoCards" class="modulo-grid"></div>
+            </div>
+            <div id="treinamentoDetalhe" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="clienteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close-modal" id="closeClienteModal">&times;</span>
+                <h2 id="clienteModalTitle">Novo Cliente</h2>
+            </div>
+            <form id="clienteForm">
+                <div class="form-group">
+                    <label for="clienteNome">Nome</label>
+                    <input type="text" id="clienteNome" required>
+                </div>
+                <div class="form-group">
+                    <label for="clientePlaca">Identificador Veículo (Placa/RENAVAM)</label>
+                    <input type="text" id="clientePlaca" placeholder="ABC1234" required>
+                </div>
+                <div class="form-group">
+                    <label for="clienteModelo">Modelo de Comissão</label>
+                    <select id="clienteModelo" required>
+                        <option value="">Selecione...</option>
+                        <option value="venda">Sobre Venda</option>
+                        <option value="mensalidade">Sobre Mensalidade</option>
+                    </select>
+                </div>
+                <div class="form-group" id="mensalidadeGroup" style="display: none;">
+                    <label for="clienteMensalidade">Mensalidade (R$)</label>
+                    <input type="number" id="clienteMensalidade" step="0.01" min="0">
+                </div>
+                <button type="submit" class="btn-primary">Salvar Cliente</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="pedidoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close-modal" id="closePedidoModal">&times;</span>
+                <h2>Novo Pedido</h2>
+            </div>
+            <form id="pedidoForm">
+                <div class="form-group">
+                    <label for="pedidoCliente">Cliente</label>
+                    <select id="pedidoCliente" required>
+                        <option value="">Selecione...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="pedidoProduto">Produto</label>
+                    <input type="text" id="pedidoProduto" placeholder="Rastreamento, Serviço..." required>
+                </div>
+                <div class="form-group">
+                    <label for="pedidoValor">Valor (R$)</label>
+                    <input type="number" id="pedidoValor" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="pedidoData">Data</label>
+                    <input type="date" id="pedidoData" required>
+                </div>
+                <div class="form-group">
+                    <label for="pedidoStatus">Status</label>
+                    <select id="pedidoStatus" required>
+                        <option value="pago">Pago</option>
+                        <option value="pendente">Pendente</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary">Salvar Pedido</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ============== STATE ==============
+        const app = {
+            vendedor: null,
+            clientes: [],
+            pedidos: [],
+            token: '',           // access_token atual
+            clienteEmEdicao: null,
+            statusClientes: {},  // { placa: 'cadastrado' | 'nao_cadastrado' | 'inadimplente' | 'erro' }
+            rastro: {
+                username: '',
+                refreshToken: '',
+                tokenExpires: null,
+                proxyUrl: 'http://localhost:3001'
+            }
+        };
+
+        // ============== STORAGE ==============
+        function salvar() {
+            localStorage.setItem('comissoes_app', JSON.stringify({
+                vendedor: app.vendedor,
+                clientes: app.clientes,
+                pedidos: app.pedidos,
+                token: app.token,
+                rastro: app.rastro
+            }));
+        }
+
+        function carregar() {
+            const dados = localStorage.getItem('comissoes_app');
+            if (dados) {
+                const parsed = JSON.parse(dados);
+                app.vendedor = parsed.vendedor;
+                app.clientes = parsed.clientes || [];
+                app.pedidos = parsed.pedidos || [];
+                app.token = parsed.token || '';
+                app.rastro = { ...app.rastro, ...(parsed.rastro || {}) };
+            }
+        }
+
+        // ============== LOGIN ==============
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const usuario = document.getElementById('loginUsuario').value.trim();
+            const senha   = document.getElementById('loginSenha').value;
+            const proxy   = document.getElementById('loginProxy').value.trim() || 'http://localhost:3001';
+            const erroEl  = document.getElementById('loginErro');
+            const btn     = document.getElementById('loginBtn');
+
+            btn.disabled = true;
+            btn.textContent = 'Conectando...';
+            erroEl.innerHTML = '';
+
+            try {
+                const body = new URLSearchParams({ username: usuario, password: senha, grant_type: 'password' });
+                const res  = await fetch(`${proxy}/newkoauth/oauth/token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString()
+                });
+
+                if (!res.ok) {
+                    let msg = `Erro ${res.status}`;
+                    try { const e = await res.json(); msg = e.error || e.message || msg; } catch {}
+                    throw new Error(msg);
+                }
+
+                const data = await res.json();
+                app.token = data.access_token;
+                app.rastro = {
+                    ...app.rastro,
+                    username:     usuario,
+                    refreshToken: data.refresh_token || '',
+                    tokenExpires: data.expires_in    || null,
+                    proxyUrl:     proxy
+                };
+                app.vendedor = { nome: usuario };
+                salvar();
+                mostraApp();
+            } catch (err) {
+                const eConexao = err.message.includes('fetch') || err.message.includes('Failed') || err.message.includes('NetworkError');
+                erroEl.innerHTML = eConexao
+                    ? `<div class="alert alert-error" style="font-size:13px;">
+                           Não foi possível conectar à Tracktiv.<br>
+                           <small>Verifique se o servidor local está rodando (<code>node proxy.js</code>).</small>
+                       </div>`
+                    : `<div class="alert alert-error" style="font-size:13px;">
+                           ${err.message}
+                       </div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Entrar';
+            }
+        });
+
+        document.getElementById('demoBtn').addEventListener('click', () => {
+            app.vendedor = { email: 'demo@tracktiv.com', nome: 'Demo' };
+            
+            // Clientes de demo
+            app.clientes = [
+                { id: '1', nome: 'Cliente A', placa: 'ABC1234', modelo: 'venda', mensalidade: 0 },
+                { id: '2', nome: 'Cliente B', placa: 'XYZ5678', modelo: 'mensalidade', mensalidade: 500 },
+                { id: '3', nome: 'Cliente C', placa: 'DEF9012', modelo: 'venda', mensalidade: 0 },
+                { id: '4', nome: 'Cliente D', placa: 'GHI3456', modelo: 'mensalidade', mensalidade: 800 },
+                { id: '5', nome: 'Cliente E', placa: 'JKL7890', modelo: 'venda', mensalidade: 0 }
+            ];
+            
+            // Pedidos de demo
+            const hoje = new Date();
+            const anoMes = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+            
+            app.pedidos = [
+                { id: '1', clienteId: '1', produto: 'Rastreamento', valor: 1000, data: `${anoMes}-01`, status: 'pago' },
+                { id: '2', clienteId: '1', produto: 'Integração', valor: 500, data: `${anoMes}-05`, status: 'pago' },
+                { id: '3', clienteId: '3', produto: 'Setup', valor: 1500, data: `${anoMes}-10`, status: 'pago' },
+                { id: '4', clienteId: '2', produto: 'Premium', valor: 300, data: `${anoMes}-15`, status: 'pendente' }
+            ];
+            
+            app.token = 'demo-token-12345';
+            salvar();
+            mostraApp();
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            app.vendedor = null;
+            app.clientes = [];
+            app.pedidos = [];
+            app.token = '';
+            salvar();
+            document.getElementById('loginPage').classList.add('active');
+            document.getElementById('appContainer').classList.remove('active');
+        });
+
+        // ============== UI ==============
+        function mostraApp() {
+            document.getElementById('loginPage').classList.remove('active');
+            document.getElementById('appContainer').classList.add('active');
+            document.getElementById('vendedorNome').textContent = app.vendedor.nome;
+            atualizaTudo();
+        }
+
+        // Tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(tabName).classList.add('active');
+                atualizaTudo();
+            });
+        });
+
+        // ============== CLIENTES ==============
+        document.getElementById('addClienteBtn').addEventListener('click', () => {
+            app.clienteEmEdicao = null;
+            document.getElementById('clienteModalTitle').textContent = 'Novo Cliente';
+            document.getElementById('clienteForm').reset();
+            document.getElementById('clienteNome').value = '';
+            document.getElementById('clientePlaca').value = '';
+            document.getElementById('clienteModelo').value = '';
+            document.getElementById('clienteMensalidade').value = '';
+            document.getElementById('clienteModal').classList.add('active');
+        });
+
+        document.getElementById('clienteModelo').addEventListener('change', (e) => {
+            document.getElementById('mensalidadeGroup').style.display = 
+                e.target.value === 'mensalidade' ? 'block' : 'none';
+        });
+
+        document.getElementById('clienteForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const cliente = {
+                id: app.clienteEmEdicao ? app.clienteEmEdicao.id : Date.now().toString(),
+                nome: document.getElementById('clienteNome').value,
+                placa: document.getElementById('clientePlaca').value,
+                modelo: document.getElementById('clienteModelo').value,
+                mensalidade: parseFloat(document.getElementById('clienteMensalidade').value) || 0
+            };
+
+            if (app.clienteEmEdicao) {
+                const idx = app.clientes.findIndex(c => c.id === app.clienteEmEdicao.id);
+                app.clientes[idx] = cliente;
+            } else {
+                app.clientes.push(cliente);
+            }
+
+            salvar();
+            document.getElementById('clienteModal').classList.remove('active');
+            atualizaTudo();
+        });
+
+        document.getElementById('closeClienteModal').addEventListener('click', () => {
+            document.getElementById('clienteModal').classList.remove('active');
+        });
+
+        function atualizaClientesList() {
+            const lista = document.getElementById('clientesList');
+            if (app.clientes.length === 0) {
+                lista.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Nenhum cliente cadastrado</p>';
+                return;
+            }
+
+            lista.innerHTML = app.clientes.map(c => {
+                const status = app.statusClientes[c.placa] || 'desconhecido';
+                const statusBadge =
+                    status === 'pagante'      ? '<span class="status-badge status-active">✓ Ativo e Pagante</span>' :
+                    status === 'inadimplente' ? '<span class="status-badge status-inactive">✗ Inativo / Inadimplente</span>' :
+                    status === 'erro'         ? '<span class="status-badge" style="background:#fff3cd;color:#856404;">! Erro ao verificar</span>' :
+                                               '<span class="status-badge status-info">○ Não verificado</span>';
+                
+                return `
+                    <div class="list-item">
+                        <div class="list-item-info">
+                            <strong>${c.nome}</strong>
+                            <small>Placa: ${c.placa} | Modelo: ${c.modelo.charAt(0).toUpperCase() + c.modelo.slice(1)}</small>
+                            ${c.modelo === 'mensalidade' ? `<small>Mensalidade: R$ ${c.mensalidade.toFixed(2)}</small>` : ''}
+                            <div style="margin-top: 4px;">${statusBadge}</div>
+                        </div>
+                        <div class="list-item-actions">
+                            ${c.rastroVeiculoId ? `
+                                <button type="button" class="btn-small btn-danger" onclick="toggleInadimplencia('${c.id}')" title="Aciona endpoint /suspender na Tracktiv">
+                                    ${status === 'inadimplente' ? '✓ Reativar' : '⚠ Inadimplência'}
+                                </button>` : ''}
+                            <button type="button" class="btn-small" onclick="editaCliente('${c.id}')">Editar</button>
+                            <button type="button" class="btn-small btn-danger" onclick="deletaCliente('${c.id}')">Deletar</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function editaCliente(id) {
+            const cliente = app.clientes.find(c => c.id === id);
+            if (!cliente) return;
+
+            app.clienteEmEdicao = cliente;
+            document.getElementById('clienteModalTitle').textContent = 'Editar Cliente';
+            document.getElementById('clienteNome').value = cliente.nome;
+            document.getElementById('clientePlaca').value = cliente.placa;
+            document.getElementById('clienteModelo').value = cliente.modelo;
+            document.getElementById('clienteMensalidade').value = cliente.mensalidade;
+            document.getElementById('mensalidadeGroup').style.display = 
+                cliente.modelo === 'mensalidade' ? 'block' : 'none';
+            document.getElementById('clienteModal').classList.add('active');
+        }
+
+        function deletaCliente(id) {
+            if (confirm('Tem certeza?')) {
+                app.clientes = app.clientes.filter(c => c.id !== id);
+                salvar();
+                atualizaTudo();
+            }
+        }
+
+        async function toggleInadimplencia(id) {
+            const cliente = app.clientes.find(c => c.id === id);
+            if (!cliente || !cliente.rastroVeiculoId) return;
+
+            const estaInadimplente = app.statusClientes[cliente.placa] === 'inadimplente';
+            const acao = estaInadimplente ? 'reativar' : 'marcar como inadimplente';
+            if (!confirm(`Deseja ${acao} o veículo ${cliente.placa} na Tracktiv?`)) return;
+
+            // delete=false → coloca em inadimplência | delete=true → retira
+            const deleteParam = estaInadimplente ? 'true' : 'false';
+            try {
+                await rastroFetch('POST', `/v0.1/veiculos/integracao/suspender?id=${cliente.rastroVeiculoId}&delete=${deleteParam}`);
+                app.statusClientes[cliente.placa] = estaInadimplente ? 'cadastrado' : 'inadimplente';
+                salvar();
+                atualizaTudo();
+            } catch (err) {
+                alert(`Erro ao ${acao}: ${err.message}`);
+            }
+        }
+
+        // ============== PEDIDOS ==============
+        document.getElementById('addPedidoBtn').addEventListener('click', () => {
+            const select = document.getElementById('pedidoCliente');
+            select.innerHTML = '<option value="">Selecione...</option>' + 
+                app.clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+            
+            document.getElementById('pedidoForm').reset();
+            document.getElementById('pedidoData').valueAsDate = new Date();
+            document.getElementById('pedidoModal').classList.add('active');
+        });
+
+        document.getElementById('pedidoForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const pedido = {
+                id: Date.now().toString(),
+                clienteId: document.getElementById('pedidoCliente').value,
+                produto: document.getElementById('pedidoProduto').value,
+                valor: parseFloat(document.getElementById('pedidoValor').value),
+                data: document.getElementById('pedidoData').value,
+                status: document.getElementById('pedidoStatus').value
+            };
+
+            app.pedidos.push(pedido);
+            salvar();
+            document.getElementById('pedidoModal').classList.remove('active');
+            atualizaTudo();
+        });
+
+        document.getElementById('closePedidoModal').addEventListener('click', () => {
+            document.getElementById('pedidoModal').classList.remove('active');
+        });
+
+        function atualizaPedidosList() {
+            const lista = document.getElementById('pedidosList');
+            if (app.pedidos.length === 0) {
+                lista.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Nenhum pedido cadastrado</p>';
+                return;
+            }
+
+            lista.innerHTML = app.pedidos.map(p => {
+                const cliente = app.clientes.find(c => c.id === p.clienteId);
+                const statusBadge = p.status === 'pago' ? 
+                    '<span class="status-badge status-active">✓ Pago</span>' :
+                    '<span class="status-badge status-info">⏳ Pendente</span>';
+                
+                return `
+                    <div class="list-item">
+                        <div class="list-item-info">
+                            <strong>${p.produto}</strong>
+                            <small>Cliente: ${cliente?.nome || 'Desconhecido'}</small>
+                            <small>Data: ${p.data} | Valor: R$ ${p.valor.toFixed(2)}</small>
+                            <div style="margin-top: 4px;">${statusBadge}</div>
+                        </div>
+                        <div class="list-item-actions">
+                            <button type="button" class="btn-small btn-danger" onclick="deletaPedido('${p.id}')">Deletar</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function deletaPedido(id) {
+            if (confirm('Tem certeza?')) {
+                app.pedidos = app.pedidos.filter(p => p.id !== id);
+                salvar();
+                atualizaTudo();
+            }
+        }
+
+        // ============== COMISSÕES ==============
+        function calculaComissoes() {
+            const agora = new Date();
+            const mesAtual = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`;
+
+            // Pedidos deste mês pagos
+            const pedidosMes = app.pedidos.filter(p => 
+                p.data.startsWith(mesAtual) && p.status === 'pago'
+            );
+
+            const comissaoPorCliente = {};
+            let comissaoTotal = 0;
+            let vendasPagas = 0;
+            let clientesSemVerificacao = 0;
+            let clientesInativos = 0;
+
+            app.clientes.forEach(cliente => {
+                const statusRastro = app.statusClientes[cliente.placa];
+
+                // Inativo/inadimplente confirmado pela Tracktiv → não gera comissão
+                if (statusRastro === 'inadimplente') {
+                    clientesInativos++;
+                    return;
+                }
+
+                // Ainda não foi verificado
+                if (!statusRastro || statusRastro === 'erro') {
+                    clientesSemVerificacao++;
+                    // Conta pedidos mas sem gerar comissão — aguarda verificação
+                    return;
+                }
+
+                // statusRastro === 'pagante' → segue com cálculo
+                const pedidosCliente = pedidosMes.filter(p => p.clienteId === cliente.id);
+                let comissao = 0;
+
+                if (cliente.modelo === 'venda') {
+                    const valorTotal = pedidosCliente.reduce((sum, p) => sum + p.valor, 0);
+                    const numVendas = pedidosCliente.length;
+                    let taxa = 0;
+                    if (numVendas >= 10) taxa = 0.12;
+                    else if (numVendas >= 5) taxa = 0.08;
+                    else if (numVendas >= 2) taxa = 0.05;
+                    comissao = valorTotal * taxa;
+                    vendasPagas += numVendas;
+                } else if (cliente.modelo === 'mensalidade') {
+                    if (pedidosCliente.length > 0) {
+                        comissao = cliente.mensalidade * 0.10;
+                        vendasPagas++;
+                    }
+                }
+
+                if (comissao > 0) {
+                    comissaoPorCliente[cliente.id] = {
+                        nome: cliente.nome,
+                        comissao,
+                        pedidos: pedidosCliente.length,
+                        modelo: cliente.modelo
+                    };
+                    comissaoTotal += comissao;
+                }
+            });
+
+            const totalClientes = app.clientes.length;
+            const clientesAtivos = totalClientes - clientesInativos - clientesSemVerificacao;
+            const meta5Clientes = clientesAtivos >= 5;
+            const meta2Vendas = vendasPagas >= 2;
+            const recorrenciaAtiva = meta5Clientes && meta2Vendas;
+
+            return {
+                comissaoTotal,
+                vendasPagas,
+                totalClientes,
+                clientesAtivos,
+                clientesSemVerificacao,
+                clientesInativos,
+                meta5Clientes,
+                meta2Vendas,
+                recorrenciaAtiva,
+                comissaoPorCliente
+            };
+        }
+
+        function atualizaCarteira() {
+            const calc = calculaComissoes();
+
+            // Status
+            const statusHtml = calc.recorrenciaAtiva ? 
+                '<span class="status-badge status-active">✓ ATIVA</span>' :
+                '<span class="status-badge status-inactive">✗ PAUSADA</span>';
+            document.getElementById('statusRecorrencia').innerHTML = statusHtml;
+
+            // Stats
+            document.getElementById('totalClientes').textContent = `${calc.clientesAtivos}/${calc.totalClientes}`;
+            document.getElementById('vendasMes').textContent = calc.vendasPagas;
+            document.getElementById('comissaoMes').textContent = calc.comissaoTotal.toFixed(2);
+
+            // Aviso de clientes não verificados
+            let avisoHtml = '';
+            if (calc.clientesSemVerificacao > 0) {
+                avisoHtml = `<div class="alert alert-info" style="margin-bottom:12px;">
+                    ⚠ <strong>${calc.clientesSemVerificacao} cliente(s)</strong> ainda não verificado(s) na Tracktiv — comissão não calculada para eles.
+                    Clique em <strong>Sincronizar</strong> para confirmar quem está ativo e pagante.
+                </div>`;
+            }
+
+            // Meta progress
+            const alertMeta = calc.recorrenciaAtiva
+                ? '<div class="alert alert-success">✓ Recorrência ativa! Meta atingida.</div>'
+                : '<div class="alert alert-info">Meta para ativar recorrência:</div>';
+
+            const metaHtml = `
+                ${avisoHtml}
+                ${alertMeta}
+                <div style="font-size: 14px; margin-top: 12px;">
+                    ${calc.meta5Clientes ? '✓' : '✗'} 5+ clientes ativos verificados (${calc.clientesAtivos}/5)<br>
+                    ${calc.meta2Vendas ? '✓' : '✗'} 2+ vendas pagas no mês (${calc.vendasPagas}/2)
+                    ${calc.clientesInativos > 0 ? `<br><span style="color:#721c24;">✗ ${calc.clientesInativos} cliente(s) inativo(s) excluído(s) do cálculo</span>` : ''}
+                </div>
+            `;
+            document.getElementById('metaProgress').innerHTML = metaHtml;
+
+            // Detalhes
+            let detalhes = '';
+            if (Object.keys(calc.comissaoPorCliente).length === 0) {
+                detalhes = '<p style="color: #999;">Nenhuma comissão registrada para este mês</p>';
+            } else {
+                detalhes = Object.entries(calc.comissaoPorCliente).map(([clienteId, info]) => `
+                    <div style="margin-bottom: 12px; padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px;">
+                        <strong>${info.nome}</strong> (${info.modelo === 'venda' ? info.pedidos + ' vendas' : 'mensalidade'})<br>
+                        <span style="color: #667eea; font-size: 16px; font-weight: bold;">R$ ${info.comissao.toFixed(2)}</span>
+                    </div>
+                `).join('');
+            }
+            document.getElementById('comissaoDetalhes').innerHTML = detalhes;
+        }
+
+        // ============== API RASTROSYSTEM ==============
+        function rastroUrl(path) {
+            const base = (app.rastro.proxyUrl || 'http://localhost:3001').replace(/\/$/, '');
+            return `${base}${path}`;
+        }
+
+        function tokenValido() {
+            if (!app.token) return false;
+            if (!app.rastro.tokenExpires) return true; // token manual sem expiração
+            return new Date(app.rastro.tokenExpires) > new Date();
+        }
+
+        async function rastroFetch(method, path, body = null) {
+            if (!tokenValido()) throw new Error('Token expirado. Reconecte nas Configurações.');
+            const opts = {
+                method,
+                headers: {
+                    'Authorization': `Bearer ${app.token}`,
+                    'Content-Type': 'application/json',
+                }
+            };
+            if (body) opts.body = JSON.stringify(body);
+            const res = await fetch(rastroUrl(path), opts);
+            if (res.status === 401) throw new Error('Não autorizado. Reconecte nas Configurações.');
+            if (!res.ok) throw new Error(`Erro ${res.status} na API Tracktiv`);
+            return res.json();
+        }
+
+        document.getElementById('syncBtn').addEventListener('click', async () => {
+            if (!app.token) {
+                alert('Faça login na Tracktiv primeiro.');
+                return;
+            }
+            if (app.clientes.length === 0) {
+                alert('Nenhum cliente cadastrado para sincronizar.');
+                return;
+            }
+
+            const alertEl = document.getElementById('carteiraAlert');
+            alertEl.innerHTML = '<div class="alert alert-info">🔄 Consultando veículos na Tracktiv...</div>';
+
+            let ok = 0, notFound = 0, erros = 0;
+
+            for (const cliente of app.clientes) {
+                try {
+                    const placa = encodeURIComponent(cliente.placa);
+                    const lista = await rastroFetch('GET', `/v0.1/veiculos/integracao?placa=${placa}&limit=1`);
+                    if (Array.isArray(lista) && lista.length > 0) {
+                        app.statusClientes[cliente.placa] = 'pagante';
+                        cliente.rastroVeiculoId = lista[0].id;
+                        ok++;
+                    } else {
+                        app.statusClientes[cliente.placa] = 'inadimplente';
+                        notFound++;
+                    }
+                } catch (err) {
+                    app.statusClientes[cliente.placa] = 'erro';
+                    erros++;
+                }
+            }
+
+            salvar();
+            const msg = `✓ Verificação concluída — ${ok} ativo(s) e pagante(s)${notFound ? `, ${notFound} inativo(s)/inadimplente(s)` : ''}${erros ? `, ${erros} erro(s)` : ''}.`;
+            alertEl.innerHTML = `<div class="alert ${notFound > 0 ? 'alert-info' : 'alert-success'}">${msg}</div>`;
+            setTimeout(() => { alertEl.innerHTML = ''; atualizaTudo(); }, 3000);
+        });
+
+        // ============== CONFIGURAÇÕES ==============
+        function atualizaStatusConexao() {
+            const el = document.getElementById('conexaoStatus');
+            if (!el) return;
+            if (app.token && tokenValido()) {
+                const exp = app.rastro.tokenExpires
+                    ? ` (expira ${new Date(app.rastro.tokenExpires).toLocaleString('pt-BR')})`
+                    : '';
+                el.innerHTML = `<div class="alert alert-success">✓ Conectado como <strong>${app.rastro.username || 'usuário'}</strong>${exp}</div>`;
+            } else if (app.token) {
+                el.innerHTML = `<div class="alert alert-error">Token expirado. Reconecte.</div>`;
+            } else {
+                el.innerHTML = `<div class="alert alert-info" style="background:#f9f9f9;border-color:#ddd;color:#666;">Não conectado</div>`;
+            }
+        }
+
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const dados = {
+                vendedor: app.vendedor,
+                clientes: app.clientes,
+                pedidos: app.pedidos,
+                status: app.statusClientes
+            };
+            console.log('Dados exportados:', dados);
+            alert('Dados exportados no console');
+        });
+
+        document.getElementById('limparBtn').addEventListener('click', () => {
+            if (confirm('IRREVERSÍVEL! Deletar TUDO?')) {
+                localStorage.removeItem('comissoes_app');
+                alert('Dados deletados');
+                location.reload();
+            }
+        });
+
+        window.addEventListener('load', () => {
+            if (app.rastro.proxyUrl) {
+                const proxyInput = document.getElementById('loginProxy');
+                if (proxyInput) proxyInput.value = app.rastro.proxyUrl;
+            }
+            atualizaStatusConexao();
+        });
+
+        // ============== TREINAMENTO ==============
+        const MODULOS_DATA = {
+            rastreador: {
+                titulo: 'Rastreador Veicular',
+                descricao: 'Aprenda como funciona o rastreador, suas funcionalidades e como vender para qualquer perfil de cliente.',
+                icone: '📡',
+                duracao: '~15 min',
+                totalPerguntas: 10,
+                secoes: [
+                    {
+                        titulo: 'Como Funciona um Rastreador Veicular',
+                        icone: '⚙️',
+                        corpo: `<p>Um rastreador veicular é um dispositivo eletrônico instalado no veículo que combina duas tecnologias principais:</p>
+                        <h4>1. GPS (Global Positioning System)</h4>
+                        <p>O módulo GPS capta sinais de pelo menos 4 satélites simultaneamente e, por meio de cálculos chamados <strong>trilateração</strong>, determina a latitude, longitude e altitude do veículo com precisão de metros.</p>
+                        <h4>2. GSM/4G (Rede Celular)</h4>
+                        <p>Assim como um celular, o rastreador tem um chip SIM que usa a rede das operadoras para <strong>enviar os dados de localização ao servidor</strong> em tempo real.</p>
+                        <div class="destaque">
+                            <strong>📱 Analogia simples para o cliente:</strong> "Pense no rastreador como um celular escondido dentro do carro. Ele sempre sabe onde está (GPS) e sempre manda essa informação para a nossa central (4G) — sem o motorista precisar fazer nada."
+                        </div>
+                        <h4>Componentes internos do rastreador</h4>
+                        <ul>
+                            <li><strong>Receptor GPS:</strong> Calcula a posição usando sinais de satélite</li>
+                            <li><strong>Módulo GSM/4G:</strong> Transmite os dados via rede celular</li>
+                            <li><strong>Memória interna:</strong> Guarda dados quando não há sinal para transmitir</li>
+                            <li><strong>Bateria de backup:</strong> Mantém o dispositivo funcionando mesmo se cortarem a energia do veículo</li>
+                            <li><strong>Sensores:</strong> Detectam ignição, vibração, impacto e outros eventos</li>
+                        </ul>`
+                    },
+                    {
+                        titulo: 'Funcionalidades Principais',
+                        icone: '🛠️',
+                        corpo: `<ul>
+                            <li><strong>🗺️ Localização em tempo real:</strong> Veja exatamente onde o veículo está agora, com atualização a cada poucos segundos.</li>
+                            <li><strong>📜 Histórico de rotas:</strong> Consulte todos os trajetos percorridos: hora de saída, chegada, velocidade e percurso completo no mapa.</li>
+                            <li><strong>🚨 Alertas de velocidade:</strong> Receba notificação quando o veículo ultrapassar um limite configurado.</li>
+                            <li><strong>📍 Geofencing (cerca virtual):</strong> Delimite uma área no mapa e seja alertado quando o veículo entrar ou sair dela.</li>
+                            <li><strong>🔐 Bloqueio remoto de motor:</strong> Impeça que o veículo seja dado a partida, de qualquer lugar, pelo aplicativo. Ativado apenas com veículo parado.</li>
+                            <li><strong>🔑 Alertas de ignição:</strong> Saiba exatamente quando o veículo foi ligado e desligado.</li>
+                            <li><strong>🆘 Botão de pânico:</strong> O motorista pode acionar uma emergência silenciosa pelo rastreador.</li>
+                            <li><strong>📊 Relatórios:</strong> Distância percorrida, tempo de motor ligado, paradas e comportamento de direção.</li>
+                        </ul>
+                        <div class="destaque">
+                            <strong>💡 Dica de vendas:</strong> Sempre apresente as funcionalidades a partir do <em>problema do cliente</em>. Para empresa: "Você saberá se o motorista saiu da rota." Para pai: "Você saberá se seu filho foi para onde disse que foi."
+                        </div>`
+                    },
+                    {
+                        titulo: 'Benefícios para o Cliente',
+                        icone: '✅',
+                        corpo: `<h4>Segurança — benefício número 1</h4>
+                        <p>Veículos rastreados têm taxa de recuperação significativamente maior após furto ou roubo. Com a localização em tempo real, a polícia consegue agir rápido.</p>
+                        <h4>Economia direta</h4>
+                        <ul>
+                            <li><strong>Desconto no seguro:</strong> Muitas seguradoras oferecem de 10% a 30% de desconto para veículos rastreados.</li>
+                            <li><strong>Redução de combustível:</strong> Empresas que monitoram rotas economizam até 25% em combustível.</li>
+                            <li><strong>Manutenção preventiva:</strong> Monitorar o comportamento de direção reduz o desgaste mecânico do veículo.</li>
+                        </ul>
+                        <h4>Controle e paz de mente</h4>
+                        <ul>
+                            <li>Pais sabem onde os filhos estão com o carro</li>
+                            <li>Empresas conferem se funcionários seguem a rota correta</li>
+                            <li>Autônomos protegem seu principal meio de trabalho e renda</li>
+                        </ul>
+                        <h4>Evidência e prova legal</h4>
+                        <p>Em caso de acidentes, disputas trabalhistas ou sinistros, o histórico de rotas e velocidade serve como prova irrefutável.</p>
+                        <div class="destaque">
+                            <strong>🎯 Argumento poderoso:</strong> "O rastreador não é um custo — é um investimento que se paga sozinho no primeiro desconto do seguro ou na primeira vez que o veículo é recuperado."
+                        </div>`
+                    },
+                    {
+                        titulo: 'Casos Reais de Como Pode Ajudar',
+                        icone: '📖',
+                        corpo: `<div class="caso-real">
+                            <strong>🚗 Caso 1 — Recuperação após furto</strong>
+                            Um cliente teve o carro furtado em um shopping à noite. Em menos de 2 horas, com a localização em tempo real, a polícia localizou e recuperou o veículo em outra cidade. Sem o rastreador, o carro provavelmente seria desmanchado em menos de 24h.
+                        </div>
+                        <div class="caso-real">
+                            <strong>🚚 Caso 2 — Frota de entregas</strong>
+                            Uma transportadora com 15 veículos descobriu que 3 motoristas faziam desvios não autorizados, adicionando mais de 2 horas/dia no trajeto. Após instalar rastreadores, reduziu o custo de combustível em 22% no primeiro mês.
+                        </div>
+                        <div class="caso-real">
+                            <strong>👨‍👩‍👧 Caso 3 — Segurança familiar</strong>
+                            Um pai configurou geofencing ao redor da escola e da casa. Às 23h, recebeu um alerta: o filho de 17 anos havia saído da área permitida. O alerta permitiu agir antes que qualquer situação perigosa acontecesse.
+                        </div>
+                        <div class="caso-real">
+                            <strong>🏍️ Caso 4 — Motocicleta de delivery</strong>
+                            Um motoboy teve a moto furtada no bairro. O rastreador, instalado em local oculto, continuou transmitindo. A moto foi encontrada a 40 km, em uma garagem, intacta — graças à localização precisa passada para a polícia.
+                        </div>
+                        <div class="caso-real">
+                            <strong>🏗️ Caso 5 — Equipamentos de construção</strong>
+                            Uma construtora instalou rastreadores em suas máquinas. Descobriu que uma retroescavadeira estava sendo usada nos fins de semana sem autorização. Evitou prejuízos com desgaste indevido e possível responsabilidade civil.
+                        </div>`
+                    },
+                    {
+                        titulo: 'Curiosidades sobre Rastreamento',
+                        icone: '💡',
+                        corpo: `<div class="curiosidade">
+                            <strong>🛰️ O GPS foi criado pelo exército americano</strong>
+                            O sistema GPS surgiu na década de 1970 para uso militar. Só em 1983, após o avião Korean Air 007 ser derrubado por engano por falta de navegação precisa, o presidente Reagan abriu o acesso ao público civil. Hoje a constelação tem 31 satélites operacionais.
+                        </div>
+                        <div class="curiosidade">
+                            <strong>🌍 GPS não é o único sistema de navegação por satélite</strong>
+                            GPS é o sistema americano, mas existem outros: GLONASS (russo), Galileo (europeu) e BeiDou (chinês). Rastreadores modernos de qualidade captam múltiplos sistemas ao mesmo tempo, aumentando a precisão e a confiabilidade.
+                        </div>
+                        <div class="curiosidade">
+                            <strong>📶 O que acontece em túneis e garagens cobertas?</strong>
+                            Sem sinal GPS, rastreadores modernos usam triangulação de torres de celular para estimar a posição. Além disso, armazenam os dados na memória interna e sincronizam quando o sinal retorna — sem perder nenhum trecho da rota.
+                        </div>
+                        <div class="curiosidade">
+                            <strong>🔒 Anti-jammer: proteção contra bloqueadores de sinal</strong>
+                            Criminosos usam dispositivos chamados "jammers" para bloquear o sinal GPS. Rastreadores profissionais detectam a interferência e enviam um alerta imediato ao proprietário — antes mesmo de serem completamente silenciados.
+                        </div>
+                        <div class="curiosidade">
+                            <strong>⚡ Bateria de backup: o plano B do rastreador</strong>
+                            Se um ladrão cortar o fio de energia tentando desligar o rastreador, a bateria interna mantém o dispositivo funcionando e transmitindo a localização por várias horas — tempo suficiente para a polícia agir.
+                        </div>`
+                    }
+                ],
+                quiz: [
+                    {
+                        texto: 'O que o módulo GPS do rastreador veicular faz?',
+                        opcoes: [
+                            'Bloqueia o motor do veículo remotamente',
+                            'Calcula a posição do veículo usando sinais de satélite',
+                            'Transmite os dados de localização ao servidor via rede celular',
+                            'Detecta quando o veículo sofre impacto ou vibração'
+                        ],
+                        correta: 1,
+                        explicacao: 'O módulo GPS capta sinais de pelo menos 4 satélites e usa trilateração para calcular a posição (latitude, longitude, altitude) com precisão de metros. A transmissão dos dados ao servidor é papel do módulo GSM/4G — são componentes diferentes com funções distintas.'
+                    },
+                    {
+                        texto: 'Qual componente é responsável por enviar os dados de localização ao servidor em tempo real?',
+                        opcoes: [
+                            'O receptor GPS',
+                            'A bateria de backup',
+                            'O módulo GSM/4G (chip de celular)',
+                            'O sensor de ignição'
+                        ],
+                        correta: 2,
+                        explicacao: 'Assim como um celular, o rastreador usa um chip SIM e a rede celular (GSM/4G) para transmitir os dados ao servidor. Por isso, o rastreador precisa de cobertura de operadora para funcionar em tempo real. Sem sinal celular, os dados são armazenados na memória interna e enviados depois.'
+                    },
+                    {
+                        texto: 'O que é geofencing em rastreamento veicular?',
+                        opcoes: [
+                            'Um sistema de câmeras de segurança instalado dentro do veículo',
+                            'Uma cerca elétrica física ao redor do estacionamento',
+                            'Uma área virtual delimitada no mapa que gera alertas quando o veículo entra ou sai dela',
+                            'Um bloqueio físico instalado nas rodas do veículo'
+                        ],
+                        correta: 2,
+                        explicacao: 'Geofencing vem de "geo" (geográfico) + "fence" (cerca em inglês). É uma fronteira virtual criada no mapa pelo usuário — quando o veículo a cruza, o sistema dispara alertas automáticos por SMS, e-mail ou notificação no app. Muito útil para empresas e famílias.'
+                    },
+                    {
+                        texto: 'Para que serve o bloqueio remoto de motor e quando ele é ativado com segurança?',
+                        opcoes: [
+                            'Para ligar o veículo à distância em dias frios',
+                            'Para impedir a partida do veículo remotamente — ativado somente com o veículo parado, por segurança',
+                            'Para acionar os freios de emergência remotamente enquanto o carro anda',
+                            'Para desligar o ar-condicionado e economizar combustível'
+                        ],
+                        correta: 1,
+                        explicacao: 'O bloqueio remoto corta o circuito de ignição, impedindo que o veículo seja dado a partida. É fundamental em casos de furto/roubo e também usado quando clientes ficam inadimplentes. Por segurança, o comando de bloqueio só é executado quando o sistema detecta que o veículo está parado.'
+                    },
+                    {
+                        texto: 'O que acontece quando o rastreador perde o sinal GPS dentro de um túnel?',
+                        opcoes: [
+                            'O rastreador para definitivamente e precisa ser reiniciado por técnico',
+                            'Um alarme sonoro é acionado dentro do veículo',
+                            'O rastreador armazena os dados na memória interna e pode usar triangulação de torres celulares como alternativa',
+                            'O veículo é bloqueado automaticamente por segurança'
+                        ],
+                        correta: 2,
+                        explicacao: 'Rastreadores modernos têm memória interna para guardar dados quando o sinal GPS ou celular está indisponível. Além disso, a triangulação de torres de telefonia celular pode estimar a posição. Quando o sinal retorna, os dados são sincronizados automaticamente — nenhum trecho da rota é perdido.'
+                    },
+                    {
+                        texto: 'Por que seguradoras de veículos oferecem desconto para clientes com rastreador?',
+                        opcoes: [
+                            'Por obrigação imposta por lei federal',
+                            'Porque o rastreador detecta acidentes e avisa os bombeiros automaticamente',
+                            'Porque veículos rastreados têm maior taxa de recuperação em casos de furto, reduzindo o risco de indenização de perda total',
+                            'Porque o rastreador elimina a necessidade de vistoria do veículo'
+                        ],
+                        correta: 2,
+                        explicacao: 'A lógica é direta: veículo rastreado = maior chance de ser recuperado após furto/roubo = menor risco de indenização de perda total para a seguradora. Esse menor risco é repassado ao cliente como desconto na apólice, podendo chegar a 30% dependendo da seguradora.'
+                    },
+                    {
+                        texto: 'Qual é o melhor argumento de venda para um autônomo que usa sua van como único meio de trabalho?',
+                        opcoes: [
+                            '"O rastreador é obrigatório por lei para veículos comerciais"',
+                            '"Vai aumentar a velocidade máxima permitida no seu veículo"',
+                            '"Protege seu principal meio de sustento: se a van for furtada, a localização em tempo real aumenta muito as chances de recuperação — e você não perde sua renda"',
+                            '"Substitui a necessidade de seguro veicular completo"'
+                        ],
+                        correta: 2,
+                        explicacao: 'Para um autônomo, a van é seu meio de trabalho e sustento. Perder o veículo significa perder a renda. O argumento da proteção do patrimônio e da alta taxa de recuperação ressoa diretamente com a realidade e os medos desse perfil — é o argumento mais poderoso e honesto.'
+                    },
+                    {
+                        texto: 'Qual das opções abaixo NÃO é uma funcionalidade real de um rastreador veicular profissional?',
+                        opcoes: [
+                            'Alertas quando o veículo ultrapassa o limite de velocidade configurado',
+                            'Histórico completo das rotas percorridas com horários',
+                            'Diagnóstico médico do estado físico do motorista em tempo real',
+                            'Detecção de quando o veículo é ligado ou desligado'
+                        ],
+                        correta: 2,
+                        explicacao: 'Rastreadores monitoram o veículo e seus dados de uso — não a saúde do motorista. Alertas de velocidade, histórico de rotas e detecção de ignição são funcionalidades reais presentes em qualquer rastreador profissional. Diagnóstico médico é área de wearables e dispositivos de saúde, não de rastreamento veicular.'
+                    },
+                    {
+                        texto: 'Um pai quer monitorar se o filho adolescente está indo apenas para a escola e para casa. Qual funcionalidade do rastreador resolve isso diretamente?',
+                        opcoes: [
+                            'Bloqueio remoto de motor, para impedir que o filho saia sem permissão',
+                            'Geofencing com alertas, delimitando as áreas permitidas e notificando quando o veículo sair delas',
+                            'Alertas de velocidade, para saber se o filho está acelerando demais',
+                            'Relatório de consumo de combustível, para controlar as saídas'
+                        ],
+                        correta: 1,
+                        explicacao: 'O geofencing é a funcionalidade ideal para esse caso. O pai configura a escola e a casa como áreas permitidas e recebe uma notificação automática se o carro sair desses limites. É uma solução discreta, que não exige que o pai fique monitorando ativamente — o sistema avisa quando algo foge do padrão.'
+                    },
+                    {
+                        texto: 'Um criminoso usa um "jammer" (bloqueador de sinal) para tentar silenciar o rastreador do veículo que está furtando. O que um rastreador profissional faz nessa situação?',
+                        opcoes: [
+                            'Para de funcionar completamente até o sinal ser restaurado manualmente',
+                            'Detecta a interferência e envia imediatamente um alerta ao proprietário antes de ser silenciado',
+                            'Aciona automaticamente os freios do veículo para impedir o furto',
+                            'Liga o alarme sonoro do veículo e acende as luzes de emergência'
+                        ],
+                        correta: 1,
+                        explicacao: 'Rastreadores profissionais têm tecnologia anti-jammer que identifica quando estão sendo bloqueados. Ao detectar a interferência, enviam imediatamente um alerta de "tentativa de bloqueio de sinal" ao proprietário — muitas vezes antes que o jammer consiga suprimir completamente a transmissão. Esse alerta dá tempo precioso para o proprietário acionar a polícia.'
+                    }
+                ]
+            }
+        };
+
+        const treinamentoState = {
+            moduloAtivo: null,
+            questaoAtual: 0,
+            respostas: [],
+            secoesAbertas: { 0: true }
+        };
+
+        function carregarProgressoTreinamento() {
+            const d = localStorage.getItem('comissoes_treinamento');
+            return d ? JSON.parse(d) : {};
+        }
+
+        function salvarProgressoTreinamento(moduloId, resultado) {
+            const p = carregarProgressoTreinamento();
+            p[moduloId] = resultado;
+            localStorage.setItem('comissoes_treinamento', JSON.stringify(p));
+        }
+
+        function renderModuloLista() {
+            const progresso = carregarProgressoTreinamento();
+            let html = Object.entries(MODULOS_DATA).map(([id, m]) => {
+                const r = progresso[id];
+                let badge = '';
+                let cardClass = 'modulo-card';
+                if (r) {
+                    badge = r.aprovado
+                        ? '<span class="status-badge status-active">✓ Aprovado</span>'
+                        : '<span class="status-badge status-inactive">✗ Reprovado</span>';
+                    if (r.aprovado) cardClass += ' concluido';
+                }
+                return `<div class="${cardClass}" onclick="abreModulo('${id}')">
+                    <div class="modulo-icone">${m.icone}</div>
+                    <div class="modulo-info">
+                        <h3>${m.titulo}</h3>
+                        <p>${m.descricao}</p>
+                        <div class="modulo-meta">
+                            <span>⏱️ ${m.duracao}</span>
+                            <span>📝 ${m.totalPerguntas} questões</span>
+                            ${badge}
+                        </div>
+                    </div>
+                    <div class="modulo-arrow">›</div>
+                </div>`;
+            }).join('');
+
+            const futuros = [
+                { titulo: 'Telemetria e Comportamento de Direção', icone: '📊' },
+                { titulo: 'Gestão de Frotas Avançado', icone: '🚛' }
+            ];
+            html += futuros.map(m => `
+                <div class="modulo-card bloqueado">
+                    <div class="modulo-icone" style="filter:grayscale(1)">${m.icone}</div>
+                    <div class="modulo-info">
+                        <h3>${m.titulo}</h3>
+                        <p style="color:#aaa;">Em breve</p>
+                        <div class="modulo-meta"><span>🔒 Bloqueado</span></div>
+                    </div>
+                    <div class="modulo-arrow">›</div>
+                </div>`).join('');
+
+            document.getElementById('treinamentoCards').innerHTML = html;
+        }
+
+        function abreModulo(id) {
+            treinamentoState.moduloAtivo = id;
+            treinamentoState.secoesAbertas = { 0: true };
+            document.getElementById('treinamentoLista').style.display = 'none';
+            document.getElementById('treinamentoDetalhe').style.display = 'block';
+            renderConteudoModulo();
+        }
+
+        function voltaLista() {
+            treinamentoState.moduloAtivo = null;
+            treinamentoState.respostas = [];
+            document.getElementById('treinamentoDetalhe').style.display = 'none';
+            document.getElementById('treinamentoLista').style.display = 'block';
+            renderModuloLista();
+        }
+
+        function renderConteudoModulo() {
+            const m = MODULOS_DATA[treinamentoState.moduloAtivo];
+            const secoesHtml = m.secoes.map((s, i) => {
+                const aberta = treinamentoState.secoesAbertas[i];
+                return `<div class="secao-treinamento">
+                    <div class="secao-header" onclick="toggleSecao(${i})">
+                        <h3>${s.icone} ${s.titulo}</h3>
+                        <span class="secao-toggle">${aberta ? '▲' : '▼'}</span>
+                    </div>
+                    ${aberta ? `<div class="secao-body">${s.corpo}</div>` : ''}
+                </div>`;
+            }).join('');
+
+            document.getElementById('treinamentoDetalhe').innerHTML = `
+                <div class="conteudo-header">
+                    <button type="button" class="btn-voltar" onclick="voltaLista()">← Módulos</button>
+                    <strong style="font-size:16px;">${m.icone} ${m.titulo}</strong>
+                </div>
+                <div id="conteudoSecoes">${secoesHtml}</div>
+                <div class="quiz-inicio">
+                    <div style="font-size:48px;margin-bottom:16px;">📝</div>
+                    <h3>Quiz Final</h3>
+                    <p>Teste seus conhecimentos com <strong>10 perguntas</strong> de múltipla escolha.<br>Você precisa de <strong>70% de acerto (7 questões)</strong> para ser aprovado.</p>
+                    <button type="button" class="btn-primary" style="width:auto;padding:12px 32px;font-size:15px;" onclick="iniciaQuiz()">Iniciar Quiz →</button>
+                </div>`;
+            scrollTopo();
+        }
+
+        function toggleSecao(idx) {
+            treinamentoState.secoesAbertas[idx] = !treinamentoState.secoesAbertas[idx];
+            renderConteudoModulo();
+        }
+
+        function iniciaQuiz() {
+            treinamentoState.questaoAtual = 0;
+            treinamentoState.respostas = [];
+            renderQuestao();
+        }
+
+        function renderQuestao() {
+            const m = MODULOS_DATA[treinamentoState.moduloAtivo];
+            const q = m.quiz[treinamentoState.questaoAtual];
+            const total = m.quiz.length;
+            const atual = treinamentoState.questaoAtual + 1;
+            const acertos = treinamentoState.respostas.filter(r => r.correta).length;
+
+            const opcoesHtml = q.opcoes.map((op, i) =>
+                `<button type="button" class="quiz-opcao" id="opcao-${i}" onclick="respondeQuestao(${i})">${String.fromCharCode(65+i)}) ${op}</button>`
+            ).join('');
+
+            document.getElementById('treinamentoDetalhe').innerHTML = `
+                <div class="conteudo-header">
+                    <button type="button" class="btn-voltar" onclick="renderConteudoModulo()">← Conteúdo</button>
+                    <strong>${m.icone} Quiz: ${m.titulo}</strong>
+                </div>
+                <div class="quiz-container">
+                    <div class="quiz-progresso">
+                        <span class="quiz-progresso-texto">Questão ${atual} de ${total}</span>
+                        <span class="quiz-progresso-texto" id="acertosLabel">✓ ${acertos} acerto${acertos !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div class="quiz-progresso-bar">
+                        <div class="quiz-progresso-fill" style="width:${((atual-1)/total)*100}%"></div>
+                    </div>
+                    <div class="quiz-pergunta">${atual}. ${q.texto}</div>
+                    <div class="quiz-opcoes">${opcoesHtml}</div>
+                    <div id="quizFeedback"></div>
+                    <div id="quizNext" style="display:none">
+                        <button type="button" class="btn-primary" style="width:auto;" onclick="proximaQuestao()">
+                            ${atual < total ? 'Próxima questão →' : 'Ver resultado →'}
+                        </button>
+                    </div>
+                </div>`;
+            scrollTopo();
+        }
+
+        function respondeQuestao(escolha) {
+            const m = MODULOS_DATA[treinamentoState.moduloAtivo];
+            const q = m.quiz[treinamentoState.questaoAtual];
+            const correta = escolha === q.correta;
+
+            treinamentoState.respostas.push({ indice: escolha, correta });
+
+            document.querySelectorAll('.quiz-opcao').forEach((btn, i) => {
+                btn.disabled = true;
+                if (i === q.correta) btn.classList.add('correta');
+                else if (i === escolha && !correta) btn.classList.add('errada');
+            });
+
+            const acertos = treinamentoState.respostas.filter(r => r.correta).length;
+            document.getElementById('acertosLabel').textContent = `✓ ${acertos} acerto${acertos !== 1 ? 's' : ''}`;
+
+            const icone = correta ? '✅' : '❌';
+            const titulo = correta ? 'Correto!' : 'Incorreto!';
+            const respostaCorretaHtml = !correta
+                ? `<div style="margin-bottom:6px;">A resposta correta era: <strong>${String.fromCharCode(65+q.correta)}) ${q.opcoes[q.correta]}</strong></div>`
+                : '';
+
+            document.getElementById('quizFeedback').innerHTML = `
+                <div class="quiz-feedback ${correta ? 'acerto' : 'erro'}">
+                    <strong>${icone} ${titulo}</strong>
+                    ${respostaCorretaHtml}
+                    <div><strong>Por quê?</strong> ${q.explicacao}</div>
+                </div>`;
+
+            document.getElementById('quizNext').style.display = 'block';
+        }
+
+        function proximaQuestao() {
+            const m = MODULOS_DATA[treinamentoState.moduloAtivo];
+            if (treinamentoState.questaoAtual + 1 >= m.quiz.length) {
+                mostraResultado();
+            } else {
+                treinamentoState.questaoAtual++;
+                renderQuestao();
+            }
+        }
+
+        function mostraResultado() {
+            const m = MODULOS_DATA[treinamentoState.moduloAtivo];
+            const respostas = treinamentoState.respostas;
+            const total = m.quiz.length;
+            const acertos = respostas.filter(r => r.correta).length;
+            const percentual = Math.round((acertos / total) * 100);
+            const aprovado = acertos >= 7;
+
+            salvarProgressoTreinamento(treinamentoState.moduloAtivo, { acertos, total, percentual, aprovado, data: new Date().toISOString() });
+
+            const revisaoHtml = m.quiz.map((q, i) => {
+                const r = respostas[i];
+                const ok = r && r.correta;
+                return `<div class="revisao-item ${ok ? 'acerto' : 'erro'}">
+                    <div style="font-weight:600;margin-bottom:4px;">${ok ? '✅' : '❌'} Questão ${i+1}: ${q.texto}</div>
+                    ${!ok && r ? `<div style="font-size:12px;color:#721c24;margin-bottom:2px;">Sua resposta: ${String.fromCharCode(65+r.indice)}) ${q.opcoes[r.indice]}</div>` : ''}
+                    <div style="font-size:12px;color:${ok ? '#155724' : '#555'};margin-bottom:4px;">Correta: ${String.fromCharCode(65+q.correta)}) ${q.opcoes[q.correta]}</div>
+                    <div class="revisao-explicacao">${q.explicacao}</div>
+                </div>`;
+            }).join('');
+
+            document.getElementById('treinamentoDetalhe').innerHTML = `
+                <div class="conteudo-header">
+                    <button type="button" class="btn-voltar" onclick="voltaLista()">← Módulos</button>
+                </div>
+                <div class="quiz-resultado">
+                    <div style="font-size:56px;">${aprovado ? '🏆' : '📚'}</div>
+                    <div class="resultado-score">${acertos}/${total}</div>
+                    <div class="resultado-percentual">${percentual}% de acerto</div>
+                    <div class="resultado-badge ${aprovado ? 'aprovado' : 'reprovado'}">${aprovado ? '✓ APROVADO' : '✗ REPROVADO'}</div>
+                    <p style="font-size:14px;color:#666;margin-bottom:16px;">
+                        ${aprovado
+                            ? 'Parabéns! Você demonstrou domínio do conteúdo sobre Rastreador Veicular.'
+                            : 'Não desanime! Revise o conteúdo e tente novamente. São necessários 7 acertos para aprovação.'}
+                    </p>
+                    <button type="button" class="btn-primary" style="width:auto;margin:4px 6px;" onclick="iniciaQuiz()">🔄 Refazer Quiz</button>
+                    <button type="button" class="btn-voltar" style="width:auto;margin:4px 6px;" onclick="renderConteudoModulo()">📖 Revisar Conteúdo</button>
+                    <div class="resultado-revisao">
+                        <h4>Revisão detalhada das questões:</h4>
+                        ${revisaoHtml}
+                    </div>
+                </div>`;
+            scrollTopo();
+        }
+
+        function scrollTopo() {
+            const tc = document.querySelector('.tab-content.active');
+            if (tc) tc.scrollTop = 0;
+        }
+
+        // ============== UTILS ==============
+        function atualizaTudo() {
+            atualizaClientesList();
+            atualizaPedidosList();
+            atualizaCarteira();
+        }
+
+        // Init
+        window.addEventListener('load', () => {
+            carregar();
+            renderModuloLista();
+            if (app.vendedor) {
+                mostraApp();
+            }
+        });
+    </script>
+</body>
+</html>
