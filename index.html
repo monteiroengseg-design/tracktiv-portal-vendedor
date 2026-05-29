@@ -27,7 +27,8 @@
                 Gestor: gestor@tracktiv.com / Gestor123<br>
                 Consultor: consultor@tracktiv.com / Consultor123<br>
                 Instalador: instalador@tracktiv.com / Instalador123<br>
-                Cliente: cliente@tracktiv.com / Cliente123
+                Cliente: cliente@tracktiv.com / Cliente123<br>
+                Técnico: tecnico@tracktiv.com / Tecnico123
             </div>
         </aside>
         <form id="loginForm" class="login-form">
@@ -351,6 +352,32 @@
                 <button id="openGestorClienteModalBtn" class="primary-btn">+ Novo acesso</button>
             </div>
             <div id="gestorClientesPortalContent"></div>
+        </section>
+
+        <!-- ──────────────── TÉCNICO: DASHBOARD ──────────────── -->
+        <section id="tecnicoDashboard" class="section">
+            <div class="section-header">
+                <div><h2>Meu Painel</h2><p>Visão geral dos seus chamados e clientes atribuídos.</p></div>
+            </div>
+            <div class="cards-grid" id="tecnicoStats"></div>
+            <div id="tecnicoChamadosRecentes"></div>
+        </section>
+
+        <!-- ──────────────── TÉCNICO: CLIENTES ──────────────── -->
+        <section id="tecnicoClientes" class="section">
+            <div class="section-header">
+                <div><h2>Meus Clientes</h2><p>Clientes atribuídos a você pelo gestor.</p></div>
+            </div>
+            <div id="tecnicoClientesContent"></div>
+        </section>
+
+        <!-- ──────────────── TÉCNICO: CHAMADOS ──────────────── -->
+        <section id="tecnicoChamados" class="section">
+            <div class="section-header">
+                <div><h2>Chamados</h2><p>Gerencie os chamados de suporte dos seus clientes.</p></div>
+                <button class="primary-btn" onclick="openChamadoModal()">+ Novo chamado</button>
+            </div>
+            <div id="tecnicoChamadosContent"></div>
         </section>
 
         <section id="dynamicContent" class="section"><div id="pageContent" class="dyn-content"></div></section>

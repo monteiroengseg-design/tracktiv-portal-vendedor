@@ -64,6 +64,11 @@ const NAV_TREE = {
             { id: 'g_inst_pend',    label: 'Instalações Pendentes',  icon: '⏳', render: () => renderInstPendentesList() },
             { id: 'g_inst_reg',     label: 'Registro de Instalações',icon: '📊', section: 'gestorInstaladores' }
         ]},
+        { id: 'g_tecnicos',    label: 'Técnicos',        icon: '🛠️', children: [
+            { id: 'g_tec_lista',    label: 'Lista de Técnicos',    icon: '📋', render: () => renderGestorTecnicos() },
+            { id: 'g_tec_new',      label: 'Cadastrar Novo',        icon: '➕', action: () => openTecnicoModal() },
+            { id: 'g_tec_chams',    label: 'Todos os Chamados',     icon: '🎫', render: () => renderGestorChamados() }
+        ]},
         { id: 'g_clientes',    label: 'Clientes',        icon: '🌐', children: [
             { id: 'g_cli_lista',    label: 'Lista de Clientes',      icon: '📋', section: 'gestorClientesPortal' },
             { id: 'g_cli_new',      label: 'Cadastrar Novo',         icon: '➕', action: () => openGestorClienteModal() },
@@ -146,6 +151,12 @@ const NAV_TREE = {
         ]},
         { id: 'i_produtos',    label: 'Produtos',       icon: '📦', section: 'consultorProdutos' },
         { id: 'i_mensagens',   label: 'Mensagens',      icon: '💬', action: () => openChatOverlay('gestor') }
+    ],
+    tecnico: [
+        { id: 't_dashboard', label: 'Dashboard',     icon: '📊', section: 'tecnicoDashboard' },
+        { id: 't_clientes',  label: 'Meus Clientes', icon: '👤', section: 'tecnicoClientes' },
+        { id: 't_chamados',  label: 'Chamados',      icon: '🎫', section: 'tecnicoChamados' },
+        { id: 't_mensagens', label: 'Mensagens',     icon: '💬', action: () => openChatOverlay('gestor') }
     ]
 };
 
@@ -973,7 +984,9 @@ const sampleState = {
         { id: 'instalador_1', name: 'Carlos Pereira', email: 'instalador@tracktiv.com', password: 'Instalador123', role: 'instalador',
           cpf: '111.222.333-44', address: 'Av. Industrial, 500 - Guarulhos/SP', whatsapp: '(11) 98888-7777', pixKey: 'carlos@tracktiv.com', storeName: 'Moto Peças Carlos' },
         { id: 'cliente_demo', name: 'Auto Prime', email: 'cliente@tracktiv.com', password: 'Cliente123', role: 'cliente',
-          clientId: 'c1', referralCode: 'AUTOPRIME23', points: 150, contractedServices: ['rastreamento'] }
+          clientId: 'c1', referralCode: 'AUTOPRIME23', points: 150, contractedServices: ['rastreamento'] },
+        { id: 'tecnico_1', name: 'Rafael Santos', email: 'tecnico@tracktiv.com', password: 'Tecnico123', role: 'tecnico',
+          cpf: '555.666.777-88', phone: '(11) 94455-6677', whatsapp: '(11) 94455-6677', specialty: 'Rastreamento Veicular' }
     ],
     clients: [
         // Laura
@@ -1015,6 +1028,24 @@ const sampleState = {
     followUps: [],
     chats: {},
     metaAlertsSent: {},
+    chamados: [
+        { id: 'ch1', clientId: 'c1', tecnicoId: 'tecnico_1', title: 'Rastreador sem sinal',
+          description: 'Rastreador do veículo ABC-1234 não envia posição há 2 dias. Necessário verificar conectividade do dispositivo.',
+          priority: 'Urgente', status: 'Em andamento', createdAt: thirtyDaysAgoISO(3), updatedAt: thirtyDaysAgoISO(1),
+          messages: [
+              { id: 'cm1', from: 'tecnico_1', text: 'Chamado aberto. Verificando conectividade do dispositivo.', at: thirtyDaysAgoISO(3) },
+              { id: 'cm2', from: 'tecnico_1', text: 'Problema identificado: antena com sinal fraco. Agendando visita técnica.', at: thirtyDaysAgoISO(1) }
+          ]
+        },
+        { id: 'ch2', clientId: 'c2', tecnicoId: 'tecnico_1', title: 'Configuração de bloqueio remoto',
+          description: 'Cliente solicita configuração e teste do bloqueio remoto no veículo GHI-9012.',
+          priority: 'Normal', status: 'Aberto', createdAt: thirtyDaysAgoISO(1), updatedAt: thirtyDaysAgoISO(1),
+          messages: [
+              { id: 'cm3', from: 'tecnico_1', text: 'Chamado registrado. Entraremos em contato em breve para agendar.', at: thirtyDaysAgoISO(1) }
+          ]
+        }
+    ],
+    tecnicoClients: { 'tecnico_1': ['c1', 'c2', 'c3'] },
     docSlots: {
         'cliente_demo': [
             { id: 'dslot_1', name: 'Contrato de Serviço', serviceKey: 'rastreamento', docId: 'cdoc_demo', uploadedAt: '2026-05-01', uploadedBy: 'Gestor Tracktiv' },
@@ -1296,7 +1327,7 @@ function loadState() {
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
-            app.state = { installations: [], coupons: [], pendingApprovals: [], productCommissions: {}, pendingUsers: [], pendingInstallations: [], photoInstallations: [], trainingProgress: {}, clientDocuments: [], clientReferrals: [], clientRedemptions: [], pointsConfig: { pointsPerRef: 100, brlPerPoint: 0.10 }, segmentForms: {}, notifications: [], goals: { default: 10, byConsultant: {} }, followUps: [], chats: {}, metaAlertsSent: {}, docChecklists: {}, docSlots: {}, ...parsed };
+            app.state = { installations: [], coupons: [], pendingApprovals: [], productCommissions: {}, pendingUsers: [], pendingInstallations: [], photoInstallations: [], trainingProgress: {}, clientDocuments: [], clientReferrals: [], clientRedemptions: [], pointsConfig: { pointsPerRef: 100, brlPerPoint: 0.10 }, segmentForms: {}, notifications: [], goals: { default: 10, byConsultant: {} }, followUps: [], chats: {}, metaAlertsSent: {}, chamados: [], tecnicoClients: {}, docChecklists: {}, docSlots: {}, ...parsed };
             // Migração: garante que o usuário demo cliente existe quando não há nenhum cliente cadastrado
             const users = app.state.users || [];
             if (!users.some(u => u.role === 'cliente')) {
@@ -1500,7 +1531,10 @@ function renderActiveSection(viewId) {
         instaladorClientes:     renderInstaladorClientes,
         instaladorInformativos: renderInstaladorInformativos,
         instaladorFotos:        renderInstaladorFotos,
-        instaladorExtrato:      renderInstaladorExtrato
+        instaladorExtrato:      renderInstaladorExtrato,
+        tecnicoDashboard:       renderTecnicoDashboard,
+        tecnicoClientes:        renderTecnicoClientes,
+        tecnicoChamados:        renderTecnicoChamados
     };
     if (renders[viewId]) renders[viewId]();
 }
@@ -3214,7 +3248,8 @@ function showApp() {
     document.getElementById('userNameLabel').textContent = app.currentUser.name;
     document.getElementById('pageRoleLabel').textContent =
         app.currentUser.role === 'gestor'     ? 'Área do Gestor' :
-        app.currentUser.role === 'instalador' ? 'Portal do Instalador' : 'Portal do Consultor';
+        app.currentUser.role === 'instalador' ? 'Portal do Instalador' :
+        app.currentUser.role === 'tecnico'    ? 'Portal do Técnico' : 'Portal do Consultor';
 
     // Initialize nav state
     app.navState = { path: [], expandedGroup: null, activeItemId: null };
@@ -3227,7 +3262,7 @@ function showApp() {
         if (firstItem.section) {
             app.activeView = firstItem.section;
             app.navState.activeItemId = firstItem.id;
-            const roleLabel = role === 'gestor' ? 'Gestor' : role === 'consultor' ? 'Consultor' : 'Instalador';
+            const roleLabel = role === 'gestor' ? 'Gestor' : role === 'consultor' ? 'Consultor' : role === 'tecnico' ? 'Técnico' : 'Instalador';
             app.navState.path = [{ label: roleLabel, groupId: null }, { label: firstItem.label, groupId: null, active: true }];
         }
     }
@@ -6925,6 +6960,504 @@ function renderGestorChatPage() {
     el.querySelectorAll('[data-page-chat]').forEach(item => {
         item.addEventListener('click', () => renderPageConv(item.dataset.pageChat));
     });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TÉCNICO PROFILE
+═══════════════════════════════════════════════════════════════════ */
+
+function renderTecnicoDashboard() {
+    if (!app.currentUser || app.currentUser.role !== 'tecnico') return;
+    const uid = app.currentUser.id;
+    const myChamados  = (app.state.chamados || []).filter(c => c.tecnicoId === uid);
+    const assignedIds = ((app.state.tecnicoClients || {})[uid] || []);
+
+    const open    = myChamados.filter(c => c.status === 'Aberto').length;
+    const inProg  = myChamados.filter(c => c.status === 'Em andamento').length;
+    const waiting = myChamados.filter(c => c.status === 'Aguardando cliente').length;
+    const closed  = myChamados.filter(c => ['Resolvido','Fechado'].includes(c.status)).length;
+
+    const stats = document.getElementById('tecnicoStats');
+    if (stats) stats.innerHTML = `
+        <div class="stat-card"><div class="stat-value">${assignedIds.length}</div><div class="stat-label">Clientes atribuídos</div></div>
+        <div class="stat-card"><div class="stat-value">${open}</div><div class="stat-label">Chamados abertos</div></div>
+        <div class="stat-card"><div class="stat-value">${inProg}</div><div class="stat-label">Em andamento</div></div>
+        <div class="stat-card"><div class="stat-value">${waiting}</div><div class="stat-label">Aguard. cliente</div></div>
+    `;
+
+    const recentes = document.getElementById('tecnicoChamadosRecentes');
+    if (recentes) {
+        const active = myChamados
+            .filter(c => c.status !== 'Fechado')
+            .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+            .slice(0, 5);
+        recentes.innerHTML = `
+            <div class="card" style="margin-top:18px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                    <h3 style="margin:0;">Chamados recentes</h3>
+                    <button class="secondary-btn" onclick="showSection('tecnicoChamados');renderTecnicoChamados()">Ver todos</button>
+                </div>
+                ${active.length === 0
+                    ? '<p class="text-muted">Nenhum chamado ativo.</p>'
+                    : active.map(ch => renderChamadoCard(ch)).join('')}
+            </div>`;
+    }
+}
+
+function renderTecnicoClientes() {
+    if (!app.currentUser || app.currentUser.role !== 'tecnico') return;
+    const uid = app.currentUser.id;
+    const assignedIds = ((app.state.tecnicoClients || {})[uid] || []);
+    const clients = (app.state.clients || []).filter(c => assignedIds.includes(c.id));
+    const el = document.getElementById('tecnicoClientesContent');
+    if (!el) return;
+
+    if (clients.length === 0) {
+        el.innerHTML = '<div class="card"><p class="text-muted">Nenhum cliente atribuído ainda. Aguarde o gestor atribuir clientes a você.</p></div>';
+        return;
+    }
+    el.innerHTML = `<div class="card" style="overflow-x:auto;">
+        <table>
+            <thead><tr><th>Cliente</th><th>Telefone</th><th>Produto</th><th>Plano</th><th>Chamados ativos</th><th>Ações</th></tr></thead>
+            <tbody>
+                ${clients.map(c => {
+                    const chams = (app.state.chamados || []).filter(ch => ch.clientId === c.id && ch.tecnicoId === uid);
+                    const openCount = chams.filter(ch => ['Aberto','Em andamento','Aguardando cliente'].includes(ch.status)).length;
+                    return `<tr>
+                        <td><strong>${esc(c.name)}</strong></td>
+                        <td>${esc(c.phone || '—')}</td>
+                        <td>${esc(c.product || '—')}</td>
+                        <td>${esc(c.plan || '—')}</td>
+                        <td>${openCount > 0
+                            ? `<span class="badge badge-warn">${openCount} aberto${openCount > 1 ? 's' : ''}</span>`
+                            : '<span class="badge badge-active">Sem pendências</span>'}</td>
+                        <td class="table-actions">
+                            <button class="secondary-btn" onclick="openChamadoModal('${c.id}')">+ Chamado</button>
+                            <button class="secondary-btn" onclick="renderTecnicoClienteChamados('${c.id}')">Ver chamados</button>
+                        </td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        </table>
+    </div>`;
+}
+
+function renderTecnicoClienteChamados(clientId) {
+    const client = (app.state.clients || []).find(c => c.id === clientId);
+    if (!client) return;
+    const uid = app.currentUser.id;
+    const chams = (app.state.chamados || [])
+        .filter(ch => ch.clientId === clientId && ch.tecnicoId === uid)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    showModal(`Chamados — ${client.name}`, `
+        <div style="margin-bottom:12px;display:flex;justify-content:flex-end;">
+            <button class="primary-btn" onclick="closeModal();openChamadoModal('${clientId}')">+ Novo chamado</button>
+        </div>
+        ${chams.length === 0
+            ? '<p class="text-muted">Nenhum chamado registrado para este cliente.</p>'
+            : chams.map(ch => renderChamadoCard(ch)).join('')}
+    `);
+}
+
+function renderTecnicoChamados() {
+    if (!app.currentUser || app.currentUser.role !== 'tecnico') return;
+    const uid = app.currentUser.id;
+    const all = (app.state.chamados || [])
+        .filter(c => c.tecnicoId === uid)
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    const el = document.getElementById('tecnicoChamadosContent');
+    if (!el) return;
+
+    const filterBar = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+        ${['Todos','Aberto','Em andamento','Aguardando cliente','Resolvido','Fechado'].map(s =>
+            `<button class="secondary-btn" style="font-size:0.8rem;padding:5px 12px;"
+                onclick="filterTecnicoChamados('${s}')">${s}</button>`
+        ).join('')}
+    </div>`;
+
+    el.innerHTML = filterBar + `<div id="tecnicoChamadosList">` +
+        (all.length === 0
+            ? '<p class="text-muted">Nenhum chamado ainda. Abra um chamado a partir da lista de clientes.</p>'
+            : all.map(ch => renderChamadoCard(ch)).join(''))
+        + '</div>';
+}
+
+function filterTecnicoChamados(status) {
+    const uid = app.currentUser.id;
+    let chams = (app.state.chamados || []).filter(c => c.tecnicoId === uid);
+    if (status !== 'Todos') chams = chams.filter(c => c.status === status);
+    chams.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    const el = document.getElementById('tecnicoChamadosList');
+    if (!el) return;
+    el.innerHTML = chams.length === 0
+        ? '<p class="text-muted">Nenhum chamado com este status.</p>'
+        : chams.map(ch => renderChamadoCard(ch)).join('');
+}
+
+function renderChamadoCard(ch) {
+    const client = (app.state.clients || []).find(c => c.id === ch.clientId);
+    const clientName = client ? client.name : 'Cliente desconhecido';
+    const statusCls = {
+        'Aberto':             'chamado-status-aberto',
+        'Em andamento':       'chamado-status-andamento',
+        'Aguardando cliente': 'chamado-status-aguardando',
+        'Resolvido':          'chamado-status-resolvido',
+        'Fechado':            'chamado-status-fechado'
+    }[ch.status] || '';
+    const priorityIcon = ch.priority === 'Urgente' ? '🔴' : ch.priority === 'Normal' ? '🟡' : '🟢';
+    const msgCount = (ch.messages || []).length;
+    return `
+        <div class="chamado-card" onclick="openChamadoDetail('${ch.id}')">
+            <div class="chamado-header">
+                <span class="chamado-title">${esc(ch.title)}</span>
+                <span class="chamado-status-pill ${statusCls}">${esc(ch.status)}</span>
+            </div>
+            <div class="chamado-meta">
+                ${priorityIcon} <strong>${esc(ch.priority)}</strong> &bull; ${esc(clientName)} &bull; ${ch.createdAt}
+            </div>
+            <div class="chamado-desc">${esc((ch.description || '').slice(0, 100))}${(ch.description || '').length > 100 ? '…' : ''}</div>
+            <div class="chamado-footer">
+                <span>${msgCount} mensagem${msgCount !== 1 ? 'ns' : ''}</span>
+                <span class="chamado-link">Ver detalhes ›</span>
+            </div>
+        </div>`;
+}
+
+function openChamadoModal(clientId) {
+    if (!app.currentUser) return;
+    const uid = app.currentUser.id;
+    const assignedIds = app.currentUser.role === 'tecnico'
+        ? ((app.state.tecnicoClients || {})[uid] || [])
+        : (app.state.clients || []).map(c => c.id);
+    const clients = (app.state.clients || []).filter(c => assignedIds.includes(c.id));
+
+    showModal('Abrir novo chamado', `
+        <form onsubmit="saveChamado(event)">
+            <div class="field">
+                <label>Cliente *</label>
+                <select id="chamadoClientId" required>
+                    <option value="">Selecione...</option>
+                    ${clients.map(c => `<option value="${c.id}" ${c.id === clientId ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
+                </select>
+            </div>
+            <div class="field">
+                <label>Título *</label>
+                <input id="chamadoTitle" type="text" required placeholder="Ex: Rastreador sem sinal">
+            </div>
+            <div class="field">
+                <label>Prioridade</label>
+                <select id="chamadoPriority">
+                    <option>Normal</option>
+                    <option>Urgente</option>
+                    <option>Baixa</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Descrição *</label>
+                <textarea id="chamadoDesc" rows="4" required placeholder="Descreva o problema ou solicitação..."></textarea>
+            </div>
+            <div class="actions">
+                <button type="submit" class="primary-btn">Abrir chamado</button>
+                <button type="button" class="secondary-btn" onclick="closeModal()">Cancelar</button>
+            </div>
+        </form>
+    `);
+}
+
+function saveChamado(e) {
+    e.preventDefault();
+    const clientId = document.getElementById('chamadoClientId').value;
+    const title    = document.getElementById('chamadoTitle').value.trim();
+    const priority = document.getElementById('chamadoPriority').value;
+    const desc     = document.getElementById('chamadoDesc').value.trim();
+    if (!clientId || !title || !desc) return;
+    const uid = app.currentUser.id;
+    const now = todayISO();
+    const ch = {
+        id: 'ch_' + Date.now(), clientId, tecnicoId: uid, title, description: desc,
+        priority, status: 'Aberto', createdAt: now, updatedAt: now,
+        messages: [{ id: 'cm_' + Date.now(), from: uid, text: `Chamado aberto: ${desc}`, at: now }]
+    };
+    if (!app.state.chamados) app.state.chamados = [];
+    app.state.chamados.push(ch);
+    const gestor = (app.state.users || []).find(u => u.role === 'gestor');
+    if (gestor) addNotification(gestor.id, 'chamado', `Novo chamado aberto por ${app.currentUser.name}: "${title}"`, { render: 'renderGestorChamados' });
+    saveState();
+    closeModal();
+    if (app.currentUser.role === 'tecnico') {
+        renderTecnicoChamados();
+        renderTecnicoDashboard();
+    }
+}
+
+function openChamadoDetail(chamadoId) {
+    const ch = (app.state.chamados || []).find(c => c.id === chamadoId);
+    if (!ch) return;
+    const client = (app.state.clients || []).find(c => c.id === ch.clientId);
+    const clientName = client ? client.name : 'Desconhecido';
+    const priorityIcon = ch.priority === 'Urgente' ? '🔴' : ch.priority === 'Normal' ? '🟡' : '🟢';
+    const statusOptions = ['Aberto','Em andamento','Aguardando cliente','Resolvido','Fechado'];
+    const canEdit = app.currentUser && (app.currentUser.role === 'tecnico' || app.currentUser.role === 'gestor');
+
+    const msgsHtml = (ch.messages || []).map(m => {
+        const sender = (app.state.users || []).find(u => u.id === m.from);
+        const senderName = sender ? sender.name : m.from;
+        const isMine = m.from === app.currentUser.id;
+        return `<div class="chamado-msg ${isMine ? 'chamado-msg-mine' : 'chamado-msg-other'}">
+            <div class="chamado-msg-meta">${esc(senderName)} &bull; ${m.at}</div>
+            <div class="chamado-msg-text">${esc(m.text)}</div>
+        </div>`;
+    }).join('');
+
+    showModal(`Chamado #${ch.id.slice(-4)}: ${ch.title}`, `
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;font-size:0.9rem;">
+            ${priorityIcon} <strong>${esc(ch.priority)}</strong>
+            &bull; Cliente: <strong>${esc(clientName)}</strong>
+            &bull; Aberto em: ${ch.createdAt}
+        </div>
+        <div class="card" style="margin-bottom:14px;padding:12px 14px;background:var(--surface-2);">
+            <strong>Descrição:</strong><br>${esc(ch.description)}
+        </div>
+        ${canEdit ? `
+        <div class="field" style="margin-bottom:14px;">
+            <label>Status do chamado</label>
+            <select id="chamadoStatusSel" onchange="updateChamadoStatus('${ch.id}',this.value)">
+                ${statusOptions.map(s => `<option ${ch.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+        </div>` : ''}
+        <div class="chamado-thread" id="chamadoThread_${ch.id}">
+            ${msgsHtml || '<p class="text-muted" style="text-align:center;padding:18px 0;">Nenhuma mensagem ainda.</p>'}
+        </div>
+        ${canEdit ? `
+        <div class="field" style="margin-top:14px;">
+            <label>Adicionar mensagem</label>
+            <textarea id="chamadoMsgInput" rows="3" placeholder="Escreva uma atualização ou anotação..."></textarea>
+        </div>
+        <div class="actions">
+            <button class="primary-btn" onclick="sendChamadoMessage('${ch.id}')">Enviar</button>
+            <button class="secondary-btn" onclick="closeModal()">Fechar</button>
+        </div>` : `<div class="actions"><button class="secondary-btn" onclick="closeModal()">Fechar</button></div>`}
+    `);
+}
+
+function updateChamadoStatus(chamadoId, newStatus) {
+    const ch = (app.state.chamados || []).find(c => c.id === chamadoId);
+    if (!ch) return;
+    ch.status    = newStatus;
+    ch.updatedAt = todayISO();
+    if (!ch.messages) ch.messages = [];
+    ch.messages.push({ id: 'cm_' + Date.now(), from: app.currentUser.id, text: `Status alterado para: ${newStatus}`, at: todayISO() });
+    saveState();
+    if (app.currentUser.role === 'tecnico') {
+        renderTecnicoDashboard();
+        renderTecnicoChamados();
+    }
+}
+
+function sendChamadoMessage(chamadoId) {
+    const input = document.getElementById('chamadoMsgInput');
+    const text = input?.value.trim();
+    if (!text) return;
+    const ch = (app.state.chamados || []).find(c => c.id === chamadoId);
+    if (!ch) return;
+    if (!ch.messages) ch.messages = [];
+    ch.messages.push({ id: 'cm_' + Date.now(), from: app.currentUser.id, text, at: todayISO() });
+    ch.updatedAt = todayISO();
+    if (app.currentUser.role === 'tecnico') {
+        const gestor = (app.state.users || []).find(u => u.role === 'gestor');
+        if (gestor) addNotification(gestor.id, 'chamado', `Nova mensagem no chamado "${ch.title}" por ${app.currentUser.name}`, { render: 'renderGestorChamados' });
+    }
+    saveState();
+    closeModal();
+    openChamadoDetail(chamadoId);
+}
+
+/* ─── GESTOR: TÉCNICOS MANAGEMENT ─── */
+
+function renderGestorTecnicos() {
+    const tecnicos = (app.state.users || []).filter(u => u.role === 'tecnico');
+    const chamados = app.state.chamados || [];
+    const tClients = app.state.tecnicoClients || {};
+
+    document.getElementById('pageContent').innerHTML = `
+        <div class="section-header">
+            <div><h2>Técnicos</h2><p>Cadastre técnicos e gerencie clientes atribuídos.</p></div>
+            <button class="primary-btn" onclick="openTecnicoModal()">+ Novo técnico</button>
+        </div>
+        ${tecnicos.length === 0
+            ? `<div class="card"><p class="text-muted">Nenhum técnico cadastrado. Clique em "+ Novo técnico" para começar.</p></div>`
+            : `<div class="card" style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Nome</th><th>Especialidade</th><th>Telefone</th><th>Clientes</th><th>Chamados abertos</th><th>Ações</th></tr></thead>
+                    <tbody>
+                    ${tecnicos.map(t => {
+                        const aIds       = tClients[t.id] || [];
+                        const openChams  = chamados.filter(c => c.tecnicoId === t.id && ['Aberto','Em andamento','Aguardando cliente'].includes(c.status)).length;
+                        return `<tr>
+                            <td><strong>${esc(t.name)}</strong><br><small class="text-muted">${esc(t.email)}</small></td>
+                            <td>${esc(t.specialty || '—')}</td>
+                            <td>${esc(t.phone || '—')}</td>
+                            <td><span class="badge badge-active">${aIds.length} cliente${aIds.length !== 1 ? 's' : ''}</span></td>
+                            <td>${openChams > 0 ? `<span class="badge badge-warn">${openChams}</span>` : '<span class="badge badge-active">0</span>'}</td>
+                            <td class="table-actions">
+                                <button class="secondary-btn" onclick="openAssignTecnicoClientModal('${t.id}')">Atribuir clientes</button>
+                                <button class="secondary-btn" onclick="openTecnicoModal('${t.id}')">Editar</button>
+                                <button class="danger-btn"    onclick="deleteTecnico('${t.id}')">Excluir</button>
+                            </td>
+                        </tr>`;
+                    }).join('')}
+                    </tbody>
+                </table>
+            </div>`}
+    `;
+    showSection('dynamicContent');
+}
+
+function openTecnicoModal(tecnicoId) {
+    const t = tecnicoId ? (app.state.users || []).find(u => u.id === tecnicoId) : null;
+    showModal(t ? 'Editar técnico' : 'Cadastrar técnico', `
+        <form onsubmit="saveTecnico(event,'${tecnicoId || ''}')">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="field"><label>Nome *</label><input id="tecNome" value="${t ? esc(t.name) : ''}" required></div>
+                <div class="field"><label>E-mail *</label><input id="tecEmail" type="email" value="${t ? esc(t.email) : ''}" required></div>
+                <div class="field"><label>Senha${t ? ' (em branco = manter)' : ' *'}</label><input id="tecSenha" type="password" ${t ? '' : 'required'}></div>
+                <div class="field"><label>CPF</label><input id="tecCPF" value="${t ? esc(t.cpf || '') : ''}"></div>
+                <div class="field"><label>Telefone</label><input id="tecTel" value="${t ? esc(t.phone || '') : ''}"></div>
+                <div class="field"><label>WhatsApp</label><input id="tecWA" value="${t ? esc(t.whatsapp || '') : ''}"></div>
+                <div class="field" style="grid-column:1/-1;"><label>Especialidade</label><input id="tecEsp" value="${t ? esc(t.specialty || '') : ''}" placeholder="Ex: Rastreamento Veicular"></div>
+            </div>
+            <div class="actions">
+                <button type="submit" class="primary-btn">${t ? 'Salvar' : 'Cadastrar'}</button>
+                <button type="button" class="secondary-btn" onclick="closeModal()">Cancelar</button>
+            </div>
+        </form>
+    `);
+}
+
+function saveTecnico(e, tecnicoId) {
+    e.preventDefault();
+    const nome  = document.getElementById('tecNome').value.trim();
+    const email = document.getElementById('tecEmail').value.trim().toLowerCase();
+    const senha = document.getElementById('tecSenha').value.trim();
+    const cpf   = document.getElementById('tecCPF').value.trim();
+    const tel   = document.getElementById('tecTel').value.trim();
+    const wa    = document.getElementById('tecWA').value.trim();
+    const esp   = document.getElementById('tecEsp').value.trim();
+    const users = app.state.users || [];
+
+    if (tecnicoId) {
+        const u = users.find(x => x.id === tecnicoId);
+        if (!u) return;
+        u.name = nome; u.email = email; u.cpf = cpf; u.phone = tel; u.whatsapp = wa; u.specialty = esp;
+        if (senha) u.password = senha;
+    } else {
+        if (users.find(x => x.email === email)) { alert('Este e-mail já está cadastrado.'); return; }
+        const newT = { id: 'tecnico_' + Date.now(), name: nome, email, password: senha, role: 'tecnico', cpf, phone: tel, whatsapp: wa, specialty: esp };
+        users.push(newT);
+        if (!app.state.tecnicoClients) app.state.tecnicoClients = {};
+        app.state.tecnicoClients[newT.id] = [];
+    }
+    saveState();
+    closeModal();
+    renderGestorTecnicos();
+}
+
+function deleteTecnico(tecnicoId) {
+    if (!confirm('Excluir este técnico? Os chamados vinculados serão mantidos no histórico.')) return;
+    app.state.users = (app.state.users || []).filter(u => u.id !== tecnicoId);
+    if (app.state.tecnicoClients) delete app.state.tecnicoClients[tecnicoId];
+    saveState();
+    renderGestorTecnicos();
+}
+
+function openAssignTecnicoClientModal(tecnicoId) {
+    const t = (app.state.users || []).find(u => u.id === tecnicoId);
+    if (!t) return;
+    const allClients = app.state.clients || [];
+    const assigned   = ((app.state.tecnicoClients || {})[tecnicoId] || []);
+    showModal(`Atribuir clientes — ${t.name}`, `
+        <p class="text-muted" style="margin-bottom:14px;">Selecione os clientes que serão atendidos por este técnico:</p>
+        <div style="max-height:360px;overflow-y:auto;">
+            ${allClients.length === 0
+                ? '<p class="text-muted">Nenhum cliente cadastrado.</p>'
+                : allClients.map(c => `
+                    <label style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;">
+                        <input type="checkbox" value="${c.id}" ${assigned.includes(c.id) ? 'checked' : ''} style="width:16px;height:16px;">
+                        <span><strong>${esc(c.name)}</strong> <small class="text-muted">${esc(c.product || '')}</small></span>
+                    </label>`).join('')}
+        </div>
+        <div class="actions" style="margin-top:16px;">
+            <button class="primary-btn" onclick="saveAssignTecnicoClients('${tecnicoId}')">Salvar</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+}
+
+function saveAssignTecnicoClients(tecnicoId) {
+    const boxes = document.querySelectorAll('#modalContent input[type=checkbox]');
+    const selected = Array.from(boxes).filter(cb => cb.checked).map(cb => cb.value);
+    if (!app.state.tecnicoClients) app.state.tecnicoClients = {};
+    app.state.tecnicoClients[tecnicoId] = selected;
+    saveState();
+    closeModal();
+    renderGestorTecnicos();
+}
+
+function renderGestorChamados() {
+    const chamados = (app.state.chamados || []).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    const tecnicos = (app.state.users || []).filter(u => u.role === 'tecnico');
+    const clients  = app.state.clients || [];
+
+    document.getElementById('pageContent').innerHTML = `
+        <div class="section-header">
+            <div><h2>Todos os chamados</h2><p>Visão consolidada de todos os chamados do sistema.</p></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+            ${['Todos','Aberto','Em andamento','Aguardando cliente','Resolvido','Fechado'].map(s =>
+                `<button class="secondary-btn" style="font-size:0.8rem;padding:5px 12px;"
+                    onclick="filterGestorChamados('${s}')">${s}</button>`
+            ).join('')}
+        </div>
+        <div id="gestorChamadosList">
+            ${_gestorChamadosListHtml(chamados, clients, tecnicos)}
+        </div>
+    `;
+    showSection('dynamicContent');
+}
+
+function _gestorChamadosListHtml(chamados, clients, tecnicos) {
+    if (chamados.length === 0) return '<div class="card"><p class="text-muted">Nenhum chamado registrado.</p></div>';
+    return chamados.map(ch => {
+        const c   = clients.find(x => x.id === ch.clientId);
+        const tec = tecnicos.find(x => x.id === ch.tecnicoId);
+        const priorityIcon = ch.priority === 'Urgente' ? '🔴' : ch.priority === 'Normal' ? '🟡' : '🟢';
+        const statusCls = {
+            'Aberto':             'chamado-status-aberto',
+            'Em andamento':       'chamado-status-andamento',
+            'Aguardando cliente': 'chamado-status-aguardando',
+            'Resolvido':          'chamado-status-resolvido',
+            'Fechado':            'chamado-status-fechado'
+        }[ch.status] || '';
+        return `<div class="chamado-card" onclick="openChamadoDetail('${ch.id}')">
+            <div class="chamado-header">
+                <span class="chamado-title">${esc(ch.title)}</span>
+                <span class="chamado-status-pill ${statusCls}">${esc(ch.status)}</span>
+            </div>
+            <div class="chamado-meta">
+                ${priorityIcon} ${esc(ch.priority)} &bull; Cliente: <strong>${c ? esc(c.name) : '—'}</strong> &bull; Técnico: <strong>${tec ? esc(tec.name) : '—'}</strong> &bull; ${ch.updatedAt}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function filterGestorChamados(status) {
+    const tecnicos = (app.state.users || []).filter(u => u.role === 'tecnico');
+    const clients  = app.state.clients || [];
+    let chams = app.state.chamados || [];
+    if (status !== 'Todos') chams = chams.filter(c => c.status === status);
+    chams = chams.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    const el = document.getElementById('gestorChamadosList');
+    if (el) el.innerHTML = _gestorChamadosListHtml(chams, clients, tecnicos);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
