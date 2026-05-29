@@ -26,7 +26,8 @@
             <div class="info-box">
                 Gestor: gestor@tracktiv.com / Gestor123<br>
                 Consultor: consultor@tracktiv.com / Consultor123<br>
-                Instalador: instalador@tracktiv.com / Instalador123
+                Instalador: instalador@tracktiv.com / Instalador123<br>
+                Cliente: cliente@tracktiv.com / Cliente123
             </div>
         </aside>
         <form id="loginForm" class="login-form">
@@ -60,6 +61,11 @@
             </div>
         </div>
         <div class="user-panel">
+            <div class="notif-wrapper">
+                <button id="notifBtn" class="header-icon-btn" title="Notificações" type="button">🔔<span class="header-badge hidden" id="notifBadge">0</span></button>
+                <div id="notifPanel" class="notif-panel hidden"></div>
+            </div>
+            <button id="chatBtn" class="header-icon-btn" title="Mensagens" type="button">💬<span class="header-badge hidden" id="chatBadge">0</span></button>
             <div class="user-chip"><strong id="userNameLabel">Usuário</strong></div>
             <button id="logoutBtn" class="logout-btn">Sair</button>
         </div>
@@ -67,6 +73,9 @@
 
     <div class="main-grid">
         <div class="tabs" id="navigationTabs"></div>
+        <div class="content-area">
+        <div id="breadcrumbBar" class="breadcrumb-bar"></div>
+        <div class="sections-wrapper">
 
         <!-- ──────────────── GESTOR: DASHBOARD ──────────────── -->
         <section id="gestorDashboard" class="section">
@@ -77,6 +86,7 @@
                 </div>
             </div>
             <div class="cards-grid" id="gestorStats"></div>
+            <div id="gestorPendingApprovals"></div>
 
             <div class="card" style="margin-top:8px;">
                 <h3>Ranking do mês</h3>
@@ -194,6 +204,8 @@
                 </div>
             </div>
             <div class="card"><h3>Status em tempo real</h3><p class="text-muted" id="realtimeStatus"></p></div>
+            <div id="metaWidget"></div>
+            <div id="todayFollowUpsWidget"></div>
         </section>
 
         <!-- ──────────────── CONSULTOR: FUNIL ──────────────── -->
@@ -213,7 +225,7 @@
             </div>
             <div class="card" style="overflow-x:auto;">
                 <table>
-                    <thead><tr><th>Cliente</th><th>Telefone</th><th>Plano</th><th>Mensalidade</th><th>Etapa</th><th>Ações</th></tr></thead>
+                    <thead><tr><th>Cliente</th><th>Telefone</th><th>Plano</th><th>Mensalidade</th><th>Etapa</th><th>Score</th><th>Ações</th></tr></thead>
                     <tbody id="clientTableBody"></tbody>
                 </table>
             </div>
@@ -234,6 +246,21 @@
             </div>
             <div class="product-grid" id="trainingModules"></div>
             <div id="trainingDetail" class="hidden"></div>
+        </section>
+
+        <!-- ──────────────── CONSULTOR: SIMULADOR ──────────────── -->
+        <section id="consultorSimulador" class="section">
+            <div class="section-header">
+                <div><h2>Simulador de Ganhos</h2><p>Calcule sua comissão estimada em tempo real.</p></div>
+            </div>
+            <div class="card" style="margin-bottom:16px;">
+                <h3 style="margin:0 0 16px;">Parâmetros</h3>
+                <div id="simControls"></div>
+            </div>
+            <div class="card">
+                <h3 style="margin:0 0 16px;">Resultado estimado</h3>
+                <div id="simArea"></div>
+            </div>
         </section>
 
         <!-- ──────────────── CONSULTOR: INFORMATIVOS ──────────────── -->
@@ -283,6 +310,53 @@
             <div id="extratoContent"></div>
         </section>
 
+
+        <!-- ──────────────── GESTOR: CONFIGURAÇÕES ──────────────── -->
+        <section id="gestorConfig" class="section">
+            <div class="section-header">
+                <div><h2>Configurações</h2><p>Comissões por produto e ajustes comerciais.</p></div>
+            </div>
+            <div id="gestorConfigContent"></div>
+        </section>
+
+        <!-- ──────────────── INSTALADOR: FUNIL ──────────────── -->
+        <section id="instaladorCRM" class="section">
+            <div class="section-header">
+                <div><h2>Funil de Vendas</h2><p>Arraste clientes entre etapas ou use os botões rápidos.</p></div>
+                <button id="openInstaladorClientCRMBtn" class="primary-btn">+ Cadastrar cliente</button>
+            </div>
+            <div class="funnel-board" id="instaladorFunnelBoard"></div>
+        </section>
+
+        <!-- ──────────────── INSTALADOR: INFORMATIVOS ──────────────── -->
+        <section id="instaladorInformativos" class="section">
+            <div class="section-header">
+                <div><h2>Informativos</h2><p>Regras de comissionamento e parceria Tracktiv.</p></div>
+            </div>
+            <div id="instaladorInformativosArea"></div>
+        </section>
+
+        <!-- ──────────────── INSTALADOR: FOTOS / INSTALAÇÕES PENDENTES ──────────────── -->
+        <section id="instaladorFotos" class="section">
+            <div class="section-header">
+                <div><h2>Instalações</h2><p>Veículos aprovados para registro fotográfico de instalação.</p></div>
+            </div>
+            <div id="instaladorFotosContent"></div>
+        </section>
+
+        <!-- ──────────────── GESTOR: PORTAL CLIENTES ──────────────── -->
+        <section id="gestorClientesPortal" class="section">
+            <div class="section-header">
+                <div><h2>Portal de Clientes</h2><p>Acesso de clientes, upload de documentos e programa de indicação.</p></div>
+                <button id="openGestorClienteModalBtn" class="primary-btn">+ Novo acesso</button>
+            </div>
+            <div id="gestorClientesPortalContent"></div>
+        </section>
+
+        <section id="dynamicContent" class="section"><div id="pageContent" class="dyn-content"></div></section>
+
+        </div><!-- /sections-wrapper -->
+        </div><!-- /content-area -->
     </div><!-- /main-grid -->
 </div><!-- /appScreen -->
 
@@ -294,6 +368,44 @@
             <button id="closeModalBtn" class="close-modal" aria-label="Fechar">×</button>
         </div>
         <div id="modalContent"></div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════ PORTAL DO CLIENTE ═══════════════════════════════════════ -->
+<div id="clientePortal" class="hidden">
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-crest">T</div>
+            <div class="brand-title"><strong>Tracktiv</strong><span>Portal do Cliente</span></div>
+        </div>
+        <div class="user-panel">
+            <div class="user-chip"><strong id="clienteNameLabel">Cliente</strong></div>
+            <button id="clienteLogoutBtn" class="logout-btn">Sair</button>
+        </div>
+    </header>
+    <div class="main-grid">
+        <div class="tabs" id="clienteTabs"></div>
+        <div class="content-area">
+            <div id="clienteBreadcrumb" class="breadcrumb-bar"></div>
+            <div class="sections-wrapper">
+                <section id="clienteHome"          class="section"></section>
+                <section id="clienteRastreamento"  class="section"></section>
+                <section id="clienteSST"           class="section"></section>
+                <section id="clienteContabilidade" class="section"></section>
+                <section id="clienteOutros"        class="section"></section>
+                <section id="clienteIndicacao"     class="section"></section>
+                <section id="clienteFormulario"    class="section"></section>
+                <section id="clienteDynamic"       class="section"><div id="clientePageContent" style="padding:28px;"></div></section>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CHAT OVERLAY -->
+<div id="chatOverlay" class="chat-overlay hidden">
+    <div class="chat-overlay-backdrop" id="chatOverlayBackdrop"></div>
+    <div class="chat-panel">
+        <div id="chatBody" style="display:flex;flex-direction:column;height:100%;"></div>
     </div>
 </div>
 
