@@ -1344,6 +1344,14 @@ function loadState() {
             (app.state.users || []).forEach(u => {
                 if (u.role === 'cliente' && !u.contractedServices) u.contractedServices = [];
             });
+            // Migração: garante usuário demo técnico se ainda não existir
+            const demoTecnico = sampleState.users.find(u => u.role === 'tecnico');
+            if (demoTecnico && !(app.state.users || []).some(u => u.email === demoTecnico.email)) {
+                app.state.users = [...(app.state.users || []), JSON.parse(JSON.stringify(demoTecnico))];
+            }
+            // Migração: garante campos chamados e tecnicoClients
+            if (!app.state.chamados) app.state.chamados = JSON.parse(JSON.stringify(sampleState.chamados || []));
+            if (!app.state.tecnicoClients) app.state.tecnicoClients = JSON.parse(JSON.stringify(sampleState.tecnicoClients || {}));
         } catch (e) {
             app.state = JSON.parse(JSON.stringify(sampleState));
         }
@@ -4083,27 +4091,38 @@ function renderClienteBreadcrumb() {
     const bar = document.getElementById('clienteBreadcrumb');
     if (!bar) return;
     const ns = app.clienteNavState;
-    const u = app.currentUser;
-    const parts = [{ label: 'Portal', fn: null }];
+    const groupLabels = { servicos: '📦 Meus Serviços', indicacao: '🎁 Indicações', documentos: '📁 Documentos' };
+    const subItemLabels = {
+        form: '📝 Formulário', docs: '📎 Documentos', veiculos: '🚗 Veículos',
+        codigo: '🔗 Meu Código', minhas: '📋 Minhas Indicações', pontos: '⭐ Meus Pontos', resgatar: '🎁 Resgatar',
+        todos: '📁 Todos', pendentes: '🔴 Pendentes', concluidos: '✅ Concluídos'
+    };
+
+    const parts = [{ label: '🏠 Início', nav: "clienteNavTo(0)" }];
+
     if (ns.group) {
-        const groupLabels = { servicos: '📦 Meus Serviços', indicacao: '🎁 Indicações', documentos: '📁 Documentos' };
-        parts.push({ label: groupLabels[ns.group] || ns.group, fn: ns.subGroup ? () => clienteNavTo(1, ns.group) : null });
+        const hasMore = !!(ns.subGroup || ns.subItem);
+        parts.push({
+            label: groupLabels[ns.group] || ns.group,
+            nav: hasMore ? `clienteNavTo(1,'${ns.group}')` : null
+        });
     }
     if (ns.subGroup) {
         const svc = SERVICE_MAP.find(s => s.key === ns.subGroup);
-        if (svc) parts.push({ label: `${svc.icon} ${svc.label}`, fn: ns.subItem ? () => clienteNavTo(2, ns.group, ns.subGroup) : null });
+        if (svc) parts.push({
+            label: `${svc.icon} ${svc.label}`,
+            nav: ns.subItem ? `clienteNavTo(2,'${ns.group}','${ns.subGroup}')` : null
+        });
     }
     if (ns.subItem) {
-        const labels = { form: '📝 Formulário', docs: '📎 Documentos', veiculos: '🚗 Veículos' };
-        parts.push({ label: labels[ns.subItem] || ns.subItem, fn: null });
+        parts.push({ label: subItemLabels[ns.subItem] || ns.subItem, nav: null });
     }
-    if (parts.length <= 1) { bar.innerHTML = ''; return; }
+
     bar.innerHTML = parts.map((p, i) => {
         const isLast = i === parts.length - 1;
         const sep = i > 0 ? `<span class="bc-sep">›</span>` : '';
-        if (isLast) return `${sep}<span class="bc-item active">${esc(p.label)}</span>`;
-        if (p.fn) return `${sep}<button class="bc-item" onclick="(${p.fn.toString()})()">${esc(p.label)}</button>`;
-        return `${sep}<span class="bc-item dimmed">${esc(p.label)}</span>`;
+        if (!isLast && p.nav) return `${sep}<button class="bc-item" onclick="${p.nav}">${esc(p.label)}</button>`;
+        return `${sep}<span class="bc-item ${isLast ? 'active' : 'dimmed'}">${esc(p.label)}</span>`;
     }).join('');
 }
 
@@ -4111,6 +4130,57 @@ function clienteNavTo(depth, group, subGroup, subItem) {
     app.clienteNavState = { depth: depth || 0, group: group || null, subGroup: subGroup || null, subItem: subItem || null };
     renderClienteNav();
     renderClienteBreadcrumb();
+    _clienteRenderCurrentView();
+}
+
+function _clienteRenderCurrentView() {
+    const ns = app.clienteNavState;
+    if (!ns.group || ns.depth === 0) {
+        showClienteSection('clienteHome');
+        renderClienteHome();
+    } else if (ns.group === 'servicos') {
+        if (ns.depth === 1) {
+            showClienteSection('clienteDynamic');
+            _renderClienteServicosOverview();
+        } else if (ns.subGroup) {
+            const svc = SERVICE_MAP.find(s => s.key === ns.subGroup);
+            if (!svc) return;
+            showClienteSection(svc.sectionId);
+            if (ns.depth === 2) renderClienteServiceMenu(ns.subGroup);
+            else if (ns.depth === 3 && ns.subItem) renderClienteSubItem(ns.subGroup, ns.subItem);
+        }
+    } else if (ns.group === 'indicacao') {
+        showClienteSection('clienteIndicacao');
+        if (ns.subItem) renderClienteIndicacaoSub(ns.subItem);
+        else renderClienteIndicacao();
+    } else if (ns.group === 'documentos') {
+        showClienteSection('clienteFormulario');
+        renderClienteDocsList(ns.subItem || 'todos');
+    }
+}
+
+function _renderClienteServicosOverview() {
+    const u = app.currentUser;
+    const contracted = u.contractedServices || [];
+    const el = document.getElementById('clientePageContent');
+    if (!el) return;
+    el.innerHTML = `
+        <div class="section-header"><div><h2>📦 Meus Serviços</h2><p>Selecione um serviço para gerenciar dados e documentos.</p></div></div>
+        <div class="cards-grid">
+            ${contracted.length === 0
+                ? '<div class="card"><p class="text-muted">Nenhum serviço contratado.</p></div>'
+                : contracted.map(key => {
+                    const svc = SERVICE_MAP.find(s => s.key === key);
+                    if (!svc) return '';
+                    const fs = (app.state.segmentForms || {})[`${u.id}_${key}`] || { data: {} };
+                    const prog = calcSegmentProgress(svc.product, fs.data || {});
+                    return `<div class="card" style="cursor:pointer;" onclick="clienteNavTo(2,'servicos','${key}')">
+                        <h3>${svc.icon} ${esc(svc.label)}</h3>
+                        <div class="seg-progress-track" style="margin:10px 0 6px;"><div class="seg-progress-fill" style="width:${prog}%;${prog===100?'background:linear-gradient(90deg,#10b981,#059669);':''}"></div></div>
+                        <small style="color:${prog===100?'#10b981':'var(--accent)'};">${prog === 100 ? '✅ Completo' : `🔴 ${prog}% completo`}</small>
+                    </div>`;
+                }).join('')}
+        </div>`;
 }
 
 function renderClienteNav() {
@@ -4203,11 +4273,7 @@ function renderClienteNav() {
             { id: 'resgatar',  label: 'Resgatar Pontos', icon: '🎁' }
         ].forEach(si => {
             tabs.appendChild(mkBtn(si.icon, si.label, false, ns.subItem === si.id, false, () => {
-                app.clienteNavState.subItem = si.id;
-                renderClienteBreadcrumb();
-                renderClienteNavigation();
-                showClienteSection('clienteIndicacao');
-                renderClienteIndicacaoSub(si.id);
+                clienteNavTo(1, 'indicacao', null, si.id);
             }));
         });
 
@@ -4219,10 +4285,7 @@ function renderClienteNav() {
             { id: 'concluidos',label: 'Concluídos', icon: '✅' }
         ].forEach(si => {
             tabs.appendChild(mkBtn(si.icon, si.label, false, ns.subItem === si.id, false, () => {
-                app.clienteNavState.subItem = si.id;
-                renderClienteBreadcrumb();
-                showClienteSection('clienteFormulario');
-                renderClienteDocsList(si.id);
+                clienteNavTo(1, 'documentos', null, si.id);
             }));
         });
     }
@@ -4252,21 +4315,21 @@ function renderClienteServiceMenu(serviceKey) {
     const slots = ((app.state.docSlots || {})[u.id] || []).filter(sl => sl.serviceKey === serviceKey);
     const slotsFilled = slots.filter(sl => sl.docId).length;
     el.innerHTML = `
-        <div class="section-header"><div><h2>${svc.icon} ${esc(svc.label)}</h2><p>Selecione uma seção no menu lateral.</p></div></div>
+        <div class="section-header"><div><h2>${svc.icon} ${esc(svc.label)}</h2><p>Selecione uma seção abaixo ou no menu lateral.</p></div></div>
         <div class="cards-grid">
-            <div class="card" style="cursor:pointer;" onclick="clienteNavTo(3,'servicos','${serviceKey}','form');renderClienteNav();renderClienteBreadcrumb();document.querySelectorAll('#clientePortal .section').forEach(s=>s.classList.remove('active'));document.getElementById('${svc.sectionId}').classList.add('active');renderClienteSubItem('${serviceKey}','form');">
+            <div class="card" style="cursor:pointer;" onclick="clienteNavTo(3,'servicos','${serviceKey}','form')">
                 <h3>📝 Formulário de Dados</h3>
                 <div class="metric" style="font-size:1.6rem;color:${progress===100?'#10b981':'var(--accent)'};">${progress}%</div>
                 <div class="seg-progress-track" style="margin-top:8px;"><div class="seg-progress-fill" style="width:${progress}%;${progress===100?'background:linear-gradient(90deg,#10b981,#059669);':''}"></div></div>
                 <small style="margin-top:6px;display:block;">${progress<100?'🔴 Incompleto':'✅ Completo'}</small>
             </div>
-            <div class="card" style="cursor:pointer;" onclick="clienteNavTo(3,'servicos','${serviceKey}','docs');renderClienteNav();renderClienteBreadcrumb();document.querySelectorAll('#clientePortal .section').forEach(s=>s.classList.remove('active'));document.getElementById('${svc.sectionId}').classList.add('active');renderClienteSubItem('${serviceKey}','docs');">
+            <div class="card" style="cursor:pointer;" onclick="clienteNavTo(3,'servicos','${serviceKey}','docs')">
                 <h3>📎 Documentos</h3>
                 <div class="metric" style="font-size:1.6rem;">${slotsFilled}/${slots.length}</div>
                 <small style="margin-top:6px;display:block;">${slots.length===0?'Sem slots configurados':slotsFilled<slots.length?`🔴 ${slots.length-slotsFilled} pendente(s)`:'✅ Todos disponíveis'}</small>
             </div>
             ${serviceKey==='rastreamento'?`
-            <div class="card" style="cursor:pointer;" onclick="clienteNavTo(3,'servicos','rastreamento','veiculos');renderClienteNav();renderClienteBreadcrumb();document.querySelectorAll('#clientePortal .section').forEach(s=>s.classList.remove('active'));document.getElementById('clienteRastreamento').classList.add('active');renderClienteSubItem('rastreamento','veiculos');">
+            <div class="card" style="cursor:pointer;" onclick="clienteNavTo(3,'servicos','rastreamento','veiculos')">
                 <h3>🚗 Meus Veículos</h3>
                 <div class="metric" style="font-size:1.6rem;">${((fs.data||{}).vehicles||[]).length}</div>
                 <small>cadastrado(s)</small>
@@ -4362,8 +4425,9 @@ function renderClienteHome() {
         <div class="card">
             <h3 style="margin:0 0 12px;">Acesso rápido</h3>
             <div style="display:flex;flex-wrap:wrap;gap:10px;">
-                ${servicesProgress.map(s => `<button class="secondary-btn" onclick="document.querySelector('[data-view=${s.sectionId}]')?.click()">${s.icon} ${esc(s.label)}</button>`).join('')}
-                <button class="secondary-btn" onclick="document.querySelector('[data-view=clienteIndicacao]')?.click()">🎁 Indicação</button>
+                ${servicesProgress.map(s => `<button class="secondary-btn" onclick="clienteNavTo(2,'servicos','${s.key}')">${s.icon} ${esc(s.label)}</button>`).join('')}
+                <button class="secondary-btn" onclick="clienteNavTo(1,'indicacao')">🎁 Indicação</button>
+                <button class="secondary-btn" onclick="clienteNavTo(1,'documentos')">📁 Documentos</button>
             </div>
         </div>`}`;
 }
