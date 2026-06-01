@@ -32,20 +32,80 @@
             </div>
         </aside>
         <form id="loginForm" class="login-form">
-            <h2>Entrar</h2>
-            <div id="loginMessage" class="info-box">Use seu usuário para acessar o portal.</div>
-            <div class="field">
-                <label for="emailInput">E-mail</label>
-                <input id="emailInput" type="email" placeholder="nome@empresa.com" required autocomplete="username" />
+            <!-- Seção de login normal -->
+            <div id="loginSection">
+                <h2>Entrar</h2>
+                <div id="loginMessage" class="info-box">Use seu usuário para acessar o portal.</div>
+                <div class="field">
+                    <label for="emailInput">E-mail</label>
+                    <input id="emailInput" type="email" placeholder="nome@empresa.com" required autocomplete="username" />
+                </div>
+                <div class="field">
+                    <label for="passwordInput">Senha</label>
+                    <input id="passwordInput" type="password" placeholder="Sua senha" required autocomplete="current-password" />
+                </div>
+                <div id="loginError" class="error-text" aria-live="polite"></div>
+                <div class="actions">
+                    <button type="submit" class="primary-btn">Entrar</button>
+                    <button type="button" id="demoButton" class="secondary-btn">Demo</button>
+                </div>
+                <button type="button" class="forgot-link" onclick="showForgotPassword()">Esqueci minha senha</button>
             </div>
-            <div class="field">
-                <label for="passwordInput">Senha</label>
-                <input id="passwordInput" type="password" placeholder="Sua senha" required autocomplete="current-password" />
-            </div>
-            <div id="loginError" class="error-text" aria-live="polite"></div>
-            <div class="actions">
-                <button type="submit" class="primary-btn">Entrar</button>
-                <button type="button" id="demoButton" class="secondary-btn">Demo</button>
+
+            <!-- Seção de recuperação de senha -->
+            <div id="resetSection" class="hidden">
+                <!-- Passo 1: e-mail -->
+                <div id="resetStep1">
+                    <h2>Recuperar senha</h2>
+                    <p class="reset-section-desc">Digite o e-mail da sua conta e geraremos um código de verificação.</p>
+                    <div class="field">
+                        <label for="resetEmailInput">E-mail cadastrado</label>
+                        <input id="resetEmailInput" type="email" placeholder="nome@empresa.com" />
+                    </div>
+                    <div id="resetError1" class="error-text"></div>
+                    <div class="actions">
+                        <button type="button" class="primary-btn" onclick="resetStep1Submit()">Gerar código</button>
+                    </div>
+                    <button type="button" class="reset-back-link" onclick="showLoginForm()">← Voltar para o login</button>
+                </div>
+
+                <!-- Passo 2: código -->
+                <div id="resetStep2" class="hidden">
+                    <h2>Código gerado</h2>
+                    <p class="reset-section-desc">Como esta é uma simulação offline, o código aparece abaixo. Digite-o para continuar.</p>
+                    <div class="reset-code-box">
+                        <span class="reset-code-num" id="resetCodeDisplay">——</span>
+                        <span class="reset-code-hint">📧 Simulado — em produção seria enviado por e-mail</span>
+                    </div>
+                    <div class="field">
+                        <label for="resetCodeInput">Digite o código</label>
+                        <input id="resetCodeInput" type="text" placeholder="000000" maxlength="6" />
+                    </div>
+                    <div id="resetError2" class="error-text"></div>
+                    <div class="actions">
+                        <button type="button" class="primary-btn" onclick="resetStep2Submit()">Confirmar código</button>
+                    </div>
+                    <button type="button" class="reset-back-link" onclick="showResetStep1()">← Voltar</button>
+                </div>
+
+                <!-- Passo 3: nova senha -->
+                <div id="resetStep3" class="hidden">
+                    <h2>Nova senha</h2>
+                    <p class="reset-section-desc">Crie uma nova senha com pelo menos 6 caracteres.</p>
+                    <div class="field">
+                        <label for="resetNewPass">Nova senha</label>
+                        <input id="resetNewPass" type="password" placeholder="Mínimo 6 caracteres" />
+                    </div>
+                    <div class="field">
+                        <label for="resetConfirmPass">Confirmar nova senha</label>
+                        <input id="resetConfirmPass" type="password" placeholder="Repita a senha" />
+                    </div>
+                    <div id="resetError3" class="error-text"></div>
+                    <div id="resetSuccess" class="reset-success hidden">✅ Senha alterada com sucesso! Faça login com a nova senha.</div>
+                    <div class="actions" id="resetStep3Actions">
+                        <button type="button" class="primary-btn" onclick="resetStep3Submit()">Salvar nova senha</button>
+                    </div>
+                </div>
             </div>
         </form>
     </div>
@@ -437,5 +497,45 @@
 </div>
 
 <script src="app.js"></script>
+
+<!-- ════════ TOUR GUIADO DO TRAK ════════ -->
+<div id="tourOverlay" class="tour-overlay hidden">
+    <div class="tour-card">
+        <div class="tour-trak-header">
+            <div class="tour-trak-avatar">🤖</div>
+            <div>
+                <div class="tour-trak-label">TRAK — Tour Guiado</div>
+                <div class="tour-step-title" id="tourStepTitle">Bem-vindo!</div>
+            </div>
+        </div>
+        <p class="tour-message" id="tourMessage"></p>
+        <div class="tour-dots" id="tourDots"></div>
+        <div class="tour-footer">
+            <button type="button" class="tour-skip-link" onclick="tourEnd()">Pular tour</button>
+            <div class="tour-nav-btns">
+                <button type="button" class="secondary-btn" id="tourPrevBtn" onclick="tourPrev()" style="padding:7px 14px;font-size:0.82rem;">← Anterior</button>
+                <button type="button" class="primary-btn"   id="tourNextBtn" onclick="tourNext()" style="padding:7px 14px;font-size:0.82rem;">Próximo →</button>
+            </div>
+        </div>
+        <div class="tour-progress-bar"><div class="tour-progress-fill" id="tourProgressFill"></div></div>
+    </div>
+</div>
+
+<!-- ════════ POPUP COMUNICADO URGENTE ════════ -->
+<div id="urgentePopup" class="urgente-popup hidden">
+    <div class="urgente-popup-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+            <span style="font-size:1.5rem;">🚨</span>
+            <h3 id="urgentePopupTitulo">Comunicado urgente</h3>
+        </div>
+        <div class="up-meta" id="urgentePopupMeta"></div>
+        <div class="up-msg" id="urgentePopupMsg"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" id="urgentePopupNext" class="secondary-btn" onclick="urgentePopupNext()">Próximo →</button>
+            <button type="button" class="primary-btn" onclick="urgentePopupClose()">Entendi ✓</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

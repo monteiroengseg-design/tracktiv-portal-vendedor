@@ -93,8 +93,11 @@ const NAV_TREE = {
         { id: 'g_config',      label: 'Configurações',   icon: '⚙️', children: [
             { id: 'g_cfg_comis',    label: 'Tabela de Comissões',   icon: '💵', section: 'gestorConfig' },
             { id: 'g_cfg_metas',    label: 'Metas',                 icon: '🎯', render: () => renderGestorMetas() },
-            { id: 'g_cfg_planos',   label: 'Planos e Preços',       icon: '💎', render: () => renderGestorPlanos() }
+            { id: 'g_cfg_planos',   label: 'Planos e Preços',       icon: '💎', render: () => renderGestorPlanos() },
+            { id: 'g_cfg_forms',    label: 'Editor de Formulários', icon: '🔧', render: () => renderGestorFormEditor() }
         ]},
+        { id: 'g_produtos_cfg', label: 'Produtos',        icon: '📦', render: () => renderGestorProdutos() },
+        { id: 'g_comunicados', label: 'Comunicados',     icon: '📢', render: () => renderGestorComunicados() },
         { id: 'g_followups',   label: 'Follow-ups',      icon: '📅', render: () => renderFollowUpCalendar() },
         { id: 'g_mensagens',   label: 'Mensagens',       icon: '💬', render: () => renderGestorChatPage() }
     ],
@@ -126,6 +129,7 @@ const NAV_TREE = {
             { id: 'c_ind_indicar',  label: 'Indicar Consultor', icon: '➕', render: () => renderIndicarConsultor() },
             { id: 'c_ind_minha',    label: 'Minha Indicação',   icon: '📋', render: () => renderMinhaIndicacao() }
         ]},
+        { id: 'c_comunicados', label: 'Comunicados',     icon: '📢', render: () => renderComunicadosMural() },
         { id: 'c_mensagens',   label: 'Mensagens',      icon: '💬', action: () => openChatOverlay('gestor') }
     ],
     instalador: [
@@ -150,6 +154,7 @@ const NAV_TREE = {
             { id: 'i_trei_cert',    label: 'Meu Certificado',       icon: '🏅', render: () => renderConsCertificados() }
         ]},
         { id: 'i_produtos',    label: 'Produtos',       icon: '📦', section: 'consultorProdutos' },
+        { id: 'i_comunicados', label: 'Comunicados',     icon: '📢', render: () => renderComunicadosMural() },
         { id: 'i_mensagens',   label: 'Mensagens',      icon: '💬', action: () => openChatOverlay('gestor') }
     ],
     tecnico: [
@@ -177,6 +182,102 @@ const planList = [
     { name: 'Empresas',       price: null  }
 ];
 
+const DEFAULT_FORM_CONFIGS = {
+    cliente: [
+        { id: 'fc_name',    label: 'Nome',             section: 'Dados do Cliente', type: 'text',       required: true,  active: true, system: true, order: 0 },
+        { id: 'fc_phone',   label: 'Telefone',         section: 'Dados do Cliente', type: 'text',       required: true,  active: true, system: true, order: 1 },
+        { id: 'fc_wa',      label: 'É WhatsApp',       section: 'Dados do Cliente', type: 'checkbox',   required: false, active: true, system: true, order: 2 },
+        { id: 'fc_email',   label: 'E-mail',           section: 'Dados do Cliente', type: 'email',      required: false, active: true, system: true, order: 3 },
+        { id: 'fc_cpf',     label: 'CPF',              section: 'Dados do Cliente', type: 'text',       required: false, active: true, system: true, order: 4 },
+        { id: 'fc_rg',      label: 'RG',               section: 'Dados do Cliente', type: 'text',       required: false, active: true, system: true, order: 5 },
+        { id: 'fc_address', label: 'Endereço',         section: 'Dados do Cliente', type: 'text',       required: false, active: true, system: true, order: 6 },
+        { id: 'fc_product', label: 'Produto',          section: 'Produto e Plano',  type: 'select',     required: true,  active: true, system: true, order: 7 },
+        { id: 'fc_plan',    label: 'Plano',            section: 'Produto e Plano',  type: 'select',     required: true,  active: true, system: true, order: 8 },
+        { id: 'fc_fee',     label: 'Mensalidade (R$)', section: 'Produto e Plano',  type: 'number',     required: true,  active: true, system: true, order: 9 },
+        { id: 'fc_payday',  label: 'Dia pagamento',    section: 'Produto e Plano',  type: 'number',     required: false, active: true, system: true, order: 10 },
+        { id: 'fc_plates',  label: 'Placas',           section: 'Produto e Plano',  type: 'text',       required: false, active: true, system: true, order: 11 },
+        { id: 'fc_need',    label: 'Necessidade',      section: 'Produto e Plano',  type: 'text',       required: false, active: true, system: true, order: 12 },
+        { id: 'fc_origins', label: 'Como conheceu',    section: 'Origem',           type: 'multicheck', required: false, active: true, system: true, order: 13 },
+        { id: 'fc_coupon',  label: 'Cupom',            section: 'Origem',           type: 'text',       required: false, active: true, system: true, order: 14 },
+        { id: 'fc_notes',   label: 'Observações',      section: 'Geral',            type: 'textarea',   required: false, active: true, system: true, order: 15 }
+    ],
+    consultor: [
+        { id: 'cc_name',    label: 'Nome',             section: 'Dados de acesso',  type: 'text',       required: true,  active: true, system: true, order: 0 },
+        { id: 'cc_email',   label: 'E-mail',           section: 'Dados de acesso',  type: 'email',      required: true,  active: true, system: true, order: 1 },
+        { id: 'cc_pass',    label: 'Senha',            section: 'Dados de acesso',  type: 'password',   required: true,  active: true, system: true, order: 2 },
+        { id: 'cc_wa',      label: 'WhatsApp',         section: 'Dados de acesso',  type: 'tel',        required: false, active: true, system: true, order: 3 },
+        { id: 'cc_cpf',     label: 'CPF',              section: 'Dados pessoais',   type: 'text',       required: false, active: true, system: true, order: 4 },
+        { id: 'cc_pix',     label: 'Chave Pix',        section: 'Dados pessoais',   type: 'text',       required: false, active: true, system: true, order: 5 },
+        { id: 'cc_addr',    label: 'Endereço',         section: 'Dados pessoais',   type: 'text',       required: false, active: true, system: true, order: 6 }
+    ],
+    instalador: [
+        { id: 'ic_name',    label: 'Nome',             section: 'Dados de acesso',  type: 'text',       required: true,  active: true, system: true, order: 0 },
+        { id: 'ic_email',   label: 'E-mail',           section: 'Dados de acesso',  type: 'email',      required: true,  active: true, system: true, order: 1 },
+        { id: 'ic_pass',    label: 'Senha',            section: 'Dados de acesso',  type: 'password',   required: true,  active: true, system: true, order: 2 },
+        { id: 'ic_wa',      label: 'WhatsApp',         section: 'Dados de acesso',  type: 'tel',        required: true,  active: true, system: true, order: 3 },
+        { id: 'ic_cpf',     label: 'CPF',              section: 'Dados pessoais',   type: 'text',       required: true,  active: true, system: true, order: 4 },
+        { id: 'ic_store',   label: 'Nome da loja',     section: 'Dados pessoais',   type: 'text',       required: true,  active: true, system: true, order: 5 },
+        { id: 'ic_pix',     label: 'Chave Pix',        section: 'Dados pessoais',   type: 'text',       required: false, active: true, system: true, order: 6 },
+        { id: 'ic_addr',    label: 'Endereço',         section: 'Dados pessoais',   type: 'text',       required: false, active: true, system: true, order: 7 }
+    ]
+};
+
+const FORM_FIELD_INPUT_MAP = {
+    cliente: {
+        fc_name:    { inputs: ['clName'] },
+        fc_phone:   { inputs: ['clPhone', 'clWa'] },
+        fc_email:   { inputs: ['clEmail'] },
+        fc_cpf:     { inputs: ['clCpf'] },
+        fc_rg:      { inputs: ['clRg'] },
+        fc_address: { inputs: ['clAddr'] },
+        fc_product: { inputs: ['clProduct'] },
+        fc_plan:    { inputs: ['clPlan'] },
+        fc_fee:     { inputs: ['clFee'] },
+        fc_payday:  { inputs: ['clPayDay'] },
+        fc_plates:  { inputs: ['clPlates'] },
+        fc_need:    { inputs: ['clNeed'] },
+        fc_origins: { selector: '.checkbox-group' },
+        fc_coupon:  { inputs: ['clCoupon'] },
+        fc_notes:   { inputs: ['clNotes'] }
+    },
+    consultor: {
+        cc_name:  { inputs: ['cName'] },
+        cc_email: { inputs: ['cEmail'] },
+        cc_pass:  { inputs: ['cPass'] },
+        cc_wa:    { inputs: ['cWa'] },
+        cc_cpf:   { inputs: ['cCpf'] },
+        cc_pix:   { inputs: ['cPix'] },
+        cc_addr:  { inputs: ['cAddr'] }
+    },
+    instalador: {
+        ic_name:  { inputs: ['iName'] },
+        ic_email: { inputs: ['iEmail'] },
+        ic_pass:  { inputs: ['iPass'] },
+        ic_wa:    { inputs: ['iWa'] },
+        ic_cpf:   { inputs: ['iCpf'] },
+        ic_store: { inputs: ['iStore'] },
+        ic_pix:   { inputs: ['iPix'] },
+        ic_addr:  { inputs: ['iAddr'] }
+    }
+};
+
+const PROD_CATEGORIES = [
+    { key: 'rastreamento', label: 'Rastreamento',  icon: '📡' },
+    { key: 'sst',          label: 'Seg. Trabalho', icon: '🦺' },
+    { key: 'chatbot',      label: 'Chatbot',        icon: '🤖' },
+    { key: 'contabilidade',label: 'Contabilidade',  icon: '📊' },
+    { key: 'marketing',    label: 'Marketing',      icon: '🌐' }
+];
+
+const DOC_LIBRARY_TREE = [
+    { key: 'rastreamento',  label: 'Rastreamento Veicular',   icon: '📡', folders: ['Contratos', 'Relatórios', 'Comprovantes'] },
+    { key: 'sst',           label: 'Segurança do Trabalho',   icon: '🦺', folders: ['PGR', 'PCMSO', 'LTCAT', 'Treinamentos', 'eSocial'] },
+    { key: 'contabilidade', label: 'Contabilidade',           icon: '📊', folders: ['Declarações', 'Notas Fiscais', 'Contratos'] },
+    { key: 'chatbot',       label: 'Chatbot',                 icon: '🤖', folders: ['Contratos', 'Relatórios'] },
+    { key: 'marketing',     label: 'Sites e Marketing',       icon: '🌐', folders: ['Contratos', 'Relatórios'] },
+    { key: 'geral',         label: 'Geral',                   icon: '📁', folders: ['Documentos diversos'] }
+];
+
 const originOptions = [
     'Google', 'Instagram', 'Facebook',
     'Indicação de amigo', 'Parceiro/Loja', 'Outro'
@@ -191,11 +292,11 @@ const productList = [
 ];
 
 const trainingData = [
-    { id: 1, locked: false, title: 'Módulo 1: Rastreador Veicular',      subtitle: '6 seções + quiz · ~20 min' },
-    { id: 2, locked: false, title: 'Módulo 2: Segurança do Trabalho',    subtitle: '5 seções + quiz · ~20 min' },
-    { id: 3, locked: false, title: 'Módulo 3: Chatbot de Atendimento',   subtitle: '5 seções + quiz · ~20 min' },
-    { id: 4, locked: false, title: 'Módulo 4: Consultoria Contábil',     subtitle: '5 seções + quiz · ~20 min' },
-    { id: 5, locked: false, title: 'Módulo 5: Sites e Marketing Digital', subtitle: '5 seções + quiz · ~20 min' }
+    { id: 1, locked: false, title: 'Módulo 1: Rastreador Veicular',       subtitle: '8 seções + quiz · ~45 min' },
+    { id: 2, locked: false, title: 'Módulo 2: Segurança do Trabalho',     subtitle: '8 seções + quiz · ~45 min' },
+    { id: 3, locked: false, title: 'Módulo 3: Chatbot de Atendimento',    subtitle: '8 seções + quiz · ~40 min' },
+    { id: 4, locked: false, title: 'Módulo 4: Consultoria Contábil',      subtitle: '8 seções + quiz · ~40 min' },
+    { id: 5, locked: false, title: 'Módulo 5: Sites e Marketing Digital', subtitle: '8 seções + quiz · ~40 min' }
 ];
 
 const TRAK_MODULE_INTROS = {
@@ -234,164 +335,239 @@ const GLOSSARY_BY_MODULE = {
 
 const QUIZ_BY_MODULE = {
     1: [
-        { q: 'Qual tecnologia o rastreador usa para enviar localização?',
-          opts: ['Bluetooth', 'Wi-Fi', 'GSM/GPS', 'Infravermelho'], ans: 2,
-          exp: 'O rastreador usa chip GSM (rede de celular) para transmitir a localização via GPS.' },
-        { q: 'O que é cerca eletrônica?',
-          opts: ['Uma cerca física ao redor do carro', 'Alerta quando o veículo sai de uma área definida', 'Sistema de câmera de segurança', 'Trava física nas rodas'], ans: 1,
-          exp: 'A cerca eletrônica cria uma zona virtual no mapa. Se o veículo sair dessa área, o cliente recebe um alerta imediato.' },
-        { q: 'Qual recurso é fundamental em caso de furto?',
-          opts: ['Câmera interna', 'Bloqueio remoto do motor', 'Alarme sonoro', 'Espelho retrovisor digital'], ans: 1,
-          exp: 'O bloqueio remoto impede que o motor seja ligado novamente, facilitando a recuperação.' },
-        { q: 'Qual o preço do plano Essencial?',
-          opts: ['R$ 39,90/mês', 'R$ 44,90/mês', 'R$ 54,90/mês', 'R$ 64,90/mês'], ans: 1,
-          exp: 'O plano Essencial custa R$ 44,90 por mês, que equivale a menos de R$1,50 por dia.' },
-        { q: 'Qual plano inclui relatórios avançados e suporte prioritário?',
-          opts: ['Essencial', 'Profissional', 'Controle Total', 'Básico'], ans: 2,
-          exp: 'O plano Controle Total (R$ 64,90) inclui tudo do Profissional mais relatórios avançados e suporte prioritário.' },
-        { q: 'Qual é a melhor pergunta para iniciar uma abordagem de venda?',
-          opts: ['Você quer comprar rastreador?', 'Você já teve medo de ter seu veículo roubado?', 'Você conhece nosso produto?', 'Posso te mandar um link?'], ans: 1,
-          exp: 'Perguntar sobre a dor (medo de roubo) conecta emocionalmente e abre o interesse do cliente.' },
-        { q: 'Quando a recorrência do consultor é ativada?',
-          opts: ['Com 1 cliente na base', 'Com 5 clientes e 2 vendas no mês', 'Com 10 vendas no mês', 'Com 3 clientes fechados'], ans: 1,
-          exp: 'São necessários pelo menos 5 clientes na base E 2 vendas fechadas no mês para ativar a recorrência.' },
-        { q: 'Qual faixa de recorrência se aplica a 7 vendas no mês?',
-          opts: ['5%', '10%', '18%', '25%'], ans: 2,
-          exp: 'Entre 5 e 9 vendas no mês, a porcentagem de recorrência é de 18% sobre as mensalidades dos clientes ativos elegíveis.' },
-        { q: 'O histórico de rotas no plano Profissional cobre quantos dias?',
-          opts: ['30 dias', '60 dias', '90 dias', '180 dias'], ans: 2,
-          exp: 'O plano Profissional inclui histórico completo de rotas dos últimos 90 dias.' },
-        { q: 'Qual argumento de preço é mais eficaz com o cliente?',
-          opts: ['É o mais barato do mercado', 'Menos de R$1,50 por dia para proteger seu veículo', 'Temos promoção só hoje', 'É parcelado em 12x'], ans: 1,
-          exp: 'Quebrar o preço em "menos de R$1,50 por dia" torna o valor muito mais palatável emocionalmente.' }
+        { q: 'Qual combinação de tecnologias o rastreador usa para funcionar?',
+          opts: ['Bluetooth + Wi-Fi', 'GPS (satélite) + GSM (rede celular)', 'GPS + Infravermelho', 'Wi-Fi + NFC'], ans: 1,
+          exp: 'O rastreador usa GPS para captar a localização via satélites e o chip GSM (rede celular 4G/3G) para transmitir esses dados ao servidor em tempo real. São duas tecnologias distintas trabalhando juntas.' },
+        { q: 'O que acontece com o rastreamento quando o veículo entra em um túnel ou garagem blindada?',
+          opts: ['O rastreador desliga automaticamente', 'O sistema registra a última posição conhecida e sincroniza o trajeto quando o sinal retornar', 'O cliente recebe um alerta de roubo imediatamente', 'O rastreador troca para modo Bluetooth'], ans: 1,
+          exp: 'Em locais sem sinal GPS ou GSM, o aparelho salva os pontos na memória interna e sincroniza automaticamente ao recuperar o sinal. O histórico de rotas aparece completo, sem buracos.' },
+        { q: 'O que é a funcionalidade de cerca eletrônica?',
+          opts: ['Uma grade física instalada ao redor do veículo', 'Uma área virtual definida no mapa — o cliente recebe alerta quando o veículo entra ou sai dela', 'Um sistema de câmera perimetral do carro', 'Trava eletrônica nas rodas ativada remotamente'], ans: 1,
+          exp: 'A cerca eletrônica é uma zona virtual desenhada pelo cliente no mapa do app. Qualquer entrada ou saída do veículo nessa área dispara uma notificação instantânea no celular do cliente.' },
+        { q: 'Como o bloqueio remoto funciona em caso de roubo?',
+          opts: ['Bloqueia as rodas fisicamente para o carro não se mover', 'Impede o motor de ligar novamente após a próxima vez que for desligado, sem interferir na direção em andamento', 'Trava as portas e aciona sirene', 'Corta a gasolina imediatamente, parando o carro na hora'], ans: 1,
+          exp: 'O bloqueio remoto funciona de forma segura: não para o carro abruptamente (o que seria perigoso em movimento). Ele impede o motor de ligar novamente após ser desligado — então o ladrão fica parado sem conseguir religar.' },
+        { q: 'Qual é a principal vantagem do bloqueio remoto para quem tem carro financiado?',
+          opts: ['Cancela automaticamente o financiamento em caso de roubo', 'Aumenta as chances de recuperar o veículo antes de precisar acionar o seguro, evitando pagar parcelas sem ter o carro', 'Bloqueia as cobranças do banco durante o processo de recuperação', 'O banco paga as parcelas enquanto o carro está roubado'], ans: 1,
+          exp: 'Quem tem carro financiado continua devendo as parcelas mesmo após o roubo. O rastreador com bloqueio remoto aumenta dramaticamente a chance de recuperação antes que o carro desapareça de vez.' },
+        { q: 'Para o perfil "pai com filho adolescente", qual funcionalidade tem maior impacto emocional na venda?',
+          opts: ['Relatórios de quilometragem', 'Alertas de ignição e cerca eletrônica — que avisam quando o carro sai e chega ao destino', 'Bloqueio remoto', 'Exportação de relatórios em Excel'], ans: 1,
+          exp: 'Pais de adolescentes compram paz de espírito. Receber uma notificação automática de "carro saiu" e "carro chegou na faculdade" elimina a ansiedade — sem precisar ligar e parecer desconfiado.' },
+        { q: 'Qual argumento de preço é mais eficaz para contornar a objeção "tá caro"?',
+          opts: ['Informar que existe opção parcelada', 'Dividir o valor mensal por 30 dias e comparar com o valor protegido do veículo', 'Dizer que é o mais barato do mercado', 'Oferecer 1 mês grátis de cortesia'], ans: 1,
+          exp: 'Quebrar o preço em valor diário (R$54,90 ÷ 30 = R$1,83/dia) torna o investimento muito mais palatável. Comparar com o valor do veículo que está sendo protegido torna o ROI irrefutável.' },
+        { q: 'Qual é o perfil de cliente mais indicado para o plano Profissional (R$54,90)?',
+          opts: ['Família com carro novo de alto valor que quer todos os recursos', 'Autônomo, motoboy ou dono de carro financiado que precisa de bloqueio remoto e histórico de 90 dias', 'Empresa com frota de 10 veículos', 'Quem quer apenas localização básica com orçamento limitado'], ans: 1,
+          exp: 'O Profissional é o ponto-doce para autônomos e financiados: inclui bloqueio remoto (que pode recuperar o veículo), histórico de 90 dias e alertas de bateria — por apenas R$10 a mais que o Essencial.' },
+        { q: 'Quanto tempo leva, em média, a instalação do rastreador?',
+          opts: ['O dia todo — o carro precisa ficar na oficina', 'Entre 30 e 60 minutos, no local escolhido pelo cliente', '2 a 3 horas em assistência técnica autorizada', 'Apenas 10 minutos, o cliente mesmo instala'], ans: 1,
+          exp: 'A instalação é realizada por técnico certificado no local do cliente (casa, empresa ou onde o carro estiver) e leva entre 30 e 60 minutos. Não é necessário levar o veículo a nenhuma oficina.' },
+        { q: 'Como o rastreador pode ajudar uma empresa a ganhar um processo trabalhista?',
+          opts: ['Não tem relação com processos trabalhistas', 'O histórico de rotas com data e hora comprova exatamente onde o motorista esteve — derrubando alegações falsas de horas extras', 'Grava o áudio das conversas do motorista como prova', 'Bloqueia a rescisão trabalhista automaticamente'], ans: 1,
+          exp: 'O histórico de GPS com carimbo de data e hora é uma prova documental precisa e irrefutável. Empresas já ganharam processos trabalhistas usando os relatórios do rastreador para contestar alegações de jornada extra.' },
+        { q: 'Qual é a resposta correta para o cliente que diz "já tenho seguro, não preciso de rastreador"?',
+          opts: ['Concordar — seguro realmente é suficiente', 'Explicar que são complementares: o seguro cobre depois (com franquia e burocracia); o rastreador age antes aumentando as chances de recuperação', 'Dizer que o rastreador substitui o seguro e é mais barato', 'Sugerir cancelar o seguro e usar o valor no rastreador'], ans: 1,
+          exp: 'Rastreador e seguro são complementares e não concorrentes. O seguro cobre o prejuízo após a perda; o rastreador tenta evitar a perda. Muitas seguradoras até oferecem desconto de 10 a 20% na apólice para veículos com rastreador ativo.' },
+        { q: 'O que diferencia o rastreador Tracktiv de equipamentos baratos comprados na internet?',
+          opts: ['Nenhuma diferença significativa — é o mesmo produto com marca diferente', 'Plataforma própria com servidor dedicado, suporte técnico incluso, técnico certificado para instalação e garantia de disponibilidade', 'O Tracktiv usa satélites exclusivos mais precisos', 'Preço — o Tracktiv é mais caro por ser importado'], ans: 1,
+          exp: 'Rastreadores genéricos baratos dependem de plataformas de terceiros sem garantia de uptime — justamente quando você precisa, pode não funcionar. O Tracktiv inclui plataforma própria, suporte, técnico certificado e garantia de funcionamento.' },
+        { q: 'Para uma empresa com 4 veículos descobrindo desvios de rota dos motoristas, qual é o argumento financeiro mais poderoso?',
+          opts: ['O rastreador é obrigatório por lei para frotas', 'A redução de combustível pela eliminação de desvios pode pagar o custo de todos os rastreadores já no primeiro mês', 'Os motoristas serão automaticamente demitidos ao desviar', 'O rastreador calcula automaticamente as metas de vendas dos motoristas'], ans: 1,
+          exp: 'Para frotas, o ROI financeiro é imediato: empresas com rastreador reduzem em média 15 a 25% o custo de combustível ao eliminar desvios e uso pessoal dos veículos. Isso frequentemente cobre o custo de todos os rastreadores já no primeiro mês.' },
+        { q: 'Qual técnica de fechamento funciona melhor ao final de uma negociação?',
+          opts: ['Pedir ao cliente para pensar por mais uma semana sem pressão', 'Fechar com alternativa de data: "instalamos essa semana ou na próxima — quando fica melhor?"', 'Enviar proposta por e-mail sem prazo e aguardar', 'Pedir que o cliente ligue de volta quando decidir'], ans: 1,
+          exp: 'Fechar com alternativa de data força uma decisão concreta sobre QUANDO (não SE). A pergunta pressupõe que o cliente vai contratar e só precisa escolher o momento — técnica clássica que elimina o "vou pensar".' },
+        { q: 'A instalação do rastreador pode cancelar a garantia de fábrica do veículo?',
+          opts: ['Sim, qualquer intervenção elétrica cancela a garantia de fábrica', 'Não — a instalação usa conectores reversíveis que não alteram os sistemas originais do veículo', 'Depende da montadora — algumas permitem, outras não', 'Apenas em veículos com menos de 1 ano de garantia'], ans: 1,
+          exp: 'A instalação por técnico certificado usa conectores padronizados e não-invasivos que não reprogramam módulos nem alteram a fiação original. A garantia de fábrica não é afetada — e a instalação pode ser revertida sem marcas se necessário.' }
     ],
     2: [
         { q: 'O que significa a sigla SST?',
           opts: ['Sistema de Segurança Técnica', 'Saúde e Segurança do Trabalho', 'Serviço Social do Trabalhador', 'Supervisão e Suporte Técnico'], ans: 1,
-          exp: 'SST significa Saúde e Segurança do Trabalho — conjunto de normas que visam proteger a integridade física e mental dos trabalhadores.' },
-        { q: 'Qual documento avalia os riscos ambientais no trabalho?',
-          opts: ['PCMSO', 'ASO', 'PGR', 'CTPS'], ans: 2,
-          exp: 'O PGR (Programa de Gerenciamento de Riscos) identifica e avalia os riscos ambientais presentes no ambiente de trabalho.' },
+          exp: 'SST significa Saúde e Segurança do Trabalho — conjunto de normas que protegem a integridade física e mental dos trabalhadores.' },
+        { q: 'O PGR (Programa de Gerenciamento de Riscos) substitui qual documento anterior?',
+          opts: ['PCMSO', 'PPRA (Programa de Prevenção de Riscos Ambientais)', 'LTCAT', 'CAT'], ans: 1,
+          exp: 'O PGR substituiu o antigo PPRA após a reformulação das NRs — ele identifica, avalia e controla riscos do ambiente de trabalho de forma mais abrangente.' },
         { q: 'O PCMSO é obrigatório para empresas com quantos funcionários CLT?',
           opts: ['Apenas acima de 50', 'Apenas acima de 100', 'A partir de 1 funcionário CLT', 'Somente indústrias'], ans: 2,
-          exp: 'O PCMSO (Programa de Controle Médico de Saúde Ocupacional) é obrigatório para qualquer empresa com pelo menos 1 funcionário CLT.' },
-        { q: 'O que é um ASO?',
-          opts: ['Atestado de Segurança Ocupacional', 'Atestado de Saúde Ocupacional', 'Análise de Segurança Operacional', 'Autorização de Serviço Obrigatório'], ans: 1,
-          exp: 'O ASO (Atestado de Saúde Ocupacional) é emitido pelo médico do trabalho após exames admissionais, periódicos ou demissionais.' },
-        { q: 'Qual NR trata especificamente de ergonomia?',
-          opts: ['NR-5', 'NR-9', 'NR-17', 'NR-35'], ans: 2,
-          exp: 'A NR-17 regula a ergonomia — condições de trabalho que proporcionem conforto e eficiência, reduzindo doenças ocupacionais.' },
-        { q: 'O e-Social exige o envio de quais dados de SST?',
-          opts: ['Apenas folha de pagamento', 'Somente demissões', 'Eventos de SST como ASOs e CAT', 'Apenas admissões'], ans: 2,
-          exp: 'O e-Social exige o envio de eventos de SST incluindo ASOs, CAT (Comunicação de Acidente de Trabalho) e dados de monitoramento de saúde.' },
-        { q: 'Qual o principal benefício financeiro do SST para a empresa?',
-          opts: ['Redução de custos com uniformes', 'Evitar multas fiscais da Receita', 'Reduzir afastamentos e evitar multas trabalhistas', 'Diminuir o FGTS dos funcionários'], ans: 2,
-          exp: 'Afastamentos custam caro: salário, substituto, queda de produção. SST reduz tudo isso e ainda evita as pesadas multas do MTE.' },
-        { q: 'Qual NR trata da Comissão Interna de Prevenção de Acidentes?',
+          exp: 'O PCMSO é obrigatório para qualquer empresa com pelo menos 1 funcionário CLT, independente do porte ou setor.' },
+        { q: 'O que é um ASO e quando ele é obrigatório?',
+          opts: ['Alvará de Segurança Ocupacional — somente após acidentes', 'Atestado de Saúde Ocupacional — na admissão, periodicamente e na demissão', 'Autorização de Serviço Operacional — somente para indústrias', 'Análise de Segurança Obrigatória — só para gestores'], ans: 1,
+          exp: 'O ASO é emitido pelo médico do trabalho em três momentos obrigatórios: admissional (antes de começar), periódico (durante o vínculo) e demissional (ao sair).' },
+        { q: 'Qual NR trata especificamente de trabalho em altura?',
+          opts: ['NR-5', 'NR-17', 'NR-35', 'NR-10'], ans: 2,
+          exp: 'A NR-35 regulamenta trabalho em altura — obrigatória para qualquer funcionário que trabalhe a mais de 2 metros do nível inferior.' },
+        { q: 'O LTCAT está relacionado a qual benefício previdenciário?',
+          opts: ['Seguro-desemprego', 'Aposentadoria especial por exposição a agentes nocivos', 'FGTS', 'Auxílio-doença simples'], ans: 1,
+          exp: 'O LTCAT (Laudo Técnico das Condições Ambientais) documenta exposição a agentes nocivos — base para o funcionário requerer aposentadoria especial.' },
+        { q: 'O e-Social unificou quais obrigações de SST?',
+          opts: ['Apenas folha de pagamento', 'Admissões e demissões somente', 'ASOs, CAT, exames e monitoração de saúde em eventos eletrônicos', 'Apenas o FGTS'], ans: 2,
+          exp: 'O e-Social exige o envio digital de eventos de SST: ASOs (exames), CAT (acidentes de trabalho) e dados de monitoramento de saúde dos funcionários.' },
+        { q: 'Qual NR trata da Comissão Interna de Prevenção de Acidentes (CIPA)?',
           opts: ['NR-1', 'NR-5', 'NR-7', 'NR-12'], ans: 1,
-          exp: 'A NR-5 regulamenta a CIPA (Comissão Interna de Prevenção de Acidentes), obrigatória para empresas com mais de 20 funcionários em atividades de risco.' },
+          exp: 'A NR-5 regulamenta a CIPA — obrigatória para empresas com mais de 20 funcionários em atividades de risco — eleição anual com participação de empregados.' },
+        { q: 'Qual o valor mínimo de multa do MTE por irregularidade de SST?',
+          opts: ['R$ 100', 'R$ 665', 'R$ 2.000', 'R$ 10.000'], ans: 1,
+          exp: 'Multas do MTE por infração às NRs começam em R$ 665 por funcionário por irregularidade — e podem ultrapassar R$ 6.634 em casos graves.' },
         { q: 'Qual é o foco principal da abordagem de venda de SST?',
-          opts: ['Vender pelo preço baixo', 'Mostrar que a empresa está irregular e pode ser multada', 'Falar sobre concorrentes', 'Oferecer desconto imediato'], ans: 1,
-          exp: 'A abordagem mais eficaz é mostrar ao empresário o risco real de multas e passivos trabalhistas — a dor de estar irregular motiva a ação.' },
-        { q: 'Quem pode ser autuado por descumprir normas de SST?',
-          opts: ['Apenas empresas com mais de 100 funcionários', 'Somente indústrias pesadas', 'Qualquer empresa com funcionário CLT', 'Apenas multinacionais'], ans: 2,
-          exp: 'Qualquer empresa com funcionário CLT, independentemente do porte, está sujeita a autuação do MTE por descumprimento das NRs.' }
+          opts: ['Vender pelo preço baixo', 'Mostrar que a empresa está irregular e pode ser multada a qualquer momento', 'Falar sobre concorrentes', 'Oferecer desconto imediato'], ans: 1,
+          exp: 'A abordagem mais eficaz é mostrar o risco real de multas e passivos trabalhistas — a dor de estar irregular e exposto é o principal motivador de compra.' },
+        { q: 'Qual é o argumento para rebater "minha empresa é pequena, não vão me fiscalizar"?',
+          opts: ['Concordar e oferecer um plano menor', 'O MTE fiscaliza empresas de todos os tamanhos — pequenas costumam estar menos preparadas', 'Dizer que é obrigatório só para empresas com +50 funcionários', 'Oferecer desconto especial para pequenas empresas'], ans: 1,
+          exp: 'O MTE não escolhe tamanho — fiscaliza MEI com funcionário, ME, EPP. Pequenas empresas costumam ser mais autuadas porque estão menos preparadas.' },
+        { q: 'Qual a frequência mínima de atualização do PCMSO?',
+          opts: ['A cada 5 anos', 'Anual ou quando há mudança de função ou risco', 'Apenas na admissão do funcionário', 'Somente após acidentes'], ans: 1,
+          exp: 'O PCMSO deve ser atualizado anualmente e sempre que houver mudança de função, exposição a novos riscos ou qualquer alteração no quadro de saúde ocupacional.' },
+        { q: 'O que diferencia SST de serviço contábil?',
+          opts: ['São exatamente o mesmo serviço', 'SST envolve médico do trabalho e engenheiro de segurança; contabilidade cuida do fiscal/tributário', 'O contador pode fazer SST também', 'SST é mais barato que contabilidade'], ans: 1,
+          exp: 'SST é uma área técnica separada que exige médico do trabalho, engenheiro de segurança e técnico em SST. É complementar à contabilidade, não concorrente.' },
+        { q: 'Qual caso de uso fortalece mais a venda de SST para empresas de construção?',
+          opts: ['Redução de imposto', 'NR-35 (trabalho em altura) e NR-18 (canteiro de obras) — obrigatórias e frequentemente autuadas', 'e-Social para folha de pagamento', 'Abertura de CNPJ'], ans: 1,
+          exp: 'Construção civil tem obrigações específicas (NR-18, NR-35) e é setor com mais fiscalizações do MTE — argumento fortíssimo para empresas da área.' },
+        { q: 'Como abordar um empresário que "acha que está em dia" com a SST?',
+          opts: ['Concordar e não insistir', 'Fazer 3 perguntas específicas (PCMSO, PGR, ASOs atualizados) — a maioria não consegue confirmar', 'Pedir para ver os documentos', 'Dizer que está errado sem provas'], ans: 1,
+          exp: 'Perguntar sobre documentos específicos (PCMSO, PGR, ASOs do último ano) coloca o cliente na posição de demonstrar que está em dia — e a maioria não consegue, o que abre a venda.' }
     ],
     3: [
         { q: 'O que é um chatbot?',
-          opts: ['Um robô físico de atendimento', 'Software que simula conversa humana e automatiza respostas', 'Um sistema de câmera de segurança', 'Um app de gestão financeira'], ans: 1,
-          exp: 'Chatbot é um software que usa regras ou IA para simular conversa humana, respondendo clientes automaticamente no WhatsApp, Instagram, site e outros canais.' },
-        { q: 'Qual canal é mais usado pelos chatbots no Brasil?',
+          opts: ['Um robô físico de atendimento', 'Software que simula conversa humana e automatiza respostas via texto', 'Um sistema de câmera de segurança', 'Um app de gestão financeira'], ans: 1,
+          exp: 'Chatbot é software que usa regras programadas ou IA para simular conversa humana, respondendo clientes automaticamente em canais como WhatsApp e Instagram.' },
+        { q: 'Qual a diferença entre chatbot simples e IA conversacional?',
+          opts: ['Não há diferença', 'Chatbot simples segue fluxos fixos; IA conversacional entende linguagem natural e adapta respostas', 'IA conversacional só funciona em inglês', 'Chatbot simples é mais caro'], ans: 1,
+          exp: 'Chatbot simples segue um script pré-definido (menu de opções). IA conversacional entende o que o cliente escreveu livremente e responde de forma contextual.' },
+        { q: 'Qual canal concentra mais uso de chatbot no Brasil?',
           opts: ['E-mail', 'WhatsApp', 'Telegram', 'SMS'], ans: 1,
-          exp: 'O WhatsApp tem mais de 170 milhões de usuários no Brasil, tornando-o o canal preferencial para chatbots de atendimento ao cliente.' },
-        { q: 'O que significa "qualificação de leads" no contexto do chatbot?',
-          opts: ['Enviar spam para todos os contatos', 'Filtrar e identificar quais leads têm real interesse de compra', 'Bloquear clientes inativos', 'Fazer ligações automáticas'], ans: 1,
-          exp: 'O chatbot faz perguntas estratégicas para identificar se o lead tem perfil, interesse e urgência de compra — entregando ao consultor só os leads quentes.' },
-        { q: 'Qual é a principal vantagem do atendimento 24/7 do chatbot?',
-          opts: ['Reduz o número de funcionários', 'Garante que nenhum lead seja perdido fora do horário comercial', 'Elimina a necessidade de atendimento humano', 'Gera relatórios automáticos'], ans: 1,
-          exp: 'Leads chegam a qualquer hora. O chatbot responde na hora — fora do horário, fins de semana e feriados — garantindo que nenhuma oportunidade se perca.' },
+          exp: 'O WhatsApp tem 170 milhões de usuários ativos no Brasil — o canal onde o cliente já está, tornando-o o principal canal para chatbots de atendimento.' },
+        { q: 'O que significa "qualificação de leads" no chatbot?',
+          opts: ['Enviar spam para listas compradas', 'Filtrar leads por perfil, interesse e urgência de compra antes de passar para o vendedor', 'Bloquear clientes inativos', 'Fazer ligações automáticas para todos os contatos'], ans: 1,
+          exp: 'Qualificação é o processo de perguntar para identificar se o lead tem perfil, interesse e urgência — entregando ao vendedor humano só quem está pronto para comprar.' },
+        { q: 'Qual a principal vantagem do atendimento 24/7?',
+          opts: ['Reduz a equipe de vendas em 100%', 'Nenhum lead fica sem resposta fora do horário comercial — zero oportunidade perdida', 'Elimina necessidade de atendimento humano', 'Reduz o custo do plano de telefone'], ans: 1,
+          exp: 'A maioria dos leads chegam fora do horário comercial. O chatbot responde em segundos às 3h da manhã, no domingo, no feriado — sem custo adicional.' },
         { q: 'O que é um "funil de atendimento" no chatbot?',
-          opts: ['Um relatório de erros do sistema', 'Sequência de mensagens que guia o cliente do primeiro contato à conversão', 'Lista de clientes bloqueados', 'Agenda de reuniões automáticas'], ans: 1,
-          exp: 'O funil de atendimento é o roteiro programado que leva o cliente passo a passo: interesse → qualificação → agendamento ou venda.' },
-        { q: 'Qual métrica mostra o impacto do chatbot nos negócios?',
-          opts: ['Número de seguidores no Instagram', 'Tempo médio de resposta e taxa de conversão de leads', 'Quantidade de e-mails enviados', 'Número de funcionários demitidos'], ans: 1,
-          exp: 'Tempo de resposta e taxa de conversão são os KPIs mais importantes: chatbot reduz o tempo de resposta de horas para segundos, aumentando a conversão.' },
-        { q: 'Como o chatbot ajuda na geração de leads pelo Instagram?',
-          opts: ['Comprando seguidores', 'Respondendo automaticamente comentários e DMs com fluxos de captação', 'Fazendo posts automáticos', 'Enviando mensagens para perfis aleatórios'], ans: 1,
-          exp: 'O chatbot integrado ao Instagram responde DMs e comentários automaticamente, inicia o fluxo de qualificação e capta o contato do lead em segundos.' },
-        { q: 'Qual empresa é ideal para começar a usar chatbot?',
-          opts: ['Apenas grandes empresas com mais de 50 funcionários', 'Qualquer negócio que receba contatos pelo WhatsApp ou redes sociais', 'Somente e-commerces', 'Apenas startups de tecnologia'], ans: 1,
-          exp: 'Qualquer negócio que receba mensagens de clientes pode se beneficiar — salão de beleza, clínica, loja, prestador de serviços. O tamanho não importa.' },
-        { q: 'O que o chatbot NÃO substitui?',
-          opts: ['Respostas a perguntas frequentes', 'O atendimento humano para situações complexas e negociações', 'Agendamentos simples', 'Envio de catálogo de produtos'], ans: 1,
-          exp: 'Chatbot trata o volume, mas negociações complexas, reclamações delicadas e vendas de alto valor ainda precisam do toque humano — e isso é uma vantagem a comunicar.' },
-        { q: 'Qual argumento mais convence um empresário a contratar chatbot?',
-          opts: ['É moderno e está na moda', 'Cada lead perdido fora do horário é dinheiro deixado na mesa', 'Todos os concorrentes já têm', 'O setup é rápido e simples'], ans: 1,
-          exp: 'A dor financeira é o gatilho mais forte: mostrar quantos leads chegam fora do horário e quantos são perdidos por falta de resposta rápida converte muito.' }
+          opts: ['Relatório de erros do sistema', 'Roteiro de mensagens que leva o cliente do primeiro contato à conversão ou agendamento', 'Lista de clientes bloqueados automaticamente', 'Agenda de reuniões criada pelo bot'], ans: 1,
+          exp: 'O funil é a sequência de mensagens programada: boas-vindas → qualificação → apresentação → agendamento/venda → transferência ao humano se necessário.' },
+        { q: 'Como o chatbot integra com o Instagram?',
+          opts: ['Comprando seguidores automaticamente', 'Respondendo DMs e comentários automaticamente com fluxos de qualificação e captação', 'Fazendo posts automáticos no feed', 'Enviando mensagens para perfis aleatórios'], ans: 1,
+          exp: 'Via Instagram API, o chatbot responde DMs e comentários de forma automática, inicia qualificação do lead e captura contato — tudo sem intervenção humana.' },
+        { q: 'Qual segmento tem mais retorno imediato com chatbot?',
+          opts: ['Grandes indústrias com operações complexas', 'Clínicas, salões, imobiliárias e qualquer negócio baseado em agendamento ou volume de contatos', 'Apenas e-commerces internacionais', 'Empresas com mais de 200 funcionários'], ans: 1,
+          exp: 'Negócios baseados em agendamento (clínicas, salões) ou com alto volume de contatos (imobiliárias, lojas) têm retorno imediato e mensurável com chatbot.' },
+        { q: 'O que o chatbot NÃO deve substituir?',
+          opts: ['Respostas a perguntas frequentes simples', 'Atendimento humano em negociações complexas, reclamações delicadas e vendas de alto valor', 'Agendamentos simples e confirmações', 'Envio de catálogos e preços'], ans: 1,
+          exp: 'Chatbot é para volume e triagem. Negociações delicadas, reclamações graves e fechamentos de alto valor ainda precisam do toque humano — e isso é uma vantagem a comunicar na venda.' },
+        { q: 'Qual métrica comprova o ROI do chatbot para o cliente?',
+          opts: ['Número de seguidores nas redes sociais', 'Redução do tempo médio de resposta e aumento da taxa de conversão de leads', 'Quantidade de posts publicados', 'Número de funcionários demitidos'], ans: 1,
+          exp: 'Tempo de resposta (de horas para segundos) e taxa de conversão (quantos leads viraram clientes) são as métricas que mostram o impacto financeiro real do chatbot.' },
+        { q: 'Como rebater "meu atendimento é personalizado, robô não funciona"?',
+          opts: ['Concordar e não vender', 'O bot faz a triagem repetitiva — você fica livre para dar atenção especial SOMENTE a quem está pronto para comprar', 'Dizer que o bot é igual a um humano', 'Oferecer desconto para convencer'], ans: 1,
+          exp: 'O chatbot não substitui o atendimento especial — ele filtra o volume para que o vendedor humano gaste tempo apenas com leads qualificados e prontos para decidir.' },
+        { q: 'Qual é o argumento financeiro mais forte para vender chatbot?',
+          opts: ['O chatbot está na moda', 'Um atendente humano custa R$1.500–2.500/mês; o chatbot faz o volume de 3 atendentes por fração desse custo', 'Todos os concorrentes já têm', 'É fácil de instalar'], ans: 1,
+          exp: 'Comparar custo de atendente humano (salário + encargos + benefícios) com o custo do chatbot que opera 24/7 sem custos adicionais é o argumento financeiro mais poderoso.' },
+        { q: 'O que é "follow-up automático" no chatbot?',
+          opts: ['Envio de spam para toda a base', 'Mensagens programadas para leads que não responderam, mantendo o contato vivo automaticamente', 'Relatório semanal enviado ao cliente', 'Ligação automática para clientes inativos'], ans: 1,
+          exp: 'Follow-up automático são mensagens agendadas que "tocam" o lead que ficou em silêncio — sem o vendedor precisar lembrar manualmente de cada contato.' },
+        { q: 'Qual tipo de relatório o chatbot gera para o negócio?',
+          opts: ['Nenhum — o chatbot não gera dados', 'Volume de atendimentos, horário de pico, taxa de qualificação, tempo médio de resposta e conversões', 'Apenas número de mensagens enviadas', 'Somente relatório de erros técnicos'], ans: 1,
+          exp: 'O chatbot gera dados valiosos: quantos leads chegaram, por qual canal, em qual horário, qual a taxa de conversão — informações que guiam decisões de marketing.' },
+        { q: 'Como demonstrar o chatbot durante a venda para maximizar o impacto?',
+          opts: ['Mostrar apenas um PDF com screenshots', 'Disparar uma mensagem ao vivo no WhatsApp do cliente e deixar o bot responder em tempo real na frente dele', 'Mandar um vídeo gravado por e-mail', 'Descrever verbalmente como funciona sem demonstrar'], ans: 1,
+          exp: 'Demonstração ao vivo é o "momento uau": o cliente manda mensagem, o bot responde em segundos. Ver funcionar na prática vale mais que qualquer argumento verbal.' }
     ],
     4: [
         { q: 'O que é o Simples Nacional?',
-          opts: ['Um banco digital para MEIs', 'Regime tributário simplificado para micro e pequenas empresas', 'Um plano de saúde empresarial', 'Um sistema de folha de pagamento'], ans: 1,
-          exp: 'O Simples Nacional é um regime tributário que unifica 8 impostos em uma única guia (DAS), com alíquotas reduzidas para micro e pequenas empresas.' },
-        { q: 'O que é o MEI?',
-          opts: ['Micro Empresa Industrial', 'Microempreendedor Individual — pessoa que fatura até R$81 mil/ano', 'Meio Empresário Individual', 'Módulo Empresarial Integrado'], ans: 1,
-          exp: 'MEI é o Microempreendedor Individual, regime simplificado para quem fatura até R$81 mil por ano, com contribuição mensal fixa e baixo custo de abertura.' },
-        { q: 'Qual documento comprova a regularidade fiscal de uma empresa?',
-          opts: ['Contrato social', 'Certidão Negativa de Débitos (CND)', 'Alvará de funcionamento', 'Declaração do IR pessoal'], ans: 1,
-          exp: 'A CND (ou CNPJ regular) comprova que a empresa não tem dívidas com a Receita Federal — exigida em licitações, financiamentos e parcerias comerciais.' },
+          opts: ['Um banco digital para MEIs', 'Regime tributário que unifica até 8 impostos em uma guia (DAS) para micro e pequenas empresas', 'Um plano de saúde empresarial', 'Um sistema de folha de pagamento'], ans: 1,
+          exp: 'O Simples Nacional unifica IRPJ, CSLL, PIS, COFINS, IPI, ICMS, ISS e CPP em uma única guia mensal (DAS) com alíquotas progressivas e reduzidas.' },
+        { q: 'Qual é o limite anual de faturamento do MEI?',
+          opts: ['R$ 40.000/ano', 'R$ 60.000/ano', 'R$ 81.000/ano', 'R$ 120.000/ano'], ans: 2,
+          exp: 'O MEI pode faturar até R$ 81.000 por ano (R$ 6.750/mês). Ultrapassar esse limite sem migrar de regime gera irregularidade tributária.' },
+        { q: 'Qual a diferença entre Lucro Presumido e Lucro Real?',
+          opts: ['São idênticos', 'Presumido: imposto sobre % presumida do faturamento; Real: imposto sobre lucro efetivo com deduções', 'Real é sempre mais barato', 'Presumido é exclusivo para empresas acima de R$ 10 milhões'], ans: 1,
+          exp: 'No Lucro Presumido a Receita presume um percentual de lucro sobre o faturamento. No Lucro Real o imposto incide sobre o lucro efetivo — melhor quando há muitas despesas dedutíveis.' },
         { q: 'O que é o pró-labore?',
-          opts: ['Lucro distribuído aos sócios sem tributação', 'Remuneração formal do sócio que trabalha na empresa, com incidência de INSS', 'Empréstimo bancário empresarial', 'Benefício de vale-alimentação'], ans: 1,
-          exp: 'Pró-labore é o salário do sócio-administrador. Sobre ele incide INSS — e definir o valor correto faz grande diferença no planejamento tributário.' },
-        { q: 'Qual regime é mais vantajoso para uma empresa com muitas despesas dedutíveis?',
-          opts: ['Simples Nacional', 'MEI', 'Lucro Real', 'Lucro Presumido'], ans: 2,
-          exp: 'No Lucro Real, o imposto é calculado sobre o lucro efetivo. Empresas com muitas despesas dedutíveis pagam menos IR — por isso pode ser mais vantajoso.' },
-        { q: 'O que é a nota fiscal eletrônica (NF-e)?',
-          opts: ['Um recibo físico obrigatório', 'Documento fiscal digital que registra operações de venda de produtos', 'Boleto bancário digital', 'Comprovante de pagamento de impostos'], ans: 1,
-          exp: 'A NF-e é o documento fiscal eletrônico obrigatório para venda de mercadorias. Sua emissão incorreta pode gerar multas e problemas com a Receita.' },
-        { q: 'Qual o principal benefício do planejamento tributário?',
-          opts: ['Sonegar impostos legalmente', 'Reduzir a carga tributária dentro da lei, pagando menos de forma lícita', 'Atrasar o pagamento de impostos', 'Eliminar todas as obrigações fiscais'], ans: 1,
-          exp: 'Planejamento tributário é escolher o regime e estrutura mais vantajosa dentro da lei. Empresas bem assessoradas chegam a economizar 30% em impostos.' },
+          opts: ['Lucro distribuído aos sócios isento de IR', 'Remuneração formal do sócio administrador, com incidência de INSS e IR', 'Empréstimo empresarial para sócios', 'Benefício de vale-alimentação para diretores'], ans: 1,
+          exp: 'Pró-labore é o salário do sócio que trabalha na empresa. Sobre ele incidem INSS e IR — definir o valor correto é estratégico para otimizar a carga tributária.' },
+        { q: 'O que é a Certidão Negativa de Débitos (CND)?',
+          opts: ['Documento que prova a existência da empresa', 'Certidão que atesta que a empresa não tem dívidas com a Receita Federal', 'Alvará de funcionamento municipal', 'Declaração de imposto de renda de pessoa física'], ans: 1,
+          exp: 'A CND comprova regularidade fiscal — exigida em licitações públicas, financiamentos bancários e abertura de contas empresariais.' },
+        { q: 'Qual obrigação fiscal é exclusiva do MEI?',
+          opts: ['SPED Contábil', 'DASN-SIMEI — Declaração Anual do Simples Nacional do MEI', 'ECF — Escrituração Contábil Fiscal', 'DCTF — Declaração de Débitos e Créditos Tributários Federais'], ans: 1,
+          exp: 'O MEI deve entregar anualmente a DASN-SIMEI, declarando seu faturamento do ano anterior — prazo geralmente em maio. Atraso gera multa mínima de R$ 50.' },
+        { q: 'O que é planejamento tributário lícito?',
+          opts: ['Sonegar impostos de forma legal', 'Escolher o regime e estrutura empresarial mais vantajosos dentro da lei para pagar menos imposto', 'Atrasar pagamento de impostos', 'Declarar despesas falsas para dedução'], ans: 1,
+          exp: 'Planejamento tributário é a análise estratégica do melhor regime e estrutura societária para reduzir a carga de impostos de forma 100% legal.' },
         { q: 'O que é a escrituração contábil?',
-          opts: ['Registro físico de clientes em caderno', 'Registro sistemático e cronológico de todas as operações financeiras da empresa', 'Sistema de ponto eletrônico', 'Controle de estoque manual'], ans: 1,
-          exp: 'Escrituração é o registro formal de todas as entradas e saídas financeiras — base para balanço patrimonial, DRE e compliance fiscal.' },
+          opts: ['Registro físico de clientes em caderno', 'Registro sistemático de todas as operações financeiras — base para DRE, balanço e compliance fiscal', 'Sistema de ponto eletrônico dos funcionários', 'Controle de estoque manual'], ans: 1,
+          exp: 'Escrituração é o registro cronológico de todas as entradas e saídas financeiras — indispensável para demonstrações financeiras, declarações fiscais e auditoria.' },
         { q: 'Qual é o perfil ideal de cliente para consultoria contábil?',
-          opts: ['Apenas grandes empresas com mais de 200 funcionários', 'Qualquer MEI, ME ou EPP que tenha CNPJ ou queira abrir empresa', 'Somente escritórios de advocacia', 'Apenas indústrias'], ans: 1,
-          exp: 'Todo CNPJ ativo é um potencial cliente! MEI, ME e EPP formam a maior fatia do mercado e costumam estar mal assessorados — oportunidade enorme.' },
+          opts: ['Apenas empresas com mais de 200 funcionários', 'Qualquer MEI, ME ou EPP com CNPJ ativo ou que quer abrir empresa', 'Somente escritórios de advocacia', 'Apenas indústrias exportadoras'], ans: 1,
+          exp: 'Todo CNPJ ativo é um potencial cliente. MEI, ME e EPP formam a maior fatia do mercado e costumam estar sem planejamento tributário — oportunidade enorme.' },
         { q: 'Como abordar um MEI que acha que não precisa de contador?',
-          opts: ['Dizer que ele é obrigado por lei', 'Mostrar quanto ele pode estar pagando a mais de imposto sem planejamento', 'Oferecer o serviço de graça', 'Ignorar e focar em empresas maiores'], ans: 1,
-          exp: 'O MEI que não tem assessoria muitas vezes paga mais imposto do que precisa ou está irregular. Mostrar esse impacto financeiro é o gatilho certo.' }
+          opts: ['Concordar e não insistir', 'Mostrar quanto pode estar pagando a mais de imposto e os riscos de irregularidade ao crescer', 'Oferecer o serviço gratuitamente', 'Ignorar e focar apenas em empresas maiores'], ans: 1,
+          exp: 'MEIs sem assessoria costumam pagar mais imposto do que precisariam ou ficam irregulares ao crescer. Mostrar esse impacto financeiro cria urgência real.' },
+        { q: 'O que é o eSocial e por que interessa ao cliente?',
+          opts: ['Rede social para empresas', 'Sistema federal que centraliza obrigações trabalhistas, previdenciárias e fiscais em um único ambiente digital', 'Aplicativo de pagamentos', 'Software de gestão de estoque'], ans: 1,
+          exp: 'O eSocial unifica o envio de informações sobre funcionários (admissão, folha, férias, SST, demissão) — obrigatório para empresas com qualquer funcionário CLT.' },
+        { q: 'Qual é o principal risco de um empresa ficar sem contador por mais de 6 meses?',
+          opts: ['Nenhum risco relevante', 'Declarações em atraso geram multas automáticas e CNPJ pode ser baixado de ofício pela Receita', 'Apenas risco de perder clientes', 'Só impacta a folha de pagamento'], ans: 1,
+          exp: 'Sem contador, declarações vencem, multas se acumulam e o CNPJ pode ser declarado inapto pela Receita — impedindo emissão de notas fiscais e acesso a crédito.' },
+        { q: 'Qual argumento mais eficaz contra "já tenho contador"?',
+          opts: ['Dizer que o contador atual está errado', 'Perguntar quando o contador apresentou pela última vez um planejamento tributário com simulação de economia', 'Oferecer preço menor que o atual', 'Dizer que o serviço é melhor sem provar'], ans: 1,
+          exp: 'A maioria dos contadores só entrega declarações — poucos fazem planejamento tributário ativo. Essa pergunta revela o diferencial e cria abertura sem atacar o contador atual.' },
+        { q: 'O que é distribuição de lucros e qual sua vantagem tributária?',
+          opts: ['É idêntico ao pró-labore', 'Parte do lucro entregue aos sócios isenta de IR e INSS — diferente do pró-labore que é tributado', 'Não tem nenhuma vantagem', 'É proibida para MEI'], ans: 1,
+          exp: 'A distribuição de lucros é isenta de IR e INSS para os sócios — ao contrário do pró-labore. Estruturar corretamente a remuneração dos sócios pode gerar grande economia tributária.' },
+        { q: 'Qual é a pergunta mais poderosa para abrir a venda de contabilidade?',
+          opts: ['Você tem CNPJ?', 'Você sabe exatamente quanto está pagando de imposto por mês — e se poderia pagar menos?', 'Você tem funcionários?', 'Você quer abrir empresa?'], ans: 1,
+          exp: 'Essa pergunta é poderosa porque a maioria dos empresários não sabe o total de imposto que paga. O desconforto criado é o gatilho para querer saber — e você apresenta a solução.' }
     ],
     5: [
         { q: 'O que é uma landing page?',
-          opts: ['Página inicial de um blog', 'Página focada em converter visitantes em leads ou clientes', 'Rede social empresarial', 'Sistema de e-mail marketing'], ans: 1,
-          exp: 'Landing page é uma página específica criada para uma campanha, com foco em uma única ação: preencher formulário, ligar, comprar ou contratar.' },
-        { q: 'O que é SEO?',
-          opts: ['Sistema de E-mail Organizado', 'Otimização para mecanismos de busca — aparecer no Google organicamente', 'Software de Edição Online', 'Serviço de Envio de Orçamento'], ans: 1,
-          exp: 'SEO (Search Engine Optimization) são técnicas para fazer o site aparecer nos primeiros resultados do Google sem pagar por anúncios.' },
+          opts: ['Página inicial de um blog', 'Página focada em uma única ação de conversão — lead, ligação ou compra', 'Rede social empresarial', 'Sistema de e-mail marketing'], ans: 1,
+          exp: 'Landing page é uma página construída para uma única ação específica: preencher formulário, ligar agora ou comprar. Sem distrações, com foco total em converter.' },
+        { q: 'O que é SEO e como gera resultados?',
+          opts: ['Serviço de E-mail Organizado', 'Otimizações técnicas e de conteúdo que fazem o site aparecer nos primeiros resultados orgânicos do Google', 'Software de Edição Online', 'Sistema de anúncios pagos no Google'], ans: 1,
+          exp: 'SEO são técnicas que sinalizam ao Google que o site é relevante para certas buscas. Resultados aparecem em 3–6 meses, mas têm custo por clique zero e efeito duradouro.' },
+        { q: 'O que é o Google Meu Negócio e por que é obrigatório para negócios locais?',
+          opts: ['Um anúncio pago no Google', 'Perfil gratuito que aparece no Google Maps e nas buscas locais — com endereço, horário, fotos e avaliações', 'Uma rede social empresarial', 'Um sistema de e-mail corporativo'], ans: 1,
+          exp: 'Google Meu Negócio é o perfil gratuito que aparece quando alguém pesquisa "serviço + cidade". Negócios sem perfil não aparecem no mapa — perdem para quem tem.' },
         { q: 'Qual a principal vantagem do Google Ads sobre o SEO?',
-          opts: ['É gratuito', 'Gera resultados imediatos ao aparecer no topo do Google rapidamente', 'Dura mais tempo', 'É mais fácil de implementar'], ans: 1,
-          exp: 'Google Ads coloca o negócio no topo do Google imediatamente — ideal para campanhas com urgência. SEO demora meses para dar resultados.' },
-        { q: 'O que é uma "taxa de conversão" em marketing digital?',
-          opts: ['Percentual de clientes que reclamam', 'Percentual de visitantes/leads que realizam a ação desejada (compra, contato)', 'Número de seguidores ganhos por mês', 'Custo de cada clique no anúncio'], ans: 1,
-          exp: 'Taxa de conversão mede a eficiência da campanha: de 100 pessoas que clicaram, quantas viraram clientes. Otimizar isso é o coração do marketing digital.' },
-        { q: 'Qual tipo de conteúdo gera mais engajamento no Instagram para negócios locais?',
-          opts: ['Fotos genéricas de banco de imagens', 'Vídeos curtos com bastidores, depoimentos e resultados reais', 'Textos longos sem imagem', 'Apenas promoções de preço'], ans: 1,
-          exp: 'Conteúdo autêntico — bastidores, depoimentos em vídeo e resultados reais — gera confiança e engajamento muito superior a imagens genéricas.' },
-        { q: 'O que é o "pixel" do Facebook/Meta?',
-          opts: ['Uma unidade de medida de tela', 'Código instalado no site para rastrear visitantes e otimizar anúncios', 'Tipo de anúncio em vídeo', 'Ferramenta de criação de imagens'], ans: 1,
-          exp: 'O pixel é um código que rastreia as ações dos visitantes no site. Com ele, é possível criar públicos personalizados e anúncios muito mais precisos.' },
-        { q: 'O que é e-mail marketing?',
-          opts: ['Spam enviado em massa', 'Comunicação estratégica via e-mail para nutrir leads e fidelizar clientes', 'Serviço de e-mail corporativo', 'Anúncio pago por e-mail'], ans: 1,
-          exp: 'E-mail marketing bem feito tem ROI altíssimo: nutrir leads com conteúdo útil até a compra e manter clientes engajados com novidades e ofertas.' },
-        { q: 'Qual métrica indica se um anúncio é eficiente em custo?',
-          opts: ['Número de curtidas', 'CPA (Custo por Aquisição) — quanto custa cada cliente conquistado', 'Quantidade de comentários', 'Número de impressões'], ans: 1,
-          exp: 'CPA (Custo por Aquisição) mostra quanto cada novo cliente custo em anúncios. Reduzir o CPA enquanto mantém volume de vendas é o objetivo.' },
-        { q: 'Por que uma empresa local precisa de presença digital?',
-          opts: ['Porque é obrigatório por lei', 'Porque 90% das pessoas pesquisam no Google antes de comprar ou contratar serviços', 'Para competir só com grandes marcas', 'Apenas para vender online'], ans: 1,
-          exp: '9 em cada 10 consumidores pesquisam online antes de comprar — mesmo para negócios físicos locais. Não estar no digital é deixar clientes para o concorrente.' },
-        { q: 'Qual argumento fecha mais clientes para sites e marketing?',
-          opts: ['Nossos sites são bonitos', 'Cada dia sem presença digital é dinheiro que vai pro concorrente que já está lá', 'Fazemos sites rápidos', 'Temos preços baixos'], ans: 1,
-          exp: 'O senso de perda (ver o concorrente crescendo enquanto você fica parado) é o gatilho emocional mais forte para empresários que ainda não investiram no digital.' }
+          opts: ['É gratuito e permanente', 'Gera resultados imediatos — aparece no topo do Google no mesmo dia da ativação', 'Tem maior alcance orgânico', 'É mais fácil de manter'], ans: 1,
+          exp: 'Google Ads coloca o negócio no topo do Google no mesmo dia. Ideal para campanhas sazonais, promoções ou quando o cliente precisa de leads rápido.' },
+        { q: 'O que é o "pixel" do Meta (Facebook/Instagram)?',
+          opts: ['Uma unidade de medida de tela', 'Código inserido no site que rastreia visitantes e permite criar públicos personalizados para anúncios', 'Tipo de anúncio em vídeo', 'Ferramenta de edição de imagens'], ans: 1,
+          exp: 'O pixel rastreia quem visitou o site e o que fez. Com esses dados, é possível anunciar exatamente para quem já demonstrou interesse — reduzindo custo por lead drasticamente.' },
+        { q: 'O que é taxa de conversão em marketing digital?',
+          opts: ['Percentual de clientes que reclamam', 'Percentual de visitantes ou leads que realizam a ação desejada (contato, compra, agendamento)', 'Número de seguidores ganhos', 'Custo de cada clique no anúncio'], ans: 1,
+          exp: 'Taxa de conversão mede eficiência: de 100 visitas, quantas viraram leads ou clientes. Dobrar a taxa de conversão equivale a dobrar o resultado sem aumentar o investimento.' },
+        { q: 'Qual tipo de conteúdo tem melhor desempenho no Instagram para negócios locais?',
+          opts: ['Fotos genéricas de banco de imagens', 'Vídeos curtos com bastidores reais, depoimentos de clientes e resultados antes/depois', 'Textos longos sem imagem', 'Apenas promoções de preço sem contexto'], ans: 1,
+          exp: 'Autenticidade vende no Instagram. Bastidores, depoimentos genuínos e resultados reais geram confiança e engajamento muito superiores a conteúdo genérico.' },
+        { q: 'O que é CPA em marketing digital?',
+          opts: ['Custo Por Acesso ao site', 'Custo Por Aquisição — quanto custou em investimento para conquistar cada novo cliente', 'Campanha Por Área geográfica', 'Conteúdo Patrocinado Avançado'], ans: 1,
+          exp: 'CPA (Custo por Aquisição) é a métrica que mostra o ROI real: se você investiu R$ 300 em anúncios e conquistou 10 clientes, o CPA é R$ 30 — compare com o ticket médio.' },
+        { q: 'Qual é o principal argumento para negócios que dependem de indicação?',
+          opts: ['Indicação é suficiente, não precisa de digital', 'Quem te indicou e pesquisa seu nome no Google sem encontrar nada vai para o concorrente que aparece', 'Google só funciona para e-commerce', 'Redes sociais substituem completamente o Google'], ans: 1,
+          exp: 'Indicação é ótima — mas quando o indicado pesquisa o nome no Google e não encontra nada, a credibilidade some e o concorrente que aparece leva o cliente.' },
+        { q: 'O que é e-mail marketing estratégico?',
+          opts: ['Spam enviado em massa para listas compradas', 'Comunicação segmentada e automatizada para nutrir leads e reativar clientes com conteúdo relevante', 'Serviço de e-mail corporativo', 'Anúncio pago enviado por e-mail'], ans: 1,
+          exp: 'E-mail marketing bem feito tem ROI de R$ 42 para cada R$ 1 investido — nutre leads com conteúdo até estarem prontos para comprar e reativa clientes inativos.' },
+        { q: 'Como fazer o diagnóstico digital ao vivo durante a venda?',
+          opts: ['Mostrar um PDF com dados do mercado', 'Abrir o Google no celular, pesquisar o serviço do cliente + cidade e mostrar quem aparece — geralmente o concorrente', 'Enviar relatório por e-mail depois da reunião', 'Descrever verbalmente sem mostrar nada'], ans: 1,
+          exp: 'Diagnóstico ao vivo é o "momento uau": o cliente vê com os próprios olhos que o concorrente aparece na busca e ele não. A dor se torna real, tangível e urgente.' },
+        { q: 'O que é gestão de redes sociais e o que diferencia de postar por conta própria?',
+          opts: ['É exatamente a mesma coisa que postar sozinho', 'Planejamento estratégico de conteúdo, calendário editorial, análise de métricas, testes A/B e consistência profissional', 'Apenas comprar seguidores periodicamente', 'Apenas responder comentários'], ans: 1,
+          exp: 'Gestão profissional inclui estratégia de conteúdo, calendário, copy, design, análise de métricas e otimização contínua — completamente diferente de postar esporadicamente.' },
+        { q: 'Qual é a resposta para "já tentei Instagram e não funcionou"?',
+          opts: ['Concordar que Instagram não funciona para todos', 'Instagram sem estratégia não funciona — a diferença é método, segmentação e consistência que a gestão profissional aplica', 'Oferecer desconto para convencer', 'Mudar de assunto e falar de Google Ads'], ans: 1,
+          exp: '90% das tentativas sem estratégia falham. O canal funciona — o problema é a ausência de método. Isso posiciona você como o especialista que sabe o que o cliente fez errado.' },
+        { q: 'Como calcular o ROI de um investimento em marketing digital para o cliente?',
+          opts: ['ROI = número de curtidas / investimento', 'ROI = (receita gerada pelos novos clientes - investimento em marketing) / investimento × 100%', 'ROI = número de impressões / investimento', 'ROI = seguidores ganhos / postagens feitas'], ans: 1,
+          exp: 'O cálculo correto usa receita real gerada. Ex: investiu R$ 500/mês em anúncios, trouxe 5 clientes com ticket de R$ 400 = R$ 2.000 receita. ROI = (2.000-500)/500 × 100 = 300%.' },
+        { q: 'Qual é o pacote mais completo para vender e o que inclui?',
+          opts: ['Apenas um perfil no Instagram', 'Site + Google Ads + gestão de redes sociais + chatbot — pacote que cobre todas as etapas do funil digital', 'Apenas e-mail marketing', 'Somente Google Meu Negócio'], ans: 1,
+          exp: 'O pacote completo fecha o funil: site capta quem pesquisa, Google Ads atrai, redes sociais engajam, chatbot converte e e-mail marketing fideliza — ROI máximo para o cliente.' }
     ]
 };
 
@@ -402,139 +578,354 @@ const QUIZ_BY_MODULE = {
 const SECTIONS_BY_MODULE = { 1: [
     {
         title: 'Como funciona',
-        trak: `Olá! 👋 Eu sou o <strong>TRAK</strong>, seu guia de treinamento aqui na Tracktiv! Antes de sair vendendo, você precisa entender o produto por dentro. Sabe quando você rastreia uma encomenda pelo app? Com o rastreador veicular é <em>igualzinho</em> — só que pro carro do seu cliente! Essa analogia já abre a cabeça de muita gente. <strong>Use ela!</strong> 🚀`,
+        trak: `Olá! 👋 Sou o TRAK, seu guia de treinamento aqui na Tracktiv! Antes de sair vendendo, você precisa entender o produto por dentro e por fora. Saber como o rastreador funciona de verdade te dá confiança na hora da abordagem — e confiança vende! Vamos começar pela base: como o sinal vai do carro até o celular do cliente? 🚀`,
         html: `
-        <h3 style="margin:0 0 18px;">Como o rastreador funciona?</h3>
+        <h3 style="margin:0 0 18px;">A jornada do sinal: do veículo ao celular</h3>
         <div class="diagram-flow">
             <div class="diagram-node"><div class="dnode-icon">🚗</div>Veículo</div>
             <div class="diagram-arrow">→</div>
-            <div class="diagram-node"><div class="dnode-icon">📡</div>Chip GSM</div>
+            <div class="diagram-node"><div class="dnode-icon">📦</div>Aparelho rastreador</div>
             <div class="diagram-arrow">→</div>
-            <div class="diagram-node"><div class="dnode-icon">🛰️</div>Satélite GPS</div>
+            <div class="diagram-node"><div class="dnode-icon">🛰️</div>Satélites GPS</div>
             <div class="diagram-arrow">→</div>
-            <div class="diagram-node"><div class="dnode-icon">☁️</div>Servidor</div>
+            <div class="diagram-node"><div class="dnode-icon">📡</div>Rede GSM (celular)</div>
             <div class="diagram-arrow">→</div>
-            <div class="diagram-node"><div class="dnode-icon">📱</div>App/Web</div>
+            <div class="diagram-node"><div class="dnode-icon">☁️</div>Servidor Tracktiv</div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-node"><div class="dnode-icon">📱</div>App/Web do cliente</div>
         </div>
+        <p style="margin:14px 0 18px;color:var(--text-muted);">O rastreador é um pequeno aparelho instalado de forma discreta no veículo. Ele capta a localização exata via <strong>GPS</strong> (satélites) e envia essas informações ao servidor pela <strong>rede GSM</strong> — a mesma rede que o celular usa para transmitir dados. O cliente acessa tudo isso pelo aplicativo ou pelo computador, de qualquer lugar do Brasil.</p>
         <div class="feature-cards">
-            <div class="feature-card"><div class="feat-icon">📍</div><strong>GPS de Alta Precisão</strong><p>Localiza o veículo com precisão de metros, em qualquer lugar do Brasil</p></div>
-            <div class="feature-card"><div class="feat-icon">📶</div><strong>Chip GSM Integrado</strong><p>Envia dados via rede de celular, sem precisar de Wi-Fi ou Bluetooth</p></div>
-            <div class="feature-card"><div class="feat-icon">📲</div><strong>App ou Web</strong><p>O cliente acessa de qualquer celular, sem instalar nada no computador</p></div>
+            <div class="feature-card"><div class="feat-icon">📍</div><strong>GPS de alta precisão</strong><p>Satélites GPS calculam a posição do veículo com precisão de 2 a 5 metros. A tecnologia é a mesma do Waze — só que dedicada à segurança. Funciona mesmo em movimento, a mais de 200 km/h.</p></div>
+            <div class="feature-card"><div class="feat-icon">📶</div><strong>Chip GSM integrado</strong><p>O aparelho tem chip de celular embutido com plano de dados incluso. Transmite dados via 4G/3G sem precisar de Wi-Fi, Bluetooth ou ação do cliente. Funciona 24h por dia, 7 dias por semana.</p></div>
+            <div class="feature-card"><div class="feat-icon">⚡</div><strong>Alimentado pelo veículo</strong><p>Conectado diretamente à fiação elétrica do carro. Não precisa de bateria interna, não recarrega, não para. O consumo equivale a um carregador de celular — imperceptível para a bateria do veículo.</p></div>
+            <div class="feature-card"><div class="feat-icon">🔒</div><strong>Instalação discreta e segura</strong><p>Instalado em local estratégico e oculto por técnico certificado. Em caso de roubo, o ladrão não sabe que está sendo rastreado — o que aumenta drasticamente as chances de recuperação.</p></div>
+            <div class="feature-card"><div class="feat-icon">🌎</div><strong>Cobertura nacional total</strong><p>Funciona onde há sinal de celular — mais de 98% do território brasileiro coberto. Em locais sem sinal (garagens blindadas, túneis), o sistema registra a última posição conhecida e sincroniza ao retornar.</p></div>
+            <div class="feature-card"><div class="feat-icon">📲</div><strong>Acesso multiplataforma</strong><p>O cliente acessa pelo app no celular (iOS e Android) ou pelo navegador do computador. Interface visual e intuitiva — mapa interativo, alertas por push e histórico completo de rotas.</p></div>
         </div>
-        <div class="script-box">💬 <strong>Como explicar pro cliente:</strong> <em>"É simples: o aparelho fica escondido no carro, conecta ao satélite GPS e manda a localização pro seu celular. É como rastrear uma encomenda, mas do seu carro — em tempo real!"</em></div>`
+        <h4 style="margin:24px 0 12px;">🔧 Perguntas técnicas que você precisa saber responder</h4>
+        <div class="objection-block">
+            <div class="obj-label">Pergunta do cliente</div>
+            <div class="obj-q">❓ "Funciona se o carro ficar em garagem coberta ou área sem sinal?"</div>
+            <div class="obj-a">✅ "Quando o sinal GPS ou GSM cai (garagens blindadas, viadutos, áreas rurais remotas), o rastreador salva os pontos de rota na memória interna e sincroniza automaticamente quando o sinal retornar. O trajeto completo aparece sem buracos no histórico."</div>
+        </div>
+        <div class="objection-block">
+            <div class="obj-label">Pergunta do cliente</div>
+            <div class="obj-q">❓ "O rastreador gasta muita energia do carro?"</div>
+            <div class="obj-a">✅ "O consumo é mínimo — equivalente a um carregador de celular comum. Não impacta a bateria do veículo mesmo parado por dias. O aparelho foi projetado para funcionar 24/7 sem qualquer efeito negativo na parte elétrica."</div>
+        </div>
+        <div class="objection-block">
+            <div class="obj-label">Pergunta do cliente</div>
+            <div class="obj-q">❓ "O ladrão consegue tirar ou desativar o rastreador?"</div>
+            <div class="obj-a">✅ "O aparelho fica instalado de forma oculta — só o técnico certificado sabe o local exato. Além disso, qualquer corte na alimentação elétrica gera um alerta imediato para o cliente. A tentativa de remoção já é detectada antes mesmo de completar."</div>
+        </div>
+        <div class="script-box" style="margin-top:20px;">💬 <strong>Analogia que todo cliente entende imediatamente:</strong> <em>"Sabe quando você rastreia uma encomenda pelo app dos Correios ou da transportadora? O rastreador veicular funciona igualzinho — só que pro carro, em tempo real, 24 horas por dia. Se a encomenda sair do caminho previsto, você recebe um alerta. Com o carro é exatamente a mesma coisa — e ainda tem bloqueio de motor se precisar."</em></div>`
     },
     {
-        title: 'Funcionalidades',
-        trak: `Agora que você entende como funciona, vamos conhecer o arsenal completo! 💪 Cada função que eu mostrar aqui é um <strong>argumento de venda</strong>. Tem cliente que fecha só pela cerca eletrônica, outros pelo bloqueio remoto. Conhece tudo pra ter resposta pra tudo!`,
+        title: 'Funcionalidades detalhadas',
+        trak: `Agora vamos explorar o arsenal completo do rastreador! 💪 Cada funcionalidade que eu mostrar aqui é um <strong>argumento de venda diferente</strong>. Tem cliente que fecha só pela cerca eletrônica, outros pelo bloqueio remoto, outros pelo controle de frota. <strong>Conhece tudo — tem resposta pra tudo!</strong> Vamos mergulhar fundo em cada recurso.`,
         html: `
-        <h3 style="margin:0 0 18px;">O que o rastreador faz?</h3>
+        <h3 style="margin:0 0 18px;">As 10 funcionalidades que fazem o cliente fechar</h3>
         <div class="feature-cards">
-            <div class="feature-card"><div class="feat-icon">📍</div><strong>Localização em tempo real</strong><p>Vê onde está o carro agora mesmo, no mapa, com atualização constante</p></div>
-            <div class="feature-card"><div class="feat-icon">⚡</div><strong>Cerca eletrônica</strong><p>Define uma área no mapa. Se o carro sair, o cliente recebe alerta imediato</p></div>
-            <div class="feature-card"><div class="feat-icon">🔒</div><strong>Bloqueio remoto</strong><p>Em caso de roubo, bloqueia o motor pelo app. O carro para e não liga mais</p></div>
-            <div class="feature-card"><div class="feat-icon">🔔</div><strong>Alertas de ignição</strong><p>Notifica quando o carro é ligado ou desligado — ideal pra saber se o filho chegou</p></div>
-            <div class="feature-card"><div class="feat-icon">🚀</div><strong>Alerta de velocidade</strong><p>Avisa quando o veículo ultrapassa a velocidade definida pelo cliente</p></div>
-            <div class="feature-card"><div class="feat-icon">🗺️</div><strong>Histórico de rotas</strong><p>Vê todas as rotas dos últimos 90 dias: hora, paradas e percurso completo</p></div>
+            <div class="feature-card"><div class="feat-icon">📍</div><strong>1. Localização em tempo real</strong><p>O cliente vê exatamente onde está o veículo agora, no mapa, com atualização constante. Funciona pelo app no celular ou pelo navegador. Precisão de metros — não de quarteirões. É a funcionalidade base que todo cliente usa diariamente.</p></div>
+            <div class="feature-card"><div class="feat-icon">⚡</div><strong>2. Cerca eletrônica</strong><p>O cliente desenha uma área no mapa (ex: "meu bairro", "o trabalho do motorista"). Se o veículo SAIR ou ENTRAR dessa área, recebe uma notificação imediata no celular. Ideal para pais, frotas e quem estaciona em garagem e quer saber se o carro moveu.</p></div>
+            <div class="feature-card"><div class="feat-icon">🔒</div><strong>3. Bloqueio remoto do motor</strong><p>Em caso de furto confirmado, o cliente (ou a central) aciona o bloqueio pelo app. O veículo para gradualmente e não volta a ligar — o ladrão fica preso no local. Funciona somente quando o motor já está ligado (por segurança, não bloqueia em movimento acima de velocidade mínima).</p></div>
+            <div class="feature-card"><div class="feat-icon">🔔</div><strong>4. Alertas de ignição</strong><p>Notificação push toda vez que o veículo for ligado ou desligado — com horário, localização e duração da parada. Ideal para pais com filhos adolescentes, empresas com motoristas e qualquer pessoa que divide o carro. Elimina a ansiedade de "será que chegou?"</p></div>
+            <div class="feature-card"><div class="feat-icon">🚀</div><strong>5. Alerta de excesso de velocidade</strong><p>O cliente define a velocidade máxima permitida (ex: 80 km/h). Se ultrapassar, recebe alerta imediato. Funciona para proteger a família, controlar motoristas de frota e reduzir risco de acidentes. Configura por veículo ou por horário — ex: "acima de 60 km/h das 22h às 6h".</p></div>
+            <div class="feature-card"><div class="feat-icon">🗺️</div><strong>6. Histórico completo de rotas</strong><p>Visualiza todos os percursos dos últimos 90 dias (Profissional e Controle Total): rota no mapa, horário de saída e chegada, paradas, velocidade média. Para frotas, é prova incontestável de onde o motorista esteve. Para clientes pessoais, é um diário digital do veículo.</p></div>
+            <div class="feature-card"><div class="feat-icon">📊</div><strong>7. Relatórios de uso do veículo</strong><p>Relatórios automáticos de quilometragem, horas rodadas, consumo estimado de combustível e rotas percorridas. Envio automático por e-mail semanal ou mensal. Para empresas, substitui planilhas manuais e é aceito em auditorias e contestações trabalhistas.</p></div>
+            <div class="feature-card"><div class="feat-icon">🛑</div><strong>8. Detecção de paradas longas</strong><p>Alerta quando o veículo fica parado por mais tempo do que o configurado fora do local habitual. Ideal para detectar desvio de rota de motoristas, abandono do veículo ou situações suspeitas. Configura facilmente no app — "avise se parar mais de 30 min fora do depósito".</p></div>
+            <div class="feature-card"><div class="feat-icon">🔋</div><strong>9. Alerta de bateria baixa e corte de energia</strong><p>Notificação se a bateria do veículo estiver baixa (prevenção de pane) e alerta imediato se a alimentação do rastreador for cortada (tentativa de remoção). Duas proteções em uma — mecânica e contra furto.</p></div>
+            <div class="feature-card"><div class="feat-icon">👥</div><strong>10. Múltiplos usuários e veículos</strong><p>Um único plano pode gerenciar vários veículos. O titular pode adicionar outros usuários (esposa, filho, sócio) com permissões configuráveis — quem pode ver, quem pode bloquear. Ideal para famílias e empresas com frota de até 10 veículos.</p></div>
         </div>
-        <div class="script-box">💡 <strong>Dica do TRAK:</strong> <em>Mostre o app ao vivo no celular durante a apresentação. Ver a localização em tempo real é o momento "uau" que acelera a decisão de compra!</em></div>`
-    },
-    {
-        title: 'Benefícios para o cliente',
-        trak: `Atenção aqui — isso é <strong>OURO!</strong> 💡 O cliente não compra função, ele compra <em>benefício</em>. Ele compra segurança pra família, paz de espírito, controle do negócio. Guarda essas frases prontas — elas fecham venda!`,
-        html: `
-        <h3 style="margin:0 0 18px;">Por que o cliente vai querer?</h3>
-        <div class="feature-cards">
-            <div class="feature-card"><div class="feat-icon">🛡️</div><strong>Segurança</strong><p>Recuperação rápida em caso de furto. Com bloqueio remoto, as chances disparam</p></div>
-            <div class="feature-card"><div class="feat-icon">🧘</div><strong>Tranquilidade</strong><p>Saber onde o filho está, se chegou em casa, se o carro está seguro — sem ansiedade</p></div>
-            <div class="feature-card"><div class="feat-icon">💰</div><strong>Economia</strong><p>Frotas com rastreador reduzem combustível e manutenção com controle de rotas</p></div>
-            <div class="feature-card"><div class="feat-icon">📊</div><strong>Controle total</strong><p>Empresa sabe onde cada motorista está, histórico de rotas, horas trabalhadas</p></div>
-        </div>
-        <h4 style="margin:18px 0 10px;">Frases prontas pra usar:</h4>
-        <div class="script-box">🛡️ <em>"Com o bloqueio remoto, mesmo que roubem o carro, você bloqueia o motor pelo celular. O veículo para — e a polícia age rápido."</em></div>
-        <div class="script-box">🧘 <em>"Você recebe uma notificação quando o carro é ligado. É tipo ter um guarda-costas digital pra família toda."</em></div>
-        <div class="script-box">💰 <em>"Menos de R$1,50 por dia. Quanto vale a tranquilidade de saber que seu veículo está protegido?"</em></div>
-        <div class="script-box">📊 <em>"Com o histórico de rotas você sabe o que cada motorista fez no dia. Sem surpresas na conta de combustível."</em></div>`
-    },
-    {
-        title: 'Casos Reais',
-        trak: `Histórias reais vendem mais que qualquer catálogo! 📖 Uma boa história cria conexão emocional e quebra objeção antes mesmo de ela aparecer. <strong>Aprende essas três e usa em toda abordagem!</strong>`,
-        html: `
-        <h3 style="margin:0 0 18px;">3 histórias que fecham venda</h3>
-        <div class="story-cards">
-            <div class="story-card">
-                <div class="story-icon">🏍️</div>
-                <h4>A moto recuperada em 20 minutos</h4>
-                <p>Um motoboy teve a moto roubada em plena luz do dia. Em menos de 20 minutos, ele acionou o bloqueio remoto pelo app. A polícia localizou o veículo parado a 5km dali — com o ladrão ao lado, sem conseguir religar a moto.</p>
-                <div class="story-tip">📌 Use quando o cliente disser "minha região é tranquila" — furto acontece em todo lugar, e 20 min faz toda a diferença.</div>
-            </div>
-            <div class="story-card">
-                <div class="story-icon">👨‍👧</div>
-                <h4>O pai que dorme tranquilo</h4>
-                <p>Um pai deu o carro pra filha adolescente ir à faculdade. Antes, ficava acordado esperando mensagem. Hoje recebe notificação quando o carro liga e outra quando chega em casa. Configurou ainda alerta de velocidade acima de 80 km/h.</p>
-                <div class="story-tip">📌 Use com pais de adolescentes, casais com carro compartilhado ou quem tem funcionário usando o veículo da empresa.</div>
-            </div>
-            <div class="story-card">
-                <div class="story-icon">🚚</div>
-                <h4>A empresa que economizou 22%</h4>
-                <p>Uma transportadora com 4 veículos descobriu, pelo histórico de rotas, que dois motoristas desviavam do trajeto — acrescendo 30 km extras por dia. Com ajustes simples, reduziram 22% do custo de combustível no mês seguinte.</p>
-                <div class="story-tip">📌 Use com qualquer cliente que tem frota — mesmo 1 ou 2 carros. A economia pode pagar o rastreador inteiro!</div>
-            </div>
-        </div>`
-    },
-    {
-        title: 'Os Planos',
-        trak: `Saber qual plano indicar pro perfil certo é o segredo do consultor top! 🎯 Não force o mais caro — <strong>indique o certo</strong>. Cliente satisfeito renova, indica amigos e faz upgrade sozinho com o tempo!`,
-        html: `
-        <h3 style="margin:0 0 18px;">Comparativo de planos</h3>
-        <div style="overflow-x:auto;">
+        <h4 style="margin:24px 0 12px;">🎯 Qual funcionalidade fecha mais por perfil</h4>
+        <div style="overflow-x:auto;margin-bottom:16px;">
             <table class="plan-compare">
-                <thead><tr><th>Plano</th><th>Valor/mês</th><th>Inclui</th><th>Perfil ideal</th></tr></thead>
+                <thead><tr><th>Perfil do cliente</th><th>Funcionalidade que fecha</th><th>Argumento principal</th></tr></thead>
                 <tbody>
-                    <tr><td class="plan-name">Essencial</td><td class="plan-price">R$ 44,90</td><td>Localização em tempo real + alertas básicos</td><td>Primeiro rastreador, orçamento limitado</td></tr>
-                    <tr><td class="plan-name">Profissional</td><td class="plan-price">R$ 54,90</td><td>Essencial + bloqueio remoto + histórico 90 dias</td><td>Autônomo, motoboy, carro financiado</td></tr>
-                    <tr><td class="plan-name">Controle Total</td><td class="plan-price">R$ 64,90</td><td>Profissional + relatórios avançados + suporte prioritário</td><td>Família, empresa pequena, quem quer o melhor</td></tr>
-                    <tr><td class="plan-name">Empresas</td><td class="plan-price">Sob consulta</td><td>Pacote completo por volume de veículos</td><td>3+ veículos, frotas, transportadoras</td></tr>
+                    <tr><td>Pai/mãe com filho adolescente</td><td>Alertas de ignição + Cerca eletrônica</td><td>"Você recebe notificação quando o carro sai e quando chega em casa"</td></tr>
+                    <tr><td>Autônomo / motoboy</td><td>Bloqueio remoto + Localização ao vivo</td><td>"Se roubarem, você bloqueia pelo celular e a polícia localiza"</td></tr>
+                    <tr><td>Empresa com frota</td><td>Histórico de rotas + Relatórios</td><td>"Você sabe onde cada motorista foi, o dia todo"</td></tr>
+                    <tr><td>Carro financiado</td><td>Bloqueio remoto + Alerta de ignição</td><td>"Protege o financiamento — perder o carro e pagar a parcela é o pior cenário"</td></tr>
+                    <tr><td>Alto risco / região insegura</td><td>Bloqueio remoto + Cerca eletrônica</td><td>"Com bloqueio remoto, a chance de recuperação dispara"</td></tr>
                 </tbody>
             </table>
         </div>
-        <h4 style="margin:16px 0 10px;">Dicas de perfil do TRAK 🤖</h4>
+        <div class="script-box">💡 <strong>Dica do TRAK para a demonstração:</strong> <em>"Mostre o app ao vivo no celular durante a apresentação. Se possível, abra o mapa e mostre um veículo sendo rastreado em tempo real. Ver a localização se atualizando no mapa é o 'momento uau' que acelera qualquer decisão de compra. Vale mais que qualquer argumentação verbal."</em></div>`
+    },
+    {
+        title: 'Perfil do cliente ideal',
+        trak: `Parar de atirar pra todo lado e começar a mirar no alvo certo é o que separa o consultor mediano do top performer! 🎯 Cada perfil de cliente tem uma dor diferente, um vocabulário diferente e um argumento que toca diferente. Quando você fala a língua do cliente, a conversa flui — e o contrato fecha. Vamos mapear cada tipo!`,
+        html: `
+        <h3 style="margin:0 0 18px;">Os 5 perfis de cliente que mais compram rastreador</h3>
+        <div class="story-cards">
+            <div class="story-card">
+                <div class="story-icon">👨‍👧</div>
+                <h4>Perfil 1: Pai ou mãe com filho adolescente</h4>
+                <p><strong>Quem são:</strong> Pais de filhos de 16 a 25 anos que usam o carro da família, seja para ir à faculdade, trabalho ou lazer. Normalmente com renda média-alta, carro de valor entre R$40 mil e R$150 mil.</p>
+                <p><strong>A dor deles:</strong> Ansiedade e preocupação. Ficam acordados esperando o filho chegar. Não sabem se o filho dirigiu em alta velocidade, saiu do bairro combinado ou chegou com segurança. Já sofreram algum susto ou conhecem alguém que perdeu filho em acidente.</p>
+                <p><strong>Como abordar:</strong> Não venda segurança — venda <em>paz de espírito e controle</em>. "Com o rastreador, você recebe uma notificação quando o carro sai de casa e outra quando chega na faculdade. Você define a velocidade máxima — acima disso, você é avisado. Não é desconfiança, é cuidado."</p>
+                <div class="story-tip">📌 <strong>Plano recomendado:</strong> Controle Total (R$64,90). Justifica com cercas, alertas de velocidade, histórico e múltiplos usuários (mãe e pai no app).</div>
+            </div>
+            <div class="story-card">
+                <div class="story-icon">🏍️</div>
+                <h4>Perfil 2: Autônomo, motoboy e MEI</h4>
+                <p><strong>Quem são:</strong> Profissionais que dependem do veículo para trabalhar — entregadores, motoboys, representantes comerciais, técnicos de campo, diaristas com carro. O veículo é o meio de produção deles.</p>
+                <p><strong>A dor deles:</strong> Perder o veículo significa parar de trabalhar e perder renda — às vezes por semanas enquanto resolve seguro, financiamento, busca carro novo. Muitos já foram roubados ou conhecem colegas que foram. Trabalham em áreas de risco, deixam o veículo em locais variados.</p>
+                <p><strong>Como abordar:</strong> Venda recuperação rápida e continuidade da renda. "Se alguém pegar sua moto, você vai pro app, aciona o bloqueio e liga pra polícia com a localização exata. Na maioria dos casos, recupera em horas — não dias. Seu trabalho não para."</p>
+                <div class="story-tip">📌 <strong>Plano recomendado:</strong> Profissional (R$54,90). Bloqueio remoto e histórico de rotas são os diferenciais chave. Mostre que custa menos que 1 dia de trabalho perdido.</div>
+            </div>
+            <div class="story-card">
+                <div class="story-icon">🚛</div>
+                <h4>Perfil 3: Empresa com frota (2 a 20 veículos)</h4>
+                <p><strong>Quem são:</strong> Donos de pequenas e médias empresas com veículos de trabalho — construtoras, distribuidoras, prestadoras de serviço, transportadoras locais, clínicas com carro de visita. Geralmente o dono toma a decisão.</p>
+                <p><strong>A dor deles:</strong> Não saber o que os motoristas fazem com o carro da empresa. Combustível que vai embora sem explicação, desvios de rota, uso pessoal do veículo fora do horário, acidentes ocultados. Além de risco de furto do patrimônio.</p>
+                <p><strong>Como abordar:</strong> Venda controle, economia e prova. "Com o rastreador você sabe onde cada carro está agora e onde esteve nos últimos 90 dias. Se houver desvio, você vê. Se houver excesso de velocidade, você é avisado. Muitas empresas recuperam o custo do serviço inteiro só com a redução de combustível no primeiro mês."</p>
+                <div class="story-tip">📌 <strong>Plano recomendado:</strong> Controle Total ou Empresas. Para 3+ veículos, acione proposta de frota com desconto por volume.</div>
+            </div>
+            <div class="story-card">
+                <div class="story-icon">🚗</div>
+                <h4>Perfil 4: Dono de carro financiado ou seminovo de valor</h4>
+                <p><strong>Quem são:</strong> Pessoas que compraram um carro novo ou seminovo nos últimos 2 anos, geralmente financiado. Pagam parcelas mensais e têm o CNPJ do banco como co-proprietário. Veículo vale entre R$60 mil e R$200 mil.</p>
+                <p><strong>A dor deles:</strong> O cenário mais temido é perder o carro e continuar pagando as parcelas. O seguro tem franquia, demora meses para resolver e muitas vezes não cobre o valor total. Financiamento continua independente do roubo.</p>
+                <p><strong>Como abordar:</strong> Venda proteção do patrimônio e do financiamento. "Você pagou 20% de entrada, parcela de R$1.500 por 60 meses. Se roubarem e não recuperar, você continua com a dívida. O rastreador é o diferencial que aumenta em até 80% a chance de recuperação — e muitas seguradoras dão desconto na apólice para quem tem."</p>
+                <div class="story-tip">📌 <strong>Plano recomendado:</strong> Profissional (R$54,90). Compare: parcela do financiamento vs custo diário do rastreador (menos de R$2/dia).</div>
+            </div>
+            <div class="story-card">
+                <div class="story-icon">🏘️</div>
+                <h4>Perfil 5: Quem mora ou trabalha em região de alto risco</h4>
+                <p><strong>Quem são:</strong> Moradores de regiões com alto índice de furto de veículos nas regiões metropolitanas. Podem ser de qualquer classe social. Geralmente já sofreram tentativa de furto, foram roubados ou têm amigos que passaram por isso recentemente.</p>
+                <p><strong>A dor deles:</strong> Medo constante e sensação de impotência. Já pagam seguro caro, mas sabem que o processo de sinistro é demorado e burocrático. Querem uma camada a mais de proteção ativa.</p>
+                <p><strong>Como abordar:</strong> Venda proteção ativa, não passiva. "O seguro te paga depois, com franquia e burocracia. O rastreador age antes — você bloqueia o motor e a polícia age com localização exata. São complementares: o rastreador aumenta a chance de recuperar, o seguro cobre se não recuperar."</p>
+                <div class="story-tip">📌 <strong>Plano recomendado:</strong> Profissional ou Controle Total. Destaque que muitas seguradoras oferecem desconto de 10 a 20% na apólice para quem tem rastreador ativo.</div>
+            </div>
+        </div>
+        <div class="script-box" style="margin-top:4px;">🎯 <strong>Dica de ouro do TRAK:</strong> <em>"Antes de apresentar qualquer funcionalidade, faz as 3 perguntas de diagnóstico: 'Você usa o carro sozinho ou a família usa?', 'Tem carro da empresa ou frota?', 'Já passou por algum problema de segurança com veículo?' Com as respostas, você vai direto no argumento que fecha — sem desperdiçar tempo com o que não importa para esse cliente específico."</em></div>`
+    },
+    {
+        title: 'Benefícios por perfil',
+        trak: `Atenção — essa é a seção mais importante para fechar vendas! 💡 O cliente não compra GPS, não compra chip GSM, não compra cerca eletrônica. O cliente compra <strong>o resultado que esses recursos entregam para a vida dele</strong>. Guarda as frases prontas abaixo — cada uma foi testada no campo e fecha contratos. Use com o perfil certo!`,
+        html: `
+        <h3 style="margin:0 0 18px;">Benefícios emocionais vs racionais — use os dois</h3>
+        <p style="color:var(--text-muted);margin:0 0 18px;">Benefício emocional toca o coração e cria desejo. Benefício racional justifica a decisão para o cérebro. Use os dois juntos: desperte a emoção, depois confirme com lógica. Veja como fazer isso para cada perfil.</p>
+        <h4 style="margin:0 0 14px;color:var(--primary);">🛡️ Benefício 1: Segurança e recuperação veicular</h4>
         <div class="feature-cards">
-            <div class="feature-card"><div class="feat-icon">🌱</div><strong>Essencial → Upgrade</strong><p>Comece pelo Essencial pra fechar, depois ofereça upgrade quando o cliente sentir o valor na prática</p></div>
-            <div class="feature-card"><div class="feat-icon">👨‍👩‍👧</div><strong>Família com carro novo?</strong><p>Vá direto pro Controle Total. Quem acabou de comprar quer proteger ao máximo</p></div>
-            <div class="feature-card"><div class="feat-icon">🚛</div><strong>Empresa com frota?</strong><p>Sempre Empresas. Feche com o dono — o ROI se paga em 1 mês</p></div>
+            <div class="feature-card"><div class="feat-icon">😰</div><strong>Emocional</strong><p>Veículos rastreados têm taxa de recuperação 3x maior do que sem rastreador. Bloqueio remoto detém o ladrão antes que ele consiga desaparecer. Você não fica impotente — age imediatamente.</p></div>
+            <div class="feature-card"><div class="feat-icon">🧮</div><strong>Racional</strong><p>Custo do rastreador: R$54,90/mês = R$658,80/ano. Custo de perder um carro de R$80.000: franquia de seguro (R$3.000 a R$8.000) + tempo sem veículo + estresse. ROI de proteção: incalculável.</p></div>
+        </div>
+        <div class="script-box">🛡️ <em>"Com o bloqueio remoto, mesmo que roubem o carro, você abre o app, ativa o bloqueio e liga para a polícia com a localização exata. O veículo para — e a polícia age com informação real. Na maioria dos casos, recuperação acontece em horas."</em></div>
+        <h4 style="margin:20px 0 14px;color:var(--primary);">🧘 Benefício 2: Tranquilidade e paz de espírito familiar</h4>
+        <div class="feature-cards">
+            <div class="feature-card"><div class="feat-icon">💬</div><strong>Emocional</strong><p>Nunca mais ficar acordado esperando mensagem do filho. Saber que a filha chegou na faculdade — sem precisar ligar e parecer chato. A notificação chega sozinha, silenciosa, tranquilizadora.</p></div>
+            <div class="feature-card"><div class="feat-icon">📐</div><strong>Racional</strong><p>Alertas de ignição funcionam 24/7. Cerca eletrônica com notificação instantânea. Histórico de rotas com horário exato. Velocidade monitorada com alerta configurável. Todas essas ferramentas custam menos de R$2 por dia.</p></div>
+        </div>
+        <div class="script-box">🧘 <em>"Você recebe uma notificação quando o carro sai de casa e outra quando chega no destino. Não precisa ligar pra saber se chegou bem — o sistema te avisa. É como ter um guarda-costas digital para a sua família."</em></div>
+        <h4 style="margin:20px 0 14px;color:var(--primary);">💰 Benefício 3: Economia e controle financeiro (frotas)</h4>
+        <div class="feature-cards">
+            <div class="feature-card"><div class="feat-icon">📉</div><strong>Emocional</strong><p>Chega de pagar combustível que ninguém sabe para onde foi. Chega de acreditar na palavra dos motoristas sem prova. Você finalmente tem controle do que acontece com o patrimônio da empresa.</p></div>
+            <div class="feature-card"><div class="feat-icon">📊</div><strong>Racional</strong><p>Empresas com rastreador reduzem em média 15 a 25% o custo de combustível ao identificar desvios de rota e uso pessoal. Para uma frota de 3 carros com R$800/mês de combustível cada, isso representa economia de R$360 a R$600/mês — que paga vários rastreadores.</p></div>
+        </div>
+        <div class="script-box">💰 <em>"Uma frota com rastreador quase sempre descobre desvios de rota que aumentam o custo de combustível. Com o histórico de rotas você vê exatamente onde cada motorista foi. Clientes com 3 carros frequentemente recuperam o custo do serviço inteiro só com a redução de combustível no primeiro mês."</em></div>
+        <h4 style="margin:20px 0 14px;color:var(--primary);">📋 Benefício 4: Desconto no seguro e proteção do financiamento</h4>
+        <div class="feature-cards">
+            <div class="feature-card"><div class="feat-icon">🤝</div><strong>Seguro com desconto</strong><p>Muitas seguradoras oferecem de 10 a 20% de desconto na apólice para veículos com rastreador ativo e homologado. Em um seguro de R$3.000/ano, o desconto pode ser R$300 a R$600 — que já cobre boa parte do custo anual do rastreador.</p></div>
+            <div class="feature-card"><div class="feat-icon">🏦</div><strong>Proteção do financiamento</strong><p>Quem tem veículo financiado e é roubado ainda deve as parcelas restantes ao banco. O rastreador aumenta dramaticamente a chance de recuperar o veículo antes que isso aconteça. É a diferença entre pagar 48 parcelas de um carro que você usa — ou de um carro que não existe mais.</p></div>
+        </div>
+        <div class="script-box">🏦 <em>"Você tem parcelas de quanto por mês? Se esse carro sumir, você continua pagando essas parcelas. O rastreador é a diferença entre recuperar em horas e ficar meses sem carro pagando banco. Além disso, pergunte pro seu corretor de seguros — muitas seguradoras dão desconto na renovação para quem tem rastreador ativo."</em></div>
+        <h4 style="margin:20px 0 14px;color:var(--primary);">⚡ Benefício 5: Resposta rápida em emergências</h4>
+        <div class="script-box">🚨 <em>"Em caso de roubo, o tempo é tudo. Sem rastreador, a polícia vai pelo boletim de ocorrência — e o veículo pode estar do outro lado da cidade. Com o rastreador, você liga pra polícia com a localização exata, em tempo real. A diferença entre recuperar em 1 hora e não recuperar é essa informação."</em></div>
+        <div class="script-box">📞 <em>"Além de você acionar, a central de monitoramento da Tracktiv fica de olho. Se detectar movimentação suspeita fora do horário ou da área habitual, já entra em contato proativamente. É proteção em camadas."</em></div>`
+    },
+    {
+        title: '5 casos reais',
+        trak: `Histórias reais valem mais que qualquer catálogo ou argumento lógico! 📖 Uma boa história cria conexão emocional, torna o benefício concreto e quebra objeções antes mesmo de elas aparecerem. <strong>Aprende os 5 casos abaixo — escolhe o que mais combina com o perfil do cliente e usa!</strong> Quanto mais parecida a história com a realidade do cliente, mais poderosa ela é.`,
+        html: `
+        <h3 style="margin:0 0 18px;">5 histórias reais que fecham contratos</h3>
+        <div class="story-cards">
+            <div class="story-card">
+                <div class="story-icon">🏍️</div>
+                <h4>Caso 1: O motoboy que recuperou a moto em 23 minutos</h4>
+                <p><strong>Situação:</strong> João, motoboy de 28 anos, usava a moto para fazer entregas por aplicativo. O veículo era o instrumento de trabalho e representava R$12.000 — comprado financiado em 36 meses, com parcelas de R$450.</p>
+                <p><strong>O problema:</strong> Em uma quinta-feira, às 14h, enquanto subia para entregar um pedido, a moto foi tomada de assalto. Um homem armado abordou João na rua, levou a moto e fugiu.</p>
+                <p><strong>O que aconteceu:</strong> João abriu o app do rastreador, ativou o bloqueio remoto e viu a localização da moto em tempo real. Ligou imediatamente para a polícia com o endereço exato. Em 23 minutos, a viatura encontrou a moto — parada em um beco, com o ladrão ao lado sem conseguir religar o motor.</p>
+                <p><strong>Resultado:</strong> Moto recuperada sem danos. João não perdeu nenhuma parcela do financiamento, voltou a trabalhar no mesmo dia e hoje conta a história para outros motoboys como argumento para contratar o rastreador.</p>
+                <div class="story-tip">📌 <strong>Use com:</strong> Motoboys, entregadores, autônomos que dependem do veículo para trabalhar. Foque na continuidade da renda e na recuperação rápida.</div>
+            </div>
+            <div class="story-card">
+                <div class="story-icon">👨‍👧</div>
+                <h4>Caso 2: O pai que nunca mais ficou acordado esperando</h4>
+                <p><strong>Situação:</strong> Roberto, 52 anos, empresário. Deu o carro — um SUV de R$130.000 — para a filha de 19 anos usar para ir à faculdade à noite, em São Paulo. Toda semana, a mesma rotina: Roberto ficava acordado até as 23h esperando mensagem de "cheguei".</p>
+                <p><strong>O problema:</strong> Em uma noite, a filha ficou conversando com amigos e não avisou que tinha chegado. Roberto ficou duas horas sem dormir, ligou quatro vezes, até ela responder no app de mensagens. No dia seguinte, instalou o rastreador.</p>
+                <p><strong>O que aconteceu:</strong> Com o rastreador, Roberto configurou: alerta quando o carro sai de casa, alerta quando chega no campus da faculdade e alerta de velocidade acima de 90 km/h. Hoje, a notificação "carro chegou no destino" chega automaticamente toda noite.</p>
+                <p><strong>Resultado:</strong> Roberto dorme tranquilo. A filha nem sabe que o pai monitora — e Roberto não precisa ligar e parecer desconfiado. O relacionamento melhorou. Custo: R$64,90/mês. Valor: incalculável.</p>
+                <div class="story-tip">📌 <strong>Use com:</strong> Pais com filhos adolescentes ou jovens adultos. A pergunta que abre essa história: "Você tem filhos que usam o carro da família?"</div>
+            </div>
+            <div class="story-card">
+                <div class="story-icon">🚚</div>
+                <h4>Caso 3: A transportadora que economizou R$1.200 por mês</h4>
+                <p><strong>Situação:</strong> Marcos tem uma transportadora local com 4 veículos de entrega. Gastava em média R$1.100 por veículo em combustível por mês — total de R$4.400. Sentia que o custo não batia com as rotas que os motoristas relatavam.</p>
+                <p><strong>O problema:</strong> Sem controle, Marcos acreditava na palavra dos motoristas. Não tinha como saber se as rotas eram otimizadas, se havia paradas não autorizadas ou uso pessoal dos veículos fora do horário.</p>
+                <p><strong>O que aconteceu:</strong> No primeiro mês com o rastreador no plano Controle Total, Marcos descobriu que dois motoristas adicionavam cerca de 40 km extras por dia — desvios de rota para fazer entregas pessoais. Ajustou as rotas e implantou alertas de uso fora do horário comercial.</p>
+                <p><strong>Resultado:</strong> Redução de R$1.200/mês em combustível — o equivalente a quase 3x o custo dos rastreadores. Em 3 meses, o sistema se pagou. Hoje, Marcos tem relatório semanal automático de quilometragem e pode contestar qualquer reclamatória trabalhista com dados precisos.</p>
+                <div class="story-tip">📌 <strong>Use com:</strong> Empresas com 2+ veículos. A pergunta que abre: "Você sabe exatamente quanto de combustível cada carro consome por mês — e por quê?"</div>
+            </div>
+            <div class="story-card">
+                <div class="story-icon">🚗</div>
+                <h4>Caso 4: O carro financiado que voltou para casa</h4>
+                <p><strong>Situação:</strong> Ana comprou um hatch zero km financiado em 60 meses, com parcelas de R$1.300. O carro valia R$75.000. Pagou 12 parcelas e ainda devia R$60.000 ao banco.</p>
+                <p><strong>O problema:</strong> Em uma madrugada, o carro foi furtado da garagem do prédio. O portão foi aberto com dispositivo eletrônico clonado. Ana acordou sem carro — e com R$60.000 de dívida ativa com o banco.</p>
+                <p><strong>O que aconteceu:</strong> O rastreador estava ativo. Ana viu no app a rota exata que o ladrão havia feito — subindo a Via Dutra em direção ao interior. Ligou para a polícia com a localização em tempo real. A viatura interceptou o veículo 40 km depois na rodovia.</p>
+                <p><strong>Resultado:</strong> Carro recuperado com pequenos arranhões. Ana não precisou acionar o seguro, não pagou franquia, não ficou sem carro. O rastreador custava R$54,90/mês. A franquia do seguro seria R$4.500. O pesadelo de pagar financiamento sem ter o carro foi evitado.</p>
+                <div class="story-tip">📌 <strong>Use com:</strong> Qualquer pessoa com carro financiado. Questione: "Se esse carro sumir amanhã, você continua pagando as parcelas?"</div>
+            </div>
+            <div class="story-card">
+                <div class="story-icon">🏢</div>
+                <h4>Caso 5: A empresa que ganhou o processo trabalhista</h4>
+                <p><strong>Situação:</strong> Diego é dono de uma empresa de assistência técnica com 3 técnicos de campo. Um ex-funcionário entrou com reclamatória trabalhista alegando horas extras não pagas — o dobro do horário contratado.</p>
+                <p><strong>O problema:</strong> Sem prova do contrário, o juiz tende a acreditar no funcionário. O processo poderia custar R$35.000 entre indenização, FGTS, custas processuais e honorários advocatícios.</p>
+                <p><strong>O que aconteceu:</strong> Diego apresentou o relatório do rastreador cobrindo todo o período trabalhado pelo funcionário. Horário de saída do depósito, chegada nos clientes, pausas, retorno — tudo registrado com carimbo de data e hora. O relatório derrubou a alegação de horas extras ponto a ponto.</p>
+                <p><strong>Resultado:</strong> Processo encerrado por falta de provas da parte autora. Diego economizou R$35.000. O advogado dele disse: "nunca vi prova tão irrefutável quanto o histórico de GPS". Hoje Diego usa o relatório como argumento para contratar novos motoristas também.</p>
+                <div class="story-tip">📌 <strong>Use com:</strong> Empresas com motoristas. Questione: "Se um funcionário processar sua empresa por horas extras, você tem como provar a jornada real de trabalho?"</div>
+            </div>
         </div>`
     },
     {
-        title: 'Como Vender',
-        trak: `Chegou a hora do módulo que transforma conhecimento em dinheiro! 💰 Você já tem o produto, os argumentos e as histórias. Agora vem a <strong>técnica de vendas</strong>. Cada script aqui você pode usar hoje mesmo na próxima conversa!`,
+        title: 'Como funciona a instalação',
+        trak: `Muitos clientes não contratam porque acham que instalar rastreador é complicado, invasivo ou vai danificar o carro. <strong>Essa objeção precisa ser destruída antes mesmo de aparecer!</strong> 🔧 Quando você explica o processo de instalação de forma clara e simples, o cliente percebe que é tranquilo — e a resistência desaparece. Vamos desmistificar!`,
         html: `
-        <h3 style="margin:0 0 8px;">As 3 perguntas mágicas</h3>
-        <p class="text-muted" style="margin:0 0 14px;">Use no início da conversa pra descobrir a dor do cliente e personalizar a abordagem.</p>
-        <div class="script-box"><strong>1. "Você já teve medo de ter seu veículo roubado?"</strong><br>A dor aparece naturalmente. Isso abre o ângulo de segurança — o mais forte de todos.</div>
-        <div class="script-box"><strong>2. "Você tem família usando o carro?"</strong><br>Abre o ângulo de tranquilidade e monitoramento familiar. Ideal pra pais e cônjuges.</div>
-        <div class="script-box"><strong>3. "Você usa o carro no trabalho ou tem alguma frota?"</strong><br>Abre o ângulo de controle e economia. Mesmo 1 carro de trabalho já justifica o investimento.</div>
-        <h3 style="margin:20px 0 12px;">Contornando objeções</h3>
+        <h3 style="margin:0 0 18px;">Processo de instalação passo a passo</h3>
+        <div class="diagram-flow">
+            <div class="diagram-node"><div class="dnode-icon">📞</div>Agendamento</div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-node"><div class="dnode-icon">🔧</div>Técnico vai até o cliente</div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-node"><div class="dnode-icon">⏱️</div>Instalação 30–60 min</div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-node"><div class="dnode-icon">✅</div>Teste e ativação</div>
+            <div class="diagram-arrow">→</div>
+            <div class="diagram-node"><div class="dnode-icon">📱</div>App configurado</div>
+        </div>
+        <div class="feature-cards">
+            <div class="feature-card"><div class="feat-icon">📅</div><strong>Agendamento flexível</strong><p>O cliente escolhe o dia e horário. O técnico vai até o local do cliente — residência, empresa, estacionamento. Não precisa levar o carro em lugar nenhum. O serviço acontece onde o veículo está.</p></div>
+            <div class="feature-card"><div class="feat-icon">⏱️</div><strong>Instalação rápida: 30 a 60 minutos</strong><p>O processo completo leva entre 30 e 60 minutos, dependendo do veículo. O cliente pode acompanhar, fazer perguntas, ou simplesmente esperar. Não precisa deixar o carro — é feito na hora.</p></div>
+            <div class="feature-card"><div class="feat-icon">🔍</div><strong>Instalação discreta e oculta</strong><p>O aparelho é instalado em local estratégico, completamente oculto — cavidade da lataria, sob o painel ou em outro ponto específico do veículo. Nenhum fio aparente, nenhuma indicação visual de que há rastreador.</p></div>
+            <div class="feature-card"><div class="feat-icon">🔒</div><strong>Não danifica a garantia do veículo</strong><p>A instalação não interfere nos sistemas eletrônicos originais do veículo. Não invalida a garantia de fábrica. O técnico usa conectores padronizados e reversíveis — se o cliente quiser remover, o carro volta ao estado original sem marcas.</p></div>
+            <div class="feature-card"><div class="feat-icon">🎓</div><strong>Técnico certificado Tracktiv</strong><p>Todos os instaladores são parceiros certificados pela Tracktiv, com treinamento específico em eletrônica veicular. Seguem protocolo padronizado com checklist de qualidade e teste ao final da instalação.</p></div>
+            <div class="feature-card"><div class="feat-icon">📱</div><strong>Configuração do app inclusa</strong><p>No final da instalação, o técnico ou o consultor configura o app no celular do cliente, testa o mapa em tempo real, configura as cercas eletrônicas e alertas conforme a necessidade. O cliente sai usando.</p></div>
+        </div>
+        <h4 style="margin:24px 0 12px;">🔧 Objeções sobre instalação — e como destruir cada uma</h4>
         <div class="objection-block">
             <div class="obj-label">Objeção</div>
+            <div class="obj-q">❌ "Vai estragar a elétrica do meu carro?"</div>
+            <div class="obj-a">✅ "Não — o técnico usa conectores não-invasivos que não alteram a fiação original. Se quiser remover no futuro, o carro fica exatamente como era antes. A instalação segue o mesmo protocolo das concessionárias autorizadas."</div>
+        </div>
+        <div class="objection-block">
+            <div class="obj-label">Objeção</div>
+            <div class="obj-q">❌ "Perde a garantia de fábrica?"</div>
+            <div class="obj-a">✅ "Absolutamente não. O rastreador é instalado como um acessório adicional — não mexe nos módulos originais do veículo, não reprograma nada, não abre o motor. Inclusive a maioria das montadoras já prevê instalação de rastreadores em seus veículos."</div>
+        </div>
+        <div class="objection-block">
+            <div class="obj-label">Objeção</div>
+            <div class="obj-q">❌ "Preciso deixar o carro o dia todo em algum lugar?"</div>
+            <div class="obj-a">✅ "Não precisa levar o carro a lugar nenhum. O técnico vai até você — na sua casa, empresa ou onde o carro estiver. O processo leva de 30 a 60 minutos, você acompanha se quiser, e ao final o app já está funcionando no seu celular."</div>
+        </div>
+        <div class="objection-block">
+            <div class="obj-label">Objeção</div>
+            <div class="obj-q">❌ "E se o rastreador apresentar problema depois?"</div>
+            <div class="obj-a">✅ "O suporte é incluso no plano. Se houver qualquer problema técnico, acionamos o técnico para verificar sem custo adicional. O aparelho tem garantia do fabricante e substituição sem burocracia em caso de defeito."</div>
+        </div>
+        <div class="script-box" style="margin-top:18px;">💬 <strong>Script para apresentar a instalação:</strong> <em>"A instalação é simples: você agenda um horário, o técnico vai até você com o aparelho, conecta na fiação elétrica do carro de forma discreta em 40 minutinhos, testa que está funcionando no mapa ao vivo e já configura o app no seu celular. No final, você vê seu carro no mapa em tempo real. É isso — sem burocracia, sem deixar o carro em lugar nenhum."</em></div>`
+    },
+    {
+        title: 'Os 4 planos',
+        trak: `Saber qual plano indicar para o perfil certo é o segredo do consultor de alta performance! 🎯 Não force o mais caro — <strong>indique o certo</strong>. Cliente satisfeito com o plano certo renova todo mês, indica amigos e depois faz upgrade sozinho quando sentir que precisa de mais. Vamos dominar o comparativo!`,
+        html: `
+        <h3 style="margin:0 0 18px;">Comparativo completo dos 4 planos</h3>
+        <div style="overflow-x:auto;margin-bottom:20px;">
+            <table class="plan-compare">
+                <thead><tr><th>Funcionalidade</th><th>Essencial<br>R$44,90/mês</th><th>Profissional<br>R$54,90/mês</th><th>Controle Total<br>R$64,90/mês</th><th>Empresas<br>Sob consulta</th></tr></thead>
+                <tbody>
+                    <tr><td>Localização em tempo real</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+                    <tr><td>Alertas de ignição</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+                    <tr><td>Cerca eletrônica (1 área)</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+                    <tr><td>Alerta de velocidade</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+                    <tr><td>Bloqueio remoto do motor</td><td>❌</td><td>✅</td><td>✅</td><td>✅</td></tr>
+                    <tr><td>Histórico de rotas</td><td>30 dias</td><td>90 dias</td><td>180 dias</td><td>360 dias</td></tr>
+                    <tr><td>Múltiplas cercas eletrônicas</td><td>❌</td><td>3 áreas</td><td>Ilimitado</td><td>Ilimitado</td></tr>
+                    <tr><td>Relatórios de uso</td><td>Básico</td><td>Completo</td><td>Avançado</td><td>Avançado + API</td></tr>
+                    <tr><td>Múltiplos usuários no app</td><td>1 usuário</td><td>3 usuários</td><td>10 usuários</td><td>Ilimitado</td></tr>
+                    <tr><td>Suporte técnico</td><td>Chat</td><td>Chat + E-mail</td><td>Prioritário</td><td>Dedicado</td></tr>
+                    <tr><td>Notificação de bateria baixa</td><td>❌</td><td>✅</td><td>✅</td><td>✅</td></tr>
+                    <tr><td>Alerta de corte de energia</td><td>❌</td><td>✅</td><td>✅</td><td>✅</td></tr>
+                    <tr><td>Gestão de frota</td><td>❌</td><td>❌</td><td>Até 10 veículos</td><td>Ilimitado</td></tr>
+                    <tr><td>Exportação de relatórios (PDF/Excel)</td><td>❌</td><td>✅</td><td>✅</td><td>✅</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <h4 style="margin:0 0 16px;">🎯 Qual plano indicar para cada perfil?</h4>
+        <div class="feature-cards">
+            <div class="feature-card"><div class="feat-icon">🌱</div><strong>Essencial → R$44,90/mês</strong><p><strong>Perfil ideal:</strong> Primeiro rastreador, orçamento limitado, cliente que quer experimentar. Funcional para monitoramento básico familiar e localização em tempo real. <strong>Estratégia:</strong> Feche pelo Essencial e ofereça upgrade após 3 meses quando o cliente sentir o valor na prática.</p></div>
+            <div class="feature-card"><div class="feat-icon">🏍️</div><strong>Profissional → R$54,90/mês</strong><p><strong>Perfil ideal:</strong> Autônomo, motoboy, carro financiado, quem precisa de bloqueio remoto. O salto de R$10 para ter bloqueio e histórico de 90 dias é a melhor relação custo-benefício da linha. <strong>Argumento:</strong> "Por R$10 a mais, você tem o bloqueio remoto — que pode recuperar o veículo em caso de roubo."</p></div>
+            <div class="feature-card"><div class="feat-icon">👨‍👩‍👧</div><strong>Controle Total → R$64,90/mês</strong><p><strong>Perfil ideal:</strong> Família com carro novo, carro de alto valor, empresa com até 10 veículos, quem quer o melhor. Múltiplos usuários, cercas ilimitadas, histórico de 180 dias e suporte prioritário. <strong>Argumento:</strong> "Quem acabou de comprar um carro novo ou tem filho usando o veículo — o Controle Total é o que faz sentido."</p></div>
+            <div class="feature-card"><div class="feat-icon">🚛</div><strong>Empresas → Sob consulta</strong><p><strong>Perfil ideal:</strong> 3+ veículos, transportadoras, frotas corporativas. Desconto por volume progressivo, gestão ilimitada, histórico de 1 ano, API para integração com sistemas. <strong>Abordagem:</strong> Agende reunião com o dono, prepare proposta personalizada com ROI calculado em combustível e horas-motorista.</p></div>
+        </div>
+        <h4 style="margin:20px 0 12px;">💡 Estratégias de upsell — como subir o plano naturalmente</h4>
+        <div class="script-box">📈 <strong>Do Essencial para o Profissional:</strong> <em>"Você está usando há 3 meses e parece satisfeito. Sabia que por R$10 a mais você tem bloqueio remoto? Considerando o valor do seu carro, seria o melhor investimento adicional que posso te oferecer."</em></div>
+        <div class="script-box">📈 <strong>Do Profissional para o Controle Total:</strong> <em>"Vi que você configurou 3 cercas eletrônicas no plano atual. Com o Controle Total, você tem cercas ilimitadas e 180 dias de histórico. Para o seu perfil, faz muito mais sentido — e o investimento adicional é de menos de R$0,35 por dia."</em></div>
+        <div class="script-box">📈 <strong>Cliente individual para frota:</strong> <em>"Você me falou que tem mais 2 carros na empresa. Com o plano Empresas, a gente rastreia todos com desconto por volume. Posso preparar uma proposta com o custo por veículo para você ver o ROI?"</em></div>`
+    },
+    {
+        title: 'Técnicas de venda avançadas',
+        trak: `Chegou a hora de transformar todo esse conhecimento em comissão! 💰 Você já domina o produto, os perfis, os benefícios e os casos reais. Agora vem a <strong>engenharia da venda</strong> — as técnicas, os scripts e as respostas para cada objeção que você vai encontrar. <strong>Cada linha aqui você pode usar hoje mesmo na próxima conversa!</strong>`,
+        html: `
+        <h3 style="margin:0 0 14px;">As 3 perguntas de diagnóstico que abrem qualquer venda</h3>
+        <p style="color:var(--text-muted);margin:0 0 14px;">Antes de apresentar qualquer funcionalidade, faça essas perguntas. Elas revelam o perfil do cliente, identificam a dor principal e te permitem personalizar o argumento certo.</p>
+        <div class="script-box"><strong>1. "Você usa o carro sozinho ou a família usa?"</strong><br>Revela se o foco é segurança familiar (filhos, cônjuge) ou uso individual. Se houver filhos adolescentes, você já sabe qual história usar.</div>
+        <div class="script-box"><strong>2. "Você usa o carro para trabalhar — seja delivery, visitas técnicas ou transporte de carga?"</strong><br>Identifica autônomo ou empresa. Se sim, o argumento é renda e continuidade do negócio — não só segurança.</div>
+        <div class="script-box"><strong>3. "Você já passou por algum problema de segurança com veículo — ou conhece alguém que passou?"</strong><br>Ativa a dor emocional real. Quase sempre o cliente responde sim. Isso torna o risco concreto e a solução urgente.</div>
+        <h3 style="margin:24px 0 12px;">🚧 As 7 objeções mais comuns — scripts prontos para cada uma</h3>
+        <div class="objection-block">
+            <div class="obj-label">Objeção 1</div>
             <div class="obj-q">❌ "Tá caro, não tenho esse dinheiro agora."</div>
-            <div class="obj-a">✅ "R$44,90 dividido por 30 dias = menos de R$1,50 por dia. Menos que um café. Quanto você pagou de seguro esse ano? Isso aqui é prevenção real, sem franquia."</div>
+            <div class="obj-a">✅ "Entendo. Mas vamos fazer a conta: R$54,90 dividido por 30 dias = R$1,83 por dia. Menos que um café. Agora me diz: quanto vale o seu carro? [Cliente responde]. Então você está protegendo R$[valor do carro] por R$1,83 por dia. Tem proteção mais barata do que isso?"</div>
         </div>
         <div class="objection-block">
-            <div class="obj-label">Objeção</div>
+            <div class="obj-label">Objeção 2</div>
             <div class="obj-q">❌ "Vou pensar e te dou um retorno."</div>
-            <div class="obj-a">✅ "Claro! Mas o que faria você decidir com mais segurança? [Escuta]. A maioria dos clientes arrependeu de uma coisa só — de não ter contratado antes do susto."</div>
+            <div class="obj-a">✅ "Claro! Mas me conta — o que faria você decidir com mais segurança? [Escuta a resposta e responde diretamente]. Sabe o que a maioria dos meus clientes me diz depois que contrata? Que arrependeu de uma coisa só: de não ter contratado antes de ter passado por um susto. Qual é o risco de decidir amanhã?"</div>
         </div>
         <div class="objection-block">
-            <div class="obj-label">Objeção</div>
+            <div class="obj-label">Objeção 3</div>
             <div class="obj-q">❌ "Não preciso disso, minha região é tranquila."</div>
-            <div class="obj-a">✅ "Que bom! Mas furto de veículos acontece em toda região. O motoboy que usou o bloqueio remoto falou a mesma coisa — e recuperou a moto em 20 minutos."</div>
+            <div class="obj-a">✅ "Que bom que você se sente seguro! Mas os dados do seguro mostram que furto de veículo acontece em todas as regiões — não só em favelas ou periferias. Um motoboy que eu atendo disse exatamente isso antes de ter a moto roubada na rua principal do bairro dele. Com o rastreador, recuperou em 23 minutos."</div>
         </div>
         <div class="objection-block">
-            <div class="obj-label">Objeção</div>
+            <div class="obj-label">Objeção 4</div>
             <div class="obj-q">❌ "Já tenho seguro, não preciso de rastreador."</div>
-            <div class="obj-a">✅ "O seguro te paga depois — com franquia e demora. O rastreador ajuda a recuperar antes de precisar do seguro. São complementares. E muitas seguradoras dão desconto pra quem tem rastreador!"</div>
+            <div class="obj-a">✅ "O seguro é excelente — e eles são complementares. O seguro te paga depois: com burocracia, vistoria, franquia de R$3.000 a R$5.000 e semanas sem carro. O rastreador age antes: você bloqueia o motor, passa a localização para a polícia e tem 80% de chance de recuperar em horas, sem acionar o seguro. E mais: muitas seguradoras dão 10 a 20% de desconto na apólice para quem tem rastreador ativo."</div>
         </div>
-        <div class="script-box" style="margin-top:18px;">🏆 <strong>Script de fechamento:</strong><br><em>"Você me disse que tem medo de roubo e usa o carro pra trabalhar. Isso aqui resolve os dois. Com o Profissional, você tem localização ao vivo, bloqueio remoto e histórico completo por R$54,90/mês. A gente começa hoje?"</em></div>`
+        <div class="objection-block">
+            <div class="obj-label">Objeção 5</div>
+            <div class="obj-q">❌ "Meu carro é velho, não vale a pena rastrear."</div>
+            <div class="obj-a">✅ "Entendo essa lógica, mas pensa comigo: se você perdesse esse carro hoje, precisaria comprar outro. Quanto custaria mesmo um carro simples agora? [R$30k a R$60k facilmente]. O rastreador protege o que você tem — e evita um gasto muito maior. Para carro de trabalho então, vale ainda mais: a ferramenta que gera sua renda."</div>
+        </div>
+        <div class="objection-block">
+            <div class="obj-label">Objeção 6</div>
+            <div class="obj-q">❌ "Já tentei e não recuperei o carro."</div>
+            <div class="obj-a">✅ "Que situação difícil — sinto muito. Mas me conta: você tinha rastreador naquela vez? [Geralmente não]. Sem rastreador, a chance de recuperação é baixíssima. Com rastreador ativo e bloqueio remoto, a taxa de recuperação sobe drasticamente — porque a polícia age com localização em tempo real, não com um boletim de ocorrência genérico."</div>
+        </div>
+        <div class="objection-block">
+            <div class="obj-label">Objeção 7</div>
+            <div class="obj-q">❌ "Tem rastreador mais barato na internet."</div>
+            <div class="obj-a">✅ "Tem mesmo! Mas tem diferença importante: rastreador barato de plataforma genérica não tem suporte, não tem garantia de disponibilidade do servidor e muitos ficam sem sinal justamente quando mais precisam. O que a Tracktiv oferece é rastreador + plataforma + suporte + técnico certificado. Na hora que o seu carro for furtado não é hora de descobrir que o servidor caiu."</div>
+        </div>
+        <h3 style="margin:24px 0 12px;">🏆 Técnicas de fechamento que funcionam</h3>
+        <div class="script-box"><strong>Fechamento por alternativa de data:</strong> <em>"Perfeito — você precisa de proteção e eu tenho a solução certa para você. A gente pode agendar a instalação essa semana ou na próxima — quando fica melhor?"</em> [Nunca pergunte "você quer" — ofereça QUANDO, não SE.]</div>
+        <div class="script-box"><strong>Fechamento por urgência real:</strong> <em>"Entendo que você quer pensar. Mas pensa comigo: o risco de furto não espera. Cada dia sem o rastreador é um dia de exposição. Se acontecer algo amanhã, você vai se lembrar dessa conversa — e vai querer ter fechado hoje."</em></div>
+        <div class="script-box"><strong>Fechamento com história de cliente anterior:</strong> <em>"Sabe o que o último cliente que 'ia pensar' me disse depois que fechou? Disse que foi a melhor decisão de proteção que fez pelo carro — e que se arrependeu de não ter feito antes. Vou ser direto: você deveria fazer hoje."</em></div>
+        <h4 style="margin:20px 0 12px;">📞 Script de follow-up (24h após a conversa)</h4>
+        <div class="script-box">💬 <em>"Oi [Nome]! Tudo bem? Passei para checar se ficou alguma dúvida sobre o rastreador. Lembro que você mencionou [dor que identificou — ex: filho adolescente usando o carro]. Esse é exatamente o perfil que mais se beneficia. Consigo encaixar a instalação ainda essa semana. O que acha?"</em></div>
+        <div class="script-box" style="margin-top:4px;">💬 <em>"Oi [Nome], revisando aqui e calculei: para o seu carro de R$[valor], o custo diário do rastreador representa 0,0[X]% do valor protegido. É o seguro mais barato que existe. Quando posso agendar?"</em></div>`
     }
 ], 2: [
     {
@@ -1046,6 +1437,9 @@ const sampleState = {
         }
     ],
     tecnicoClients: { 'tecnico_1': ['c1', 'c2', 'c3'] },
+    clientTecnicoHistory: {
+        'c1': [{ id: 'cth_demo', tecnicoId: 'tecnico_1', tecnicoName: 'Rafael Santos', assignedAt: '2026-05-15', assignedBy: 'Gestor Tracktiv', obs: 'Cliente indicado para suporte de instalação' }]
+    },
     docSlots: {
         'cliente_demo': [
             { id: 'dslot_1', name: 'Contrato de Serviço', serviceKey: 'rastreamento', docId: 'cdoc_demo', uploadedAt: '2026-05-01', uploadedBy: 'Gestor Tracktiv' },
@@ -1055,12 +1449,65 @@ const sampleState = {
     },
     docChecklists: {
         'cliente_demo': [
-            { id: 'chk_d1', label: 'RG e CPF',                  done: true,  deadline: null,         addedAt: '2026-05-01', completedAt: '2026-05-10' },
-            { id: 'chk_d2', label: 'Comprovante de endereço',    done: false, deadline: '2026-06-30', addedAt: '2026-05-01' },
-            { id: 'chk_d3', label: 'Contrato assinado',          done: true,  deadline: null,         addedAt: '2026-05-01', completedAt: '2026-05-15' },
-            { id: 'chk_d4', label: 'Autorização de instalação',  done: false, deadline: '2026-06-15', addedAt: '2026-05-01' }
+            { id: 'chk_d1', label: 'RG e CPF', required: true, category: 'geral', instruction: 'Envie cópia de RG e CPF do titular do contrato.', done: true, status: 'concluido', deadline: null, addedBy: 'Rafael Santos', addedById: 'tecnico_1', addedAt: '2026-05-01', completedAt: '2026-05-10' },
+            { id: 'chk_d2', label: 'Comprovante de endereço', required: true, category: 'geral', instruction: 'Comprovante recente (até 3 meses). Pode ser conta de luz, água ou telefone fixo.', done: false, status: 'aguardando', deadline: '2026-06-30', addedBy: 'Rafael Santos', addedById: 'tecnico_1', addedAt: '2026-05-01' },
+            { id: 'chk_d3', label: 'Contrato assinado', required: true, category: 'rastreamento', instruction: 'Contrato de prestação de serviços devidamente assinado em todas as páginas.', done: true, status: 'concluido', deadline: null, addedBy: 'Rafael Santos', addedById: 'tecnico_1', addedAt: '2026-05-01', completedAt: '2026-05-15' },
+            { id: 'chk_d4', label: 'Autorização de instalação', required: true, category: 'rastreamento', instruction: 'Formulário de autorização para instalação do rastreador no veículo. Assine e devolva digitalizado.', done: false, status: 'enviado', deadline: '2026-06-15', addedBy: 'Rafael Santos', addedById: 'tecnico_1', addedAt: '2026-05-01', uploadedDocId: null }
         ]
-    }
+    },
+    comunicados: [
+        { id: 'com_1', autorId: 'gestor', titulo: 'Boas-vindas ao Portal!', mensagem: 'Bem-vindo ao Portal do Vendedor Tracktiv. Aqui você encontra treinamentos, clientes, comissões e muito mais. Qualquer dúvida, fale com o gestor.', prioridade: 'normal', criadoEm: '2026-05-01', lidos: [] },
+        { id: 'com_2', autorId: 'gestor', titulo: '🚀 Nova meta de maio: 10 vendas!', mensagem: 'A meta deste mês é 10 vendas por consultor. Quem atingir a meta ganha bônus de R$200. Use o simulador de ganhos para acompanhar seu progresso. Vamos nessa!', prioridade: 'importante', criadoEm: '2026-05-15', lidos: [] }
+    ],
+    produtos_config: [
+        { id: 'prod_1', nome: 'Rastreador Veicular', descricao: 'Monitoramento 24/7, alertas em tempo real e proteção completa para veículos pessoais e frotas empresariais.',
+          categoria: 'rastreamento', status: 'ativo', destaque: true, icone: '📡', adesao: 60, mensalidade: 44.90,
+          planos: [
+            { id: 'pln_1_1', nome: 'Essencial',      valor: 44.90, descricao: 'Ideal para uso pessoal básico',         itens: ['Localização em tempo real', 'Histórico 30 dias', 'Alertas de ignição', 'App mobile'] },
+            { id: 'pln_1_2', nome: 'Profissional',   valor: 54.90, descricao: 'Para autônomos e financiados',          itens: ['Tudo do Essencial', 'Bloqueio remoto', 'Histórico 90 dias', 'Alerta bateria fraca'] },
+            { id: 'pln_1_3', nome: 'Controle Total', valor: 64.90, descricao: 'Para famílias e controle avançado',     itens: ['Tudo do Profissional', 'Múltiplos usuários', 'Relatórios avançados', 'Suporte prioritário'] },
+            { id: 'pln_1_4', nome: 'Empresas',       valor: null,  descricao: 'Para frotas — orçamento personalizado', itens: ['Tudo do Controle Total', 'Gerente de conta', 'API de integração', 'SLA garantido'] }
+          ],
+          descontoAnual: 10, condicoesEspeciais: '', pagamentos: ['pix', 'boleto', 'cartao'], pagamentoPersonalizado: '', parcelasCartao: 12,
+          comissao: { tipo: 'fixo', valor: 50, recorrencia: 10 }, visibilidade: ['consultor', 'instalador'] },
+        { id: 'prod_2', nome: 'Segurança do Trabalho', descricao: 'Documentação NR, treinamentos obrigatórios e consultoria para conformidade com o MTE.',
+          categoria: 'sst', status: 'ativo', destaque: false, icone: '🦺', adesao: 0, mensalidade: 149.90,
+          planos: [
+            { id: 'pln_2_1', nome: 'Básico',      valor: 149.90, descricao: 'Até 5 funcionários',      itens: ['PCMSO', 'PGR', 'ASO', 'Suporte básico'] },
+            { id: 'pln_2_2', nome: 'Avançado',    valor: 249.90, descricao: 'Até 20 funcionários',     itens: ['Tudo do Básico', 'e-Social', 'Treinamentos NR', 'Consultoria mensal'] },
+            { id: 'pln_2_3', nome: 'Empresarial', valor: null,   descricao: '20+ funcionários',         itens: ['Tudo do Avançado', 'Assessoria jurídica', 'Auditorias', 'SLA 24h'] }
+          ],
+          descontoAnual: 15, condicoesEspeciais: '', pagamentos: ['pix', 'boleto', 'cartao'], pagamentoPersonalizado: '', parcelasCartao: 6,
+          comissao: { tipo: 'percentual', valor: 15, recorrencia: 8 }, visibilidade: ['consultor'] },
+        { id: 'prod_3', nome: 'Chatbot de Atendimento', descricao: 'Automação via WhatsApp, Instagram e outros canais. Qualificação de leads 24h sem intervenção humana.',
+          categoria: 'chatbot', status: 'ativo', destaque: false, icone: '🤖', adesao: 200, mensalidade: 89.90,
+          planos: [
+            { id: 'pln_3_1', nome: 'Starter',    valor: 89.90,  descricao: 'Para pequenos negócios',  itens: ['1 canal', 'Até 500 conversas/mês', 'Templates básicos', 'Relatórios simples'] },
+            { id: 'pln_3_2', nome: 'Business',   valor: 149.90, descricao: 'Para médios negócios',    itens: ['3 canais', 'Conversas ilimitadas', 'Agendamento automático', 'CRM integrado'] },
+            { id: 'pln_3_3', nome: 'Enterprise', valor: null,   descricao: 'Personalizado',             itens: ['Canais ilimitados', 'IA avançada', 'Integração API', 'Suporte dedicado'] }
+          ],
+          descontoAnual: 10, condicoesEspeciais: '', pagamentos: ['pix', 'cartao'], pagamentoPersonalizado: '', parcelasCartao: 12,
+          comissao: { tipo: 'percentual', valor: 20, recorrencia: 10 }, visibilidade: ['consultor'] },
+        { id: 'prod_4', nome: 'Consultoria Contábil', descricao: 'Apoio fiscal, tributário e contábil completo para micro e pequenas empresas.',
+          categoria: 'contabilidade', status: 'ativo', destaque: false, icone: '📊', adesao: 0, mensalidade: 199.90,
+          planos: [
+            { id: 'pln_4_1', nome: 'MEI/ME',       valor: 199.90, descricao: 'Para MEI e ME',           itens: ['DAS mensal', 'DEFIS', 'NF-e ilimitadas', 'Suporte WhatsApp'] },
+            { id: 'pln_4_2', nome: 'Empresarial',  valor: 349.90, descricao: 'Para EPP e Ltda',          itens: ['Tudo do MEI/ME', 'Folha de pagamento', 'eSocial', 'Planejamento tributário'] },
+            { id: 'pln_4_3', nome: 'Premium',      valor: null,   descricao: 'Personalizado',             itens: ['Tudo do Empresarial', 'BPO financeiro', 'Assessoria jurídica', 'Gerente exclusivo'] }
+          ],
+          descontoAnual: 20, condicoesEspeciais: '', pagamentos: ['pix', 'boleto', 'cartao', 'transferencia'], pagamentoPersonalizado: '', parcelasCartao: 3,
+          comissao: { tipo: 'percentual', valor: 12, recorrencia: 7 }, visibilidade: ['consultor'] },
+        { id: 'prod_5', nome: 'Sites e Marketing Digital', descricao: 'Landing pages, gestão de redes sociais e campanhas para atrair e converter leads.',
+          categoria: 'marketing', status: 'ativo', destaque: false, icone: '🌐', adesao: 500, mensalidade: 299.90,
+          planos: [
+            { id: 'pln_5_1', nome: 'Presença',    valor: 299.90, descricao: 'Presença digital básica', itens: ['Site landing page', '2 redes sociais', '4 posts/semana', 'Google Meu Negócio'] },
+            { id: 'pln_5_2', nome: 'Crescimento', valor: 499.90, descricao: 'Para crescer online',     itens: ['Tudo do Presença', 'Google Ads', 'Meta Ads', 'Relatório mensal'] },
+            { id: 'pln_5_3', nome: 'Dominância',  valor: null,   descricao: 'Resultado máximo',         itens: ['Tudo do Crescimento', 'SEO avançado', 'Funil de vendas', 'Gerente de marketing'] }
+          ],
+          descontoAnual: 10, condicoesEspeciais: '', pagamentos: ['pix', 'cartao', 'boleto'], pagamentoPersonalizado: '', parcelasCartao: 6,
+          comissao: { tipo: 'percentual', valor: 10, recorrencia: 5 }, visibilidade: ['consultor'] }
+    ],
+    formConfigs: {}
 };
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1327,7 +1774,14 @@ function loadState() {
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
-            app.state = { installations: [], coupons: [], pendingApprovals: [], productCommissions: {}, pendingUsers: [], pendingInstallations: [], photoInstallations: [], trainingProgress: {}, clientDocuments: [], clientReferrals: [], clientRedemptions: [], pointsConfig: { pointsPerRef: 100, brlPerPoint: 0.10 }, segmentForms: {}, notifications: [], goals: { default: 10, byConsultant: {} }, followUps: [], chats: {}, metaAlertsSent: {}, chamados: [], tecnicoClients: {}, docChecklists: {}, docSlots: {}, ...parsed };
+            app.state = { installations: [], coupons: [], pendingApprovals: [], productCommissions: {}, pendingUsers: [], pendingInstallations: [], photoInstallations: [], trainingProgress: {}, clientDocuments: [], clientReferrals: [], clientRedemptions: [], pointsConfig: { pointsPerRef: 100, brlPerPoint: 0.10 }, segmentForms: {}, notifications: [], goals: { default: 10, byConsultant: {} }, followUps: [], chats: {}, metaAlertsSent: {}, chamados: [], tecnicoClients: {}, clientTecnicoHistory: {}, docChecklists: {}, docSlots: {}, comunicados: [], produtos_config: [], formConfigs: {}, ...parsed };
+            if (!app.state.comunicados || app.state.comunicados.length === 0) {
+                app.state.comunicados = JSON.parse(JSON.stringify(sampleState.comunicados || []));
+            }
+            if (!app.state.produtos_config || app.state.produtos_config.length === 0) {
+                app.state.produtos_config = JSON.parse(JSON.stringify(sampleState.produtos_config || []));
+            }
+            if (!app.state.formConfigs) app.state.formConfigs = {};
             // Migração: garante que o usuário demo cliente existe quando não há nenhum cliente cadastrado
             const users = app.state.users || [];
             if (!users.some(u => u.role === 'cliente')) {
@@ -1344,14 +1798,23 @@ function loadState() {
             (app.state.users || []).forEach(u => {
                 if (u.role === 'cliente' && !u.contractedServices) u.contractedServices = [];
             });
-            // Migração: garante usuário demo técnico se ainda não existir
-            const demoTecnico = sampleState.users.find(u => u.role === 'tecnico');
-            if (demoTecnico && !(app.state.users || []).some(u => u.email === demoTecnico.email)) {
-                app.state.users = [...(app.state.users || []), JSON.parse(JSON.stringify(demoTecnico))];
-            }
+            // Migração: força-sincroniza usuários demo (garante role e senha corretos)
+            const demoUsers = sampleState.users.filter(u => ['gestor','consultor','instalador','tecnico','cliente'].includes(u.role));
+            demoUsers.forEach(demo => {
+                app.state.users = (app.state.users || []).filter(u => u.id !== demo.id && u.email !== demo.email);
+                app.state.users.push(JSON.parse(JSON.stringify(demo)));
+            });
             // Migração: garante campos chamados e tecnicoClients
             if (!app.state.chamados) app.state.chamados = JSON.parse(JSON.stringify(sampleState.chamados || []));
             if (!app.state.tecnicoClients) app.state.tecnicoClients = JSON.parse(JSON.stringify(sampleState.tecnicoClients || {}));
+            if (!app.state.clientTecnicoHistory) app.state.clientTecnicoHistory = {};
+            // Migração: normaliza campos dos itens de checklist
+            Object.values(app.state.docChecklists || {}).forEach(items => {
+                items.forEach(item => {
+                    if (!item.status) item.status = item.done ? 'concluido' : 'aguardando';
+                    if (item.required === undefined) item.required = true;
+                });
+            });
         } catch (e) {
             app.state = JSON.parse(JSON.stringify(sampleState));
         }
@@ -1415,6 +1878,7 @@ function renderNavigation() {
                 const isActive = app.navState.activeItemId === child.id;
                 btn.className = 'tab tab-child' + (isActive ? ' active' : '');
                 btn.type = 'button';
+                btn.dataset.navId = child.id;
                 btn.innerHTML = `<span style="font-size:1rem;flex-shrink:0;">${child.icon || ''}</span><span>${esc(child.label)}</span>`;
                 btn.addEventListener('click', () => navItemClick(child, group));
                 tabs.appendChild(btn);
@@ -1428,6 +1892,7 @@ function renderNavigation() {
             const isActive = app.navState.activeItemId === item.id;
             btn.className = 'tab' + (isActive ? ' active' : '');
             btn.type = 'button';
+            btn.dataset.navId = item.id;
             const icon = item.icon || NAV_ICONS[item.section || ''] || '';
             if (item.children) {
                 btn.innerHTML = `<span style="font-size:1.1rem;flex-shrink:0;">${icon}</span><span>${esc(item.label)}</span><span class="nav-chevron">›</span>`;
@@ -1454,7 +1919,7 @@ function navItemClick(item, parent) {
 
     // Build breadcrumb path
     const role = app.currentUser.role;
-    const roleLabel = role === 'gestor' ? 'Gestor' : role === 'consultor' ? 'Consultor' : 'Instalador';
+    const roleLabel = role === 'gestor' ? 'Gestor' : role === 'consultor' ? 'Consultor' : role === 'tecnico' ? 'Técnico' : 'Instalador';
     const path = [{ label: roleLabel, groupId: null }];
     if (parent) {
         path.push({ label: parent.label, groupId: parent.id });
@@ -1962,15 +2427,40 @@ function renderProducts() {
     const grid = document.getElementById('productsGrid');
     if (!grid) return;
     grid.innerHTML = '';
-    const visibleProducts = app.currentUser?.role === 'instalador'
-        ? productList.filter(p => p.title === 'Rastreador Veicular')
-        : productList;
-    visibleProducts.forEach(p => {
-        const card = document.createElement('article');
-        card.className = 'product-card';
-        card.innerHTML = `<strong>${esc(p.title)}</strong><span>${esc(p.subtitle)}</span><p>${esc(p.description)}</p>`;
-        grid.appendChild(card);
-    });
+    const role = app.currentUser?.role;
+    const configProds = getProdutosVisiveis(role);
+    const visibleProducts = configProds.length > 0 ? configProds : (
+        role === 'instalador' ? productList.filter(p => p.title === 'Rastreador Veicular') : productList
+    );
+    if (configProds.length > 0) {
+        const sorted = [...visibleProducts].sort((a, b) => (b.destaque ? 1 : 0) - (a.destaque ? 1 : 0));
+        sorted.forEach(p => {
+            const catInfo = PROD_CATEGORIES.find(c => c.key === p.categoria) || {};
+            const minPlan = (p.planos || []).filter(pl => pl.valor).reduce((min, pl) => (!min || pl.valor < min.valor) ? pl : min, null);
+            const card = document.createElement('article');
+            card.className = 'product-card';
+            card.innerHTML = `
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                    <span style="font-size:1.8rem;">${p.icone || '📦'}</span>
+                    <div>
+                        <strong>${esc(p.nome)}${p.destaque ? ' <span class="badge-destaque">★</span>' : ''}</strong>
+                        <span class="prod-cat-badge" style="display:block;margin-top:2px;">${catInfo.icon || ''} ${catInfo.label || p.categoria}</span>
+                    </div>
+                </div>
+                <p style="font-size:0.85rem;color:var(--text-soft);margin:0 0 10px;">${esc(p.descricao)}</p>
+                ${minPlan ? `<div style="font-size:0.82rem;color:var(--primary);font-weight:600;">A partir de R$ ${formatCurrency(minPlan.valor)}/mês</div>` : ''}
+                ${p.adesao ? `<div style="font-size:0.78rem;color:var(--text-muted);">Adesão: R$ ${formatCurrency(p.adesao)}</div>` : ''}
+                ${(p.planos||[]).length > 0 ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">${(p.planos||[]).length} planos disponíveis</div>` : ''}`;
+            grid.appendChild(card);
+        });
+    } else {
+        visibleProducts.forEach(p => {
+            const card = document.createElement('article');
+            card.className = 'product-card';
+            card.innerHTML = `<strong>${esc(p.title)}</strong><span>${esc(p.subtitle)}</span><p>${esc(p.description)}</p>`;
+            grid.appendChild(card);
+        });
+    }
 }
 
 function renderInformativos() {
@@ -3275,9 +3765,15 @@ function showApp() {
         }
     }
 
+    // Marca o role no DOM para fins de CSS e debug
+    const appScreenEl = document.getElementById('appScreen');
+    if (appScreenEl) appScreenEl.dataset.role = role;
+
+    // Limpa todos os active antes de qualquer render
+    document.querySelectorAll('#appScreen .section').forEach(s => s.classList.remove('active'));
+
     renderNavigation();
     renderBreadcrumb();
-    showActiveSection();
 
     // Inject hamburger button se não existir
     let hb = document.getElementById('hamburgerBtn');
@@ -3312,6 +3808,17 @@ function showApp() {
     if (chip) chip.innerHTML = `<div class="user-avatar">${esc(uname.charAt(0).toUpperCase())}</div><strong>${esc(uname)}</strong>`;
 
     renderAppViews();
+
+    // Aplica a seção correta DEPOIS de todo o rendering — garantia final
+    if (firstItem && firstItem.section) {
+        showSection(firstItem.section);
+    } else {
+        showActiveSection();
+    }
+
+    if (['consultor', 'instalador'].includes(app.currentUser.role) && !isTourCompleted(app.currentUser.id)) {
+        setTimeout(startTour, 600);
+    }
 }
 
 function renderAppViews() {
@@ -3319,32 +3826,50 @@ function renderAppViews() {
     if (app.activeView === 'dynamicContent') return;
     updateNotifBadge();
 
-    renderGestorStats();
-    renderConsultorTable();
-    renderInstaladorDashTable();
-    renderPendingApprovals();
-    renderManageConsultors();
-    renderGestorInstaladores();
-    renderGestorCupons();
-    renderConsultorDashboard();
-    renderFunnelBoard();
-    renderClientTable();
-    renderProducts();
-    renderTrainingModules();
-    renderSimulador();
-    renderInstaladorDashboard();
-    renderInstaladorFunnelBoard();
-    renderInstaladorClientes();
-    renderInstaladorFotos();
-    renderInstaladorExtrato();
-    renderGestorClientesPortal();
-    // Reset informativos so they re-render with updated data
-    ['consultorInformativosArea', 'instaladorInformativosArea'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) { delete el.dataset.rendered; }
-    });
-    if (app.activeView === 'consultorInformativos') renderInformativos();
-    if (app.activeView === 'instaladorInformativos') renderInstaladorInformativos();
+    const role = app.currentUser?.role;
+
+    if (role === 'gestor') {
+        renderGestorStats();
+        renderConsultorTable();
+        renderInstaladorDashTable();
+        renderPendingApprovals();
+        renderManageConsultors();
+        renderGestorInstaladores();
+        renderGestorCupons();
+        renderGestorClientesPortal();
+    }
+
+    if (role === 'consultor') {
+        renderConsultorDashboard();
+        renderFunnelBoard();
+        renderClientTable();
+        renderSimulador();
+        const ciEl = document.getElementById('consultorInformativosArea');
+        if (ciEl) delete ciEl.dataset.rendered;
+        if (app.activeView === 'consultorInformativos') renderInformativos();
+    }
+
+    if (role === 'instalador') {
+        renderInstaladorDashboard();
+        renderInstaladorFunnelBoard();
+        renderInstaladorClientes();
+        renderInstaladorFotos();
+        renderInstaladorExtrato();
+        const iiEl = document.getElementById('instaladorInformativosArea');
+        if (iiEl) delete iiEl.dataset.rendered;
+        if (app.activeView === 'instaladorInformativos') renderInstaladorInformativos();
+    }
+
+    if (role === 'consultor' || role === 'instalador') {
+        renderProducts();
+        renderTrainingModules();
+    }
+
+    if (role === 'tecnico') {
+        renderTecnicoDashboard();
+        renderTecnicoClientes();
+        renderTecnicoChamados();
+    }
 }
 
 function openClientProfile(clientId) {
@@ -3352,6 +3877,11 @@ function openClientProfile(clientId) {
     if (!c) return;
     const ph = (c.phone || '').replace(/\D/g, '');
     const history = c.contactHistory || [];
+    const isGestor = app.currentUser?.role === 'gestor';
+    const tClients = app.state.tecnicoClients || {};
+    const assignedTecId = Object.keys(tClients).find(tId => (tClients[tId] || []).includes(clientId));
+    const assignedTec = assignedTecId ? (app.state.users || []).find(u => u.id === assignedTecId) : null;
+    const tecHistory = ((app.state.clientTecnicoHistory || {})[clientId] || []);
     const historyHtml = history.length
         ? history.slice().reverse().map(h => `
             <div class="history-entry">
@@ -3367,7 +3897,30 @@ function openClientProfile(clientId) {
             ${c.email ? `<a href="mailto:${esc(c.email)}" class="profile-action-btn">✉️ Email</a>` : ''}
             <button type="button" class="profile-action-btn" id="profileEditBtn">✏️ Editar</button>
             <button type="button" class="profile-action-btn" id="profileFormBtn">📝 Formulário</button>
+            ${isGestor ? `<button type="button" class="profile-action-btn" id="profileEncaminharBtn">🔧 Encaminhar para Técnico</button>` : ''}
         </div>
+
+        ${isGestor ? `
+        <div class="profile-section">
+            <strong>Técnico responsável</strong>
+            <div class="profile-grid" style="margin-top:10px;">
+                ${assignedTec
+                    ? `<div class="profile-field"><span>Técnico</span><strong>🔧 ${esc(assignedTec.name)}</strong></div>
+                       <div class="profile-field"><span>Especialidade</span><strong>${esc(assignedTec.specialty || '—')}</strong></div>`
+                    : `<div class="profile-field" style="grid-column:1/-1"><span style="color:var(--text-soft);">Nenhum técnico atribuído</span></div>`}
+            </div>
+            ${tecHistory.length > 0 ? `
+            <details style="margin-top:10px;">
+                <summary style="cursor:pointer;font-size:0.83rem;color:var(--text-soft);">Histórico (${tecHistory.length})</summary>
+                <div style="margin-top:8px;">
+                    ${tecHistory.slice().reverse().map(h => `
+                        <div class="history-entry">
+                            <span class="history-date">${h.assignedAt}</span>
+                            <p class="history-text">Atribuído a <strong>${esc(h.tecnicoName)}</strong> por ${esc(h.assignedBy)}${h.obs ? ` — ${esc(h.obs)}` : ''}</p>
+                        </div>`).join('')}
+                </div>
+            </details>` : ''}
+        </div>` : ''}
 
         <div class="profile-section">
             <strong>Dados pessoais</strong>
@@ -3427,6 +3980,106 @@ function openClientProfile(clientId) {
     document.getElementById('profileScoreBtn').addEventListener('click', () => { closeModal(); openScoreModal(clientId); });
     document.getElementById('saveNoteBtn').addEventListener('click', () => handleAddNote(clientId));
     document.getElementById('profileFormBtn')?.addEventListener('click', () => { closeModal(); openSegmentFormModal(clientId); });
+    document.getElementById('profileEncaminharBtn')?.addEventListener('click', () => { closeModal(); openEncaminharTecnicoModal(clientId); });
+}
+
+/* ─── FEATURE 1: ENCAMINHAMENTO DE CLIENTE PARA TÉCNICO ─── */
+
+function openEncaminharTecnicoModal(clientId) {
+    const client = (app.state.clients || []).find(x => x.id === clientId);
+    if (!client) return;
+    const tecnicos = (app.state.users || []).filter(u => u.role === 'tecnico');
+    const tClients = app.state.tecnicoClients || {};
+    const currentTecId = Object.keys(tClients).find(tId => (tClients[tId] || []).includes(clientId));
+    const history = ((app.state.clientTecnicoHistory || {})[clientId] || []);
+
+    const tecRows = tecnicos.length === 0
+        ? '<p class="text-muted">Nenhum técnico cadastrado. Vá em Técnicos → + Novo técnico primeiro.</p>'
+        : tecnicos.map(t => {
+            const clientCount = (tClients[t.id] || []).length;
+            const openChams = (app.state.chamados || []).filter(ch => ch.tecnicoId === t.id && ['Aberto','Em andamento'].includes(ch.status)).length;
+            const isCurrent = t.id === currentTecId;
+            return `
+                <label style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid ${isCurrent ? 'var(--primary)' : 'var(--border)'};border-radius:10px;cursor:pointer;margin-bottom:8px;background:${isCurrent ? 'rgba(99,102,241,0.04)' : 'transparent'};transition:border-color 0.15s;">
+                    <input type="radio" name="encTecnico" value="${esc(t.id)}" ${isCurrent ? 'checked' : ''} style="accent-color:var(--primary);width:16px;height:16px;flex-shrink:0;">
+                    <div style="flex:1;">
+                        <div style="font-weight:600;">${esc(t.name)}${isCurrent ? ' <span style="font-size:0.75rem;color:var(--primary);font-weight:400;">(atual)</span>' : ''}</div>
+                        <div style="font-size:0.8rem;color:var(--text-soft);margin-top:2px;">${esc(t.specialty || 'Técnico')} · <strong>${clientCount}</strong> cliente${clientCount !== 1 ? 's' : ''} · <strong>${openChams}</strong> chamado${openChams !== 1 ? 's' : ''} aberto${openChams !== 1 ? 's' : ''}</div>
+                    </div>
+                </label>`;
+        }).join('');
+
+    const histHtml = history.length === 0 ? '' : `
+        <details style="margin-top:16px;">
+            <summary style="cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--text-soft);">Histórico de atribuições (${history.length})</summary>
+            <div style="margin-top:8px;">
+                ${history.slice().reverse().slice(0,5).map(h => `
+                    <div class="history-entry">
+                        <span class="history-date">${h.assignedAt}</span>
+                        <p class="history-text">Atribuído a <strong>${esc(h.tecnicoName)}</strong> por ${esc(h.assignedBy)}${h.obs ? ` — ${esc(h.obs)}` : ''}</p>
+                    </div>`).join('')}
+            </div>
+        </details>`;
+
+    showModal(`Encaminhar: ${esc(client.name)}`, `
+        <div class="field" style="margin-bottom:16px;">
+            <label style="font-weight:600;margin-bottom:10px;display:block;">Selecione o técnico responsável</label>
+            ${tecRows}
+        </div>
+        <div class="field">
+            <label>Observação (opcional)</label>
+            <input id="encObs" type="text" placeholder="Ex: Instalação agendada para amanhã" style="width:100%;">
+        </div>
+        ${histHtml}
+        <div class="actions" style="margin-top:16px;">
+            <button class="primary-btn" onclick="saveEncaminharTecnico('${esc(clientId)}')">Confirmar atribuição</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+}
+
+function saveEncaminharTecnico(clientId) {
+    const radios = document.querySelectorAll('input[name="encTecnico"]');
+    const selected = Array.from(radios).find(r => r.checked);
+    if (!selected) { alert('Selecione um técnico.'); return; }
+    const newTecId = selected.value;
+    const obs = (document.getElementById('encObs')?.value || '').trim();
+    const tecnico = (app.state.users || []).find(u => u.id === newTecId);
+    const client = (app.state.clients || []).find(x => x.id === clientId);
+    if (!tecnico || !client) return;
+
+    // Remove client from all current assignments
+    if (!app.state.tecnicoClients) app.state.tecnicoClients = {};
+    Object.keys(app.state.tecnicoClients).forEach(tId => {
+        app.state.tecnicoClients[tId] = (app.state.tecnicoClients[tId] || []).filter(cId => cId !== clientId);
+    });
+
+    // Assign to selected tecnico
+    if (!app.state.tecnicoClients[newTecId]) app.state.tecnicoClients[newTecId] = [];
+    if (!app.state.tecnicoClients[newTecId].includes(clientId)) {
+        app.state.tecnicoClients[newTecId].push(clientId);
+    }
+
+    // Record history
+    if (!app.state.clientTecnicoHistory) app.state.clientTecnicoHistory = {};
+    if (!app.state.clientTecnicoHistory[clientId]) app.state.clientTecnicoHistory[clientId] = [];
+    app.state.clientTecnicoHistory[clientId].push({
+        id: `cth_${Date.now()}`, tecnicoId: newTecId, tecnicoName: tecnico.name,
+        assignedAt: todayISO(), assignedBy: app.currentUser.name, obs
+    });
+
+    // Notify tecnico
+    addNotification(newTecId, 'client_assigned', `👤 Novo cliente atribuído a você: ${client.name}`, { render: 'renderTecnicoClientes' });
+
+    // Notify client user (if exists)
+    const clientUser = (app.state.users || []).find(u => u.clientId === clientId && u.role === 'cliente');
+    if (clientUser) {
+        addNotification(clientUser.id, 'tecnico_assigned', `🔧 Técnico responsável: ${tecnico.name}`, null);
+    }
+
+    saveState();
+    closeModal();
+    renderGestorTecnicos();
 }
 
 function handleAddNote(clientId) {
@@ -3493,6 +4146,7 @@ function openConsultorModal(id = null) {
     `);
     document.getElementById('cancelConsultorBtn').addEventListener('click', closeModal);
     document.getElementById('consultorForm').addEventListener('submit', handleConsultorSave);
+    applyFormConfig('consultor');
 }
 
 function handleConsultorSave(e) {
@@ -3536,8 +4190,13 @@ function deleteConsultor(id) {
 function openClientModal(id = null) {
     app.editingClientId = id;
     const ed = id ? (app.state.clients || []).find(c => c.id === id) : null;
-    const planOpts = planList.map(p => `<option value="${p.name}" ${(ed?.plan === p.name) ? 'selected' : ''}>${p.name}${p.price ? ' — R$ ' + p.price.toFixed(2).replace('.',',') : ' (personalizado)'}</option>`).join('');
-    const prodOpts = productList.map(p => `<option value="${p.title}" ${ed?.product === p.title ? 'selected' : ''}>${p.title}</option>`).join('');
+    const visProds = getProdutosVisiveis(app.currentUser?.role);
+    const activeProdOpts = visProds.length > 0
+        ? visProds.map(p => `<option value="${esc(p.nome)}" ${ed?.product === p.nome ? 'selected' : ''}>${esc(p.icone || '')} ${esc(p.nome)}</option>`).join('')
+        : productList.map(p => `<option value="${esc(p.title)}" ${ed?.product === p.title ? 'selected' : ''}>${esc(p.title)}</option>`).join('');
+    const selectedProduct = ed?.product || (visProds[0]?.nome || productList[0]?.title || '');
+    const planOpts = buildPlanOptsForProduct(selectedProduct, ed?.plan);
+    const prodOpts = activeProdOpts;
     const originChks = originOptions.map(o => `
         <label class="checkbox-label">
             <input type="checkbox" name="clientOrigin" value="${o}" ${(ed?.origins||[]).includes(o)?'checked':''} />
@@ -3583,11 +4242,23 @@ function openClientModal(id = null) {
         </form>
     `);
     document.getElementById('cancelClientBtn').addEventListener('click', closeModal);
+    document.getElementById('clProduct').addEventListener('change', function() {
+        const planSel = document.getElementById('clPlan');
+        planSel.innerHTML = buildPlanOptsForProduct(this.value, '');
+        const firstOpt = planSel.options[0];
+        if (firstOpt) {
+            const plans = getPlanosProduto(this.value);
+            const mp = plans.find(p => p.nome === firstOpt.value);
+            if (mp && mp.valor) document.getElementById('clFee').value = mp.valor.toFixed(2);
+        }
+    });
     document.getElementById('clPlan').addEventListener('change', function() {
-        const p = planList.find(p => p.name === this.value);
-        if (p && p.price !== null) document.getElementById('clFee').value = p.price.toFixed(2);
+        const plans = getPlanosProduto(document.getElementById('clProduct').value);
+        const p = plans.find(p => p.nome === this.value);
+        if (p && p.valor !== null) document.getElementById('clFee').value = p.valor.toFixed(2);
     });
     document.getElementById('clientForm').addEventListener('submit', handleClientSave);
+    applyFormConfig('cliente');
 }
 
 function handleClientSave(e) {
@@ -3599,6 +4270,13 @@ function handleClientSave(e) {
     const fee     = Number(document.getElementById('clFee').value);
     if (!name || !phone || !fee) { err.textContent = 'Nome, telefone e mensalidade são obrigatórios.'; return; }
     const origins = [...document.querySelectorAll('input[name="clientOrigin"]:checked')].map(i => i.value);
+    const customFields = {};
+    getFormFields('cliente').filter(f => !f.system && f.active !== false).forEach(f => {
+        if (f.type === 'checkbox') { const el = document.getElementById(`cf_${f.id}`); if (el) customFields[f.id] = el.checked; }
+        else if (f.type === 'multicheck') { customFields[f.id] = [...document.querySelectorAll(`input[name="cfm_${f.id}"]:checked`)].map(i => i.value); }
+        else if (f.type === 'radio') { const el = document.querySelector(`input[name="cf_${f.id}"]:checked`); if (el) customFields[f.id] = el.value; }
+        else { const el = document.getElementById(`cf_${f.id}`); if (el) customFields[f.id] = el.value.trim(); }
+    });
     const fields = {
         name, phone,
         isWhatsapp: document.getElementById('clWa').checked,
@@ -3614,7 +4292,8 @@ function handleClientSave(e) {
         need:     document.getElementById('clNeed').value.trim(),
         origins,
         coupon:   document.getElementById('clCoupon').value.trim().toUpperCase(),
-        notes:    document.getElementById('clNotes').value.trim()
+        notes:    document.getElementById('clNotes').value.trim(),
+        ...(Object.keys(customFields).length ? { customFields } : {})
     };
     if (app.editingClientId) {
         const c = app.state.clients.find(c => c.id === app.editingClientId);
@@ -3695,6 +4374,7 @@ function openInstaladorModal(id = null) {
     `);
     document.getElementById('cancelInstaladorBtn').addEventListener('click', closeModal);
     document.getElementById('instaladorForm').addEventListener('submit', handleInstaladorSave);
+    applyFormConfig('instalador');
 }
 
 function handleInstaladorSave(e) {
@@ -4018,10 +4698,21 @@ function handleLogin(e) {
     const pass  = document.getElementById('passwordInput').value.trim();
     const errEl = document.getElementById('loginError');
     errEl.textContent = '';
-    const user = (app.state.users || []).find(u => u.email === email && u.password === pass);
+    const VALID_ROLES = ['gestor', 'consultor', 'instalador', 'tecnico', 'cliente'];
+    const user = (app.state.users || []).find(u =>
+        u.email === email && u.password === pass && VALID_ROLES.includes(u.role)
+    );
     if (!user) { errEl.textContent = 'E-mail ou senha incorretos.'; return; }
-    app.currentUser = user;
-    if (user.role === 'cliente') { showClientePortal(); } else { showApp(); }
+    // Cópia defensiva para evitar mutação acidental
+    app.currentUser = { ...user };
+    if (app.currentUser.role === 'cliente') {
+        showClientePortal();
+    } else {
+        showApp();
+        if (['consultor', 'instalador', 'tecnico'].includes(app.currentUser.role)) {
+            setTimeout(checkUrgentePopup, 400);
+        }
+    }
 }
 
 function handleDemo() {
@@ -4029,7 +4720,7 @@ function handleDemo() {
     saveState();
     document.getElementById('emailInput').value    = 'cliente@tracktiv.com';
     document.getElementById('passwordInput').value = 'Cliente123';
-    document.getElementById('loginMessage').textContent = 'Demo carregado. Gestor: gestor@tracktiv.com / Gestor123 · Consultor: consultor@tracktiv.com / Consultor123 · Cliente: cliente@tracktiv.com / Cliente123';
+    document.getElementById('loginMessage').textContent = 'Demo carregado. Gestor: gestor@tracktiv.com / Gestor123 · Consultor: consultor@tracktiv.com / Consultor123 · Cliente: cliente@tracktiv.com / Cliente123 · Técnico: tecnico@tracktiv.com / Tecnico123';
     document.getElementById('loginError').textContent   = '';
 }
 
@@ -4091,7 +4782,7 @@ function renderClienteBreadcrumb() {
     const bar = document.getElementById('clienteBreadcrumb');
     if (!bar) return;
     const ns = app.clienteNavState;
-    const groupLabels = { servicos: '📦 Meus Serviços', indicacao: '🎁 Indicações', documentos: '📁 Documentos' };
+    const groupLabels = { servicos: '📦 Meus Serviços', indicacao: '🎁 Indicações', documentos: '📁 Documentos', biblioteca: '📚 Biblioteca', requeridos: '📋 Requeridos' };
     const subItemLabels = {
         form: '📝 Formulário', docs: '📎 Documentos', veiculos: '🚗 Veículos',
         codigo: '🔗 Meu Código', minhas: '📋 Minhas Indicações', pontos: '⭐ Meus Pontos', resgatar: '🎁 Resgatar',
@@ -4156,6 +4847,12 @@ function _clienteRenderCurrentView() {
     } else if (ns.group === 'documentos') {
         showClienteSection('clienteFormulario');
         renderClienteDocsList(ns.subItem || 'todos');
+    } else if (ns.group === 'biblioteca') {
+        showClienteSection('clienteDynamic');
+        renderClienteBiblioteca();
+    } else if (ns.group === 'requeridos') {
+        showClienteSection('clienteDynamic');
+        renderClienteChecklistBoard();
     }
 }
 
@@ -4233,6 +4930,32 @@ function renderClienteNav() {
         tabs.appendChild(mkBtn('📁', 'Documentos', true, ns.group === 'documentos', false, () => {
             clienteNavTo(1, 'documentos');
         }));
+        const bibUnread = _docUnreadCount(u.clientId, u.id);
+        tabs.appendChild(mkBtn('📚', 'Biblioteca', false, ns.group === 'biblioteca', false, () => {
+            clienteNavTo(1, 'biblioteca');
+        }));
+        if (bibUnread > 0) {
+            const lastBtn = tabs.lastElementChild;
+            if (lastBtn) {
+                const badge = document.createElement('span');
+                badge.className = 'nav-badge'; badge.style.background = '#dc3545'; badge.style.marginLeft = 'auto';
+                badge.textContent = bibUnread;
+                lastBtn.appendChild(badge);
+            }
+        }
+        const chkPending = _chkPendingCount(u.id);
+        tabs.appendChild(mkBtn('📋', 'Requeridos', false, ns.group === 'requeridos', false, () => {
+            clienteNavTo(1, 'requeridos');
+        }));
+        if (chkPending > 0) {
+            const lastBtn = tabs.lastElementChild;
+            if (lastBtn) {
+                const badge = document.createElement('span');
+                badge.className = 'nav-badge'; badge.style.background = '#dc3545'; badge.style.marginLeft = 'auto';
+                badge.textContent = chkPending;
+                lastBtn.appendChild(badge);
+            }
+        }
 
     } else if (ns.depth === 1 && ns.group === 'servicos') {
         tabs.appendChild(mkBack('Meus Serviços', () => clienteNavTo(0)));
@@ -4364,7 +5087,7 @@ function renderClienteHome() {
     });
     const hasIncomplete = servicesProgress.some(s => s.progress < 100);
     const chkItems = (app.state.docChecklists || {})[u.id] || [];
-    const chkDone = chkItems.filter(i => i.done).length;
+    const chkDone = chkItems.filter(i => _chkStatus(i) === 'concluido').length;
     const chkTotal = chkItems.length;
     const chkPct = chkTotal > 0 ? Math.round(chkDone / chkTotal * 100) : 100;
     const hasPendingDocs = chkTotal > 0 && chkDone < chkTotal;
@@ -4411,16 +5134,23 @@ function renderClienteHome() {
                 <div class="seg-progress-track"><div class="seg-progress-fill" style="width:${chkPct}%;${chkPct === 100 ? 'background:linear-gradient(90deg,#10b981,#059669);' : ''}"></div></div>
             </div>
             ${hasPendingDocs ? `<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:0.85rem;">🔴 Você tem <strong>${chkTotal - chkDone}</strong> documento${chkTotal - chkDone > 1 ? 's' : ''} pendente${chkTotal - chkDone > 1 ? 's' : ''}. Entre em contato com seu consultor para mais informações.</div>` : `<div class="info-box" style="margin-top:10px;background:#e6f7ec;border-color:#a3d9b5;color:#1a6e35;margin-bottom:14px;">✅ Todos os documentos foram entregues!</div>`}
-            ${chkItems.map(item => `
-                <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${item.done ? '#f0faf5' : '#fff8f8'};border:1px solid ${item.done ? '#a3d9b5' : '#f5c6cb'};">
-                    <span style="font-size:1.1rem;flex-shrink:0;">${item.done ? '✅' : '🔴'}</span>
+            ${chkItems.slice(0,4).map(item => {
+                const st = _chkStatus(item);
+                const icon = st === 'concluido' ? '✅' : st === 'enviado' ? '📤' : st === 'recusado' ? '❌' : '⏳';
+                const bg = st === 'concluido' ? '#f0faf5' : '#fff8f8';
+                const bd = st === 'concluido' ? '#a3d9b5' : '#f5c6cb';
+                const badgeLabel = st === 'concluido' ? 'Aprovado' : st === 'enviado' ? 'Enviado' : st === 'recusado' ? 'Recusado' : 'Pendente';
+                const badgeCls = st === 'concluido' ? 'badge-ok' : st === 'enviado' ? 'badge-warn' : 'badge-warn';
+                return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:6px;background:${bg};border:1px solid ${bd};">
+                    <span style="font-size:1.1rem;flex-shrink:0;">${icon}</span>
                     <div style="flex:1;min-width:0;">
-                        <div style="${item.done ? 'text-decoration:line-through;color:var(--text-soft);' : ''}font-size:0.9rem;font-weight:600;">${esc(item.label)}</div>
+                        <div style="${st === 'concluido' ? 'text-decoration:line-through;color:var(--text-soft);' : ''}font-size:0.9rem;font-weight:600;">${esc(item.label)}</div>
                         ${item.deadline ? `<small style="color:var(--text-soft);">Prazo: ${item.deadline}</small>` : ''}
-                        ${item.done && item.completedAt ? `<small style="color:#10b981;"> · Entregue em ${item.completedAt}</small>` : ''}
                     </div>
-                    <span class="badge ${item.done ? 'badge-ok' : 'badge-warn'}" style="font-size:0.75rem;flex-shrink:0;">${item.done ? 'Entregue' : 'Pendente'}</span>
-                </div>`).join('')}
+                    <span class="badge ${badgeCls}" style="font-size:0.75rem;flex-shrink:0;">${badgeLabel}</span>
+                </div>`;
+            }).join('')}
+            ${chkItems.length > 4 ? `<button class="secondary-btn" style="width:100%;margin-top:4px;" onclick="clienteNavTo(1,'requeridos')">Ver todos (${chkItems.length})</button>` : ''}
         </div>` : ''}
         <div class="card">
             <h3 style="margin:0 0 12px;">Acesso rápido</h3>
@@ -4428,6 +5158,7 @@ function renderClienteHome() {
                 ${servicesProgress.map(s => `<button class="secondary-btn" onclick="clienteNavTo(2,'servicos','${s.key}')">${s.icon} ${esc(s.label)}</button>`).join('')}
                 <button class="secondary-btn" onclick="clienteNavTo(1,'indicacao')">🎁 Indicação</button>
                 <button class="secondary-btn" onclick="clienteNavTo(1,'documentos')">📁 Documentos</button>
+                ${chkTotal > 0 ? `<button class="secondary-btn${_chkPendingCount(u.id) > 0 ? '" style="border-color:#dc3545;color:#dc3545;' : '"'} onclick="clienteNavTo(1,'requeridos')">📋 Requeridos${_chkPendingCount(u.id) > 0 ? ` (${_chkPendingCount(u.id)})` : ''}</button>` : ''}
             </div>
         </div>`}`;
 }
@@ -4823,12 +5554,11 @@ function openDocUploadModal(clienteUserId) {
     const cu = (app.state.users || []).find(u => u.id === clienteUserId);
     if (!cu) return;
     const docs = (app.state.clientDocuments || []).filter(d => d.clientId === cu.clientId);
-    const catOpts = [
-        { value: 'rastreamento', label: 'Rastreamento Veicular' },
-        { value: 'sst',          label: 'Segurança do Trabalho' },
-        { value: 'contabilidade',label: 'Contabilidade' },
-        { value: 'outros',       label: 'Outros Serviços' }
-    ].map(c => `<option value="${c.value}">${c.label}</option>`).join('');
+    const catOpts = DOC_LIBRARY_TREE.map(cat =>
+        `<optgroup label="${cat.icon} ${cat.label}">
+            ${cat.folders.map(f => `<option value="${cat.key}|${f}">${f}</option>`).join('')}
+        </optgroup>`
+    ).join('');
     showModal(`Documentos — ${esc(cu.name)}`, `
         <div style="margin-bottom:20px;">
             <h4 style="margin:0 0 12px;">Documentos atuais (${docs.length})</h4>
@@ -4844,7 +5574,7 @@ function openDocUploadModal(clienteUserId) {
         <h4 style="margin:0 0 12px;">Adicionar documento</h4>
         <div class="form-grid">
             <div class="field"><label>Nome do documento *</label><input id="docName" type="text" placeholder="Ex: Contrato de Serviço 2026" required /></div>
-            <div class="field"><label>Categoria *</label>
+            <div class="field"><label>Pasta de destino *</label>
                 <select id="docCat" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;">${catOpts}</select>
             </div>
             <div class="field"><label>Notas (opcional)</label><input id="docNotes" type="text" placeholder="Informação adicional" /></div>
@@ -4861,7 +5591,8 @@ function openDocUploadModal(clienteUserId) {
     document.getElementById('cancelDocBtn').addEventListener('click', closeModal);
     document.getElementById('saveDocBtn').addEventListener('click', () => {
         const name  = document.getElementById('docName').value.trim();
-        const cat   = document.getElementById('docCat').value;
+        const folderVal = document.getElementById('docCat').value;
+        const [cat, subfolder] = folderVal.includes('|') ? folderVal.split('|') : [folderVal, ''];
         const notes = document.getElementById('docNotes').value.trim();
         const file  = document.getElementById('docFile').files[0];
         const err   = document.getElementById('docUploadError');
@@ -4871,12 +5602,13 @@ function openDocUploadModal(clienteUserId) {
         const saveDoc = (data) => {
             if (!app.state.clientDocuments) app.state.clientDocuments = [];
             app.state.clientDocuments.push({
-                id: `cdoc_${Date.now()}`, clientId: cu.clientId, category: cat, name,
+                id: `cdoc_${Date.now()}`, clientId: cu.clientId, category: cat,
+                subfolder: subfolder || '', name,
                 fileName: file ? file.name : name, data: data || null, type: file ? file.type : '',
                 size: file ? file.size : 0, uploadedAt: todayISO(),
-                uploadedBy: app.currentUser.name, notes
+                uploadedBy: app.currentUser.name, uploadedByRole: 'gestor',
+                viewedBy: [], notes
             });
-            // Notificar cliente
             addNotification(cu.id, 'new_document', `📄 Novo documento disponível: "${name}"`, null);
             saveState(); closeModal(); renderGestorClientesPortal();
         };
@@ -5309,65 +6041,110 @@ function openSegmentFormModal(clientId, readOnly) {
 
 /* ── CHECKLIST DE DOCUMENTOS (GESTOR) ── */
 
+function _chkStatus(item) {
+    return item.status || (item.done ? 'concluido' : 'aguardando');
+}
+function _chkPendingCount(userId) {
+    const items = (app.state.docChecklists || {})[userId] || [];
+    return items.filter(i => { const s = _chkStatus(i); return s === 'aguardando' || s === 'recusado'; }).length;
+}
+
 function openDocChecklistModal(clienteUserId) {
     const cu = (app.state.users || []).find(u => u.id === clienteUserId);
     if (!cu) return;
     if (!app.state.docChecklists) app.state.docChecklists = {};
     if (!app.state.docChecklists[clienteUserId]) app.state.docChecklists[clienteUserId] = [];
     const items = app.state.docChecklists[clienteUserId];
-    const done = items.filter(i => i.done).length;
+    const approved = items.filter(i => _chkStatus(i) === 'concluido').length;
     const total = items.length;
-    const pct = total > 0 ? Math.round(done / total * 100) : 0;
+    const pct = total > 0 ? Math.round(approved / total * 100) : 0;
+    const today = todayISO();
+
+    const statusConfig = {
+        aguardando: { icon: '⏳', label: 'Aguardando', bg: '#fff8f8', border: '#f5c6cb', color: '#dc3545' },
+        enviado:    { icon: '📤', label: 'Enviado — aguardando aprovação', bg: '#fffbf0', border: '#ffd700', color: '#856404' },
+        concluido:  { icon: '✅', label: 'Aprovado', bg: '#f0faf5', border: '#a3d9b5', color: '#10b981' },
+        recusado:   { icon: '❌', label: 'Recusado', bg: '#f8f8f8', border: '#dee2e6', color: '#6c757d' }
+    };
 
     const itemsHtml = items.length === 0
         ? `<p class="text-muted" style="padding:8px 0;">Nenhum item ainda. Adicione abaixo.</p>`
-        : items.map(item => `
-            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:8px;background:${item.done ? '#f0faf5' : '#fff8f8'};border:1px solid ${item.done ? '#a3d9b5' : '#f5c6cb'};">
-                <span style="font-size:1.2rem;flex-shrink:0;">${item.done ? '✅' : '🔴'}</span>
+        : items.map(item => {
+            const st = _chkStatus(item);
+            const cfg = statusConfig[st] || statusConfig.aguardando;
+            const isExpiring = item.deadline && st !== 'concluido' && item.deadline <= today;
+            const approveRejectBtns = st === 'enviado'
+                ? `<button class="small-btn" style="background:#e6f7ec;color:#1a6e35;border-color:#a3d9b5;" onclick="approveChecklistItem('${clienteUserId}','${item.id}')">✅ Aprovar</button>
+                   <button class="small-btn danger-btn" onclick="rejectChecklistItem('${clienteUserId}','${item.id}')">❌ Recusar</button>`
+                : `<button class="small-btn" onclick="toggleChecklistItem('${clienteUserId}','${item.id}')" title="${st === 'concluido' ? 'Reabrir' : 'Marcar aprovado manualmente'}">${st === 'concluido' ? '↩' : '✓'}</button>`;
+            return `
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:8px;background:${cfg.bg};border:1px solid ${cfg.border};">
+                <span style="font-size:1.1rem;flex-shrink:0;margin-top:2px;">${cfg.icon}</span>
                 <div style="flex:1;min-width:0;">
-                    <div style="${item.done ? 'text-decoration:line-through;color:var(--text-soft);' : ''}font-weight:600;font-size:0.9rem;">${esc(item.label)}</div>
-                    ${item.deadline ? `<small style="color:var(--text-soft);">Prazo: ${item.deadline}${item.done && item.completedAt ? ` · Entregue em ${item.completedAt}` : ''}</small>` : item.done && item.completedAt ? `<small style="color:var(--text-soft);">Entregue em ${item.completedAt}</small>` : ''}
+                    <div style="${st === 'concluido' ? 'text-decoration:line-through;color:var(--text-soft);' : ''}font-weight:600;font-size:0.88rem;">${esc(item.label)}</div>
+                    ${item.required ? '' : `<span style="font-size:0.72rem;color:var(--text-soft);">Opcional</span>`}
+                    ${item.instruction ? `<div style="font-size:0.78rem;color:var(--text-soft);margin-top:2px;">${esc(item.instruction)}</div>` : ''}
+                    ${item.deadline ? `<small style="color:${isExpiring ? '#dc3545' : 'var(--text-soft)'};">${isExpiring ? '⚠️ Prazo vencido:' : 'Prazo:'} ${item.deadline}</small>` : ''}
+                    ${st === 'concluido' && item.completedAt ? `<small style="color:#10b981;"> · Aprovado em ${item.completedAt}</small>` : ''}
+                    ${st === 'recusado' && item.rejectedReason ? `<div style="font-size:0.78rem;color:#dc3545;margin-top:2px;">Motivo: ${esc(item.rejectedReason)}</div>` : ''}
+                    <div style="font-size:0.72rem;margin-top:3px;"><span style="color:${cfg.color};font-weight:600;">${cfg.label}</span>${item.addedBy ? ` · adicionado por ${esc(item.addedBy)}` : ''}</div>
                 </div>
-                <div style="display:flex;gap:5px;flex-shrink:0;">
-                    <button class="small-btn" onclick="toggleChecklistItem('${clienteUserId}','${item.id}')" title="${item.done ? 'Reabrir' : 'Marcar como entregue'}">${item.done ? '↩ Reabrir' : '✓ Entregar'}</button>
+                <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+                    ${approveRejectBtns}
                     <button class="small-btn" onclick="editChecklistItem('${clienteUserId}','${item.id}')" style="background:#f0f4ff;" title="Editar">✏️</button>
                     <button class="danger-btn" onclick="deleteChecklistItem('${clienteUserId}','${item.id}')" title="Remover">🗑</button>
                 </div>
-            </div>`).join('');
+            </div>`;
+        }).join('');
+
+    const catOptions = DOC_LIBRARY_TREE.map(c => `<option value="${c.key}">${c.icon} ${c.label}</option>`).join('');
 
     showModal(`📋 Checklist de Documentos — ${esc(cu.name)}`, `
         ${total > 0 ? `
-        <div style="margin-bottom:20px;">
+        <div style="margin-bottom:18px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                <span style="font-size:0.9rem;"><strong>${done}</strong> de <strong>${total}</strong> documentos entregues</span>
+                <span style="font-size:0.9rem;"><strong>${approved}</strong> de <strong>${total}</strong> aprovados</span>
                 <strong style="color:${pct === 100 ? '#10b981' : 'var(--accent)'};">${pct}%</strong>
             </div>
-            <div class="seg-progress-track">
-                <div class="seg-progress-fill" style="width:${pct}%;${pct === 100 ? 'background:linear-gradient(90deg,#10b981,#059669);' : ''}"></div>
-            </div>
-            ${pct === 100 ? `<div class="info-box" style="margin-top:10px;background:#e6f7ec;border-color:#a3d9b5;color:#1a6e35;">✅ Todos os documentos foram entregues!</div>` : ''}
+            <div class="seg-progress-track"><div class="seg-progress-fill" style="width:${pct}%;${pct === 100 ? 'background:linear-gradient(90deg,#10b981,#059669);' : ''}"></div></div>
+            ${pct === 100 ? `<div class="info-box" style="margin-top:8px;background:#e6f7ec;border-color:#a3d9b5;color:#1a6e35;">✅ Todos os documentos aprovados!</div>` : ''}
         </div>` : ''}
         <div style="margin-bottom:20px;">${itemsHtml}</div>
-        <div style="border-top:1.5px solid var(--border);padding-top:18px;">
-            <h4 style="margin:0 0 14px;font-size:0.95rem;">+ Adicionar item ao checklist</h4>
-            <div class="form-grid two-columns" style="gap:12px;">
+        <div style="border-top:1.5px solid var(--border);padding-top:16px;">
+            <h4 style="margin:0 0 12px;font-size:0.95rem;">+ Adicionar documento requerido</h4>
+            <div class="form-grid two-columns" style="gap:10px;">
                 <div class="field" style="grid-column:1/-1;">
                     <label>Nome do documento *</label>
-                    <input id="chkLabel" type="text" placeholder="Ex: PGR atualizado, PCMSO 2026, RG e CPF…" />
+                    <input id="chkLabel" type="text" placeholder="Ex: PGR atualizado, Contrato assinado, RG e CPF…" />
                 </div>
                 <div class="field">
-                    <label>Prazo (opcional)</label>
+                    <label>Categoria</label>
+                    <select id="chkCategory" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;width:100%;background:var(--surface);">
+                        <option value="">— Sem categoria —</option>
+                        ${catOptions}
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Prazo de entrega (opcional)</label>
                     <input id="chkDeadline" type="date" />
+                </div>
+                <div class="field" style="grid-column:1/-1;">
+                    <label>Instrução para o cliente (opcional)</label>
+                    <input id="chkInstruction" type="text" placeholder="Ex: Envie cópia autenticada, frente e verso…" />
+                </div>
+                <div class="field" style="display:flex;align-items:center;gap:8px;">
+                    <input id="chkRequired" type="checkbox" checked style="width:16px;height:16px;accent-color:var(--accent);" />
+                    <label for="chkRequired" style="margin:0;cursor:pointer;">Obrigatório</label>
                 </div>
                 <div class="field" style="display:flex;align-items:flex-end;">
                     <button class="primary-btn" onclick="addChecklistItem('${clienteUserId}')" type="button" style="width:100%;">+ Adicionar</button>
                 </div>
             </div>
-            <div style="margin-top:12px;">
-                <p style="font-size:0.8rem;color:var(--text-soft);margin:0 0 8px;">Sugestões rápidas:</p>
-                <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                    ${['PGR atualizado','PCMSO 2026','Contrato assinado','RG e CPF','Comprovante de endereço','Autorização de instalação','Declaração de frota','CNPJ','Laudo NR-12'].map(s =>
-                        `<button class="secondary-btn" onclick="document.getElementById('chkLabel').value='${s}'" style="font-size:0.78rem;padding:4px 10px;">${s}</button>`
+            <div style="margin-top:10px;">
+                <p style="font-size:0.78rem;color:var(--text-soft);margin:0 0 6px;">Sugestões rápidas:</p>
+                <div style="display:flex;flex-wrap:wrap;gap:5px;">
+                    ${['PGR atualizado','PCMSO 2026','Contrato assinado','RG e CPF','Comprovante de endereço','Autorização de instalação','CNPJ','Laudo NR-12','Declaração de frota'].map(s =>
+                        `<button class="secondary-btn" onclick="document.getElementById('chkLabel').value='${s}'" style="font-size:0.75rem;padding:3px 9px;">${s}</button>`
                     ).join('')}
                 </div>
             </div>
@@ -5378,26 +6155,39 @@ function openDocChecklistModal(clienteUserId) {
 function addChecklistItem(clienteUserId) {
     const label = document.getElementById('chkLabel')?.value.trim();
     const deadline = document.getElementById('chkDeadline')?.value || null;
+    const category = document.getElementById('chkCategory')?.value || '';
+    const instruction = document.getElementById('chkInstruction')?.value.trim() || '';
+    const required = document.getElementById('chkRequired')?.checked !== false;
     if (!label) { alert('Digite o nome do documento.'); return; }
     if (!app.state.docChecklists) app.state.docChecklists = {};
     if (!app.state.docChecklists[clienteUserId]) app.state.docChecklists[clienteUserId] = [];
-    app.state.docChecklists[clienteUserId].push({ id: `chk_${Date.now()}`, label, done: false, deadline, addedAt: todayISO() });
-    saveState(); openDocChecklistModal(clienteUserId); renderGestorClientesPortal();
+    const addedBy = app.currentUser?.name || '';
+    const addedById = app.currentUser?.id || '';
+    app.state.docChecklists[clienteUserId].push({
+        id: `chk_${Date.now()}`, label, done: false, status: 'aguardando',
+        required, category, instruction, deadline, addedBy, addedById, addedAt: todayISO()
+    });
+    saveState();
+    addNotification(clienteUserId, 'doc_requested', `📋 Novo documento requerido: ${label}${instruction ? ` — ${instruction}` : ''}`, null);
+    openDocChecklistModal(clienteUserId);
+    if (typeof renderGestorClientesPortal === 'function') renderGestorClientesPortal();
 }
 
 function toggleChecklistItem(clienteUserId, itemId) {
     const items = (app.state.docChecklists || {})[clienteUserId] || [];
     const item = items.find(i => i.id === itemId);
     if (!item) return;
-    item.done = !item.done;
-    if (item.done) item.completedAt = todayISO();
-    else delete item.completedAt;
-    if (item.done && items.every(i => i.done) && items.length > 0) {
-        if (!app.state.notifications) app.state.notifications = [];
-        const cu = (app.state.users || []).find(u => u.id === clienteUserId);
-        app.state.notifications.push({ id: `notif_${Date.now()}`, type: 'checklist_complete', clientUserId: clienteUserId, clientName: cu?.name || '', read: false, createdAt: todayISO() });
+    const wasDone = _chkStatus(item) === 'concluido';
+    if (wasDone) {
+        item.status = 'aguardando'; item.done = false; delete item.completedAt;
+    } else {
+        item.status = 'concluido'; item.done = true; item.completedAt = todayISO();
     }
-    saveState(); openDocChecklistModal(clienteUserId); renderGestorClientesPortal();
+    if (!wasDone && items.every(i => _chkStatus(i) === 'concluido') && items.length > 0) {
+        addNotification(clienteUserId, 'checklist_complete', '✅ Todos os documentos do seu checklist foram aprovados!', null);
+    }
+    saveState(); openDocChecklistModal(clienteUserId);
+    if (typeof renderGestorClientesPortal === 'function') renderGestorClientesPortal();
 }
 
 function editChecklistItem(clienteUserId, itemId) {
@@ -5418,7 +6208,38 @@ function deleteChecklistItem(clienteUserId, itemId) {
     if (app.state.docChecklists?.[clienteUserId]) {
         app.state.docChecklists[clienteUserId] = app.state.docChecklists[clienteUserId].filter(i => i.id !== itemId);
     }
-    saveState(); openDocChecklistModal(clienteUserId); renderGestorClientesPortal();
+    saveState(); openDocChecklistModal(clienteUserId);
+    if (typeof renderGestorClientesPortal === 'function') renderGestorClientesPortal();
+}
+
+function approveChecklistItem(clienteUserId, itemId) {
+    const items = (app.state.docChecklists || {})[clienteUserId] || [];
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+    item.status = 'concluido'; item.done = true;
+    item.completedAt = todayISO(); delete item.rejectedReason;
+    saveState();
+    addNotification(clienteUserId, 'doc_approved', `✅ Documento aprovado: ${item.label}`, null);
+    if (items.every(i => _chkStatus(i) === 'concluido') && items.length > 0) {
+        addNotification(clienteUserId, 'checklist_complete', '🎉 Todos os seus documentos foram aprovados!', null);
+    }
+    openDocChecklistModal(clienteUserId);
+    if (typeof renderGestorClientesPortal === 'function') renderGestorClientesPortal();
+}
+
+function rejectChecklistItem(clienteUserId, itemId) {
+    const items = (app.state.docChecklists || {})[clienteUserId] || [];
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+    const reason = prompt('Motivo da recusa (será informado ao cliente):', '');
+    if (reason === null) { openDocChecklistModal(clienteUserId); return; }
+    item.status = 'recusado'; item.done = false;
+    item.rejectedReason = reason.trim() || 'Documento recusado. Por favor reenvie.';
+    delete item.completedAt;
+    saveState();
+    addNotification(clienteUserId, 'doc_rejected', `❌ Documento recusado: ${item.label}. Motivo: ${item.rejectedReason}`, null);
+    openDocChecklistModal(clienteUserId);
+    if (typeof renderGestorClientesPortal === 'function') renderGestorClientesPortal();
 }
 
 /* ─── FORMULÁRIO POR SERVIÇO ─── */
@@ -5581,6 +6402,290 @@ function renderClienteVehicles(el) {
             : `<div id="vehicleList">${vehicles.map((v, i) => renderVehicleCard(v, i)).join('')}</div>
                <button class="secondary-btn" onclick="clienteAddVehicle()" style="margin-top:4px;">+ Adicionar Veículo</button>`
         }`;
+}
+
+/* ─── FEATURE 3: BIBLIOTECA DE DOCUMENTOS DO CLIENTE ─── */
+
+function renderClienteBiblioteca(catKey, subfolder, search) {
+    const u = app.currentUser;
+    const el = document.getElementById('clientePageContent');
+    if (!el) return;
+    showClienteSection('clienteDynamic');
+
+    const allDocs = (app.state.clientDocuments || []).filter(d => d.clientId === u.clientId);
+    const searchTerm = (typeof search === 'string') ? search : '';
+
+    if (catKey && subfolder) {
+        const catInfo = DOC_LIBRARY_TREE.find(c => c.key === catKey);
+        if (!catInfo) return;
+        const folderDocs = allDocs.filter(d => d.category === catKey && d.subfolder === subfolder);
+        folderDocs.forEach(d => markDocViewed(d.id));
+        el.innerHTML = `
+            <div class="section-header">
+                <div>
+                    <button class="secondary-btn" onclick="renderClienteBiblioteca('${esc(catKey)}')" style="margin-bottom:10px;font-size:0.82rem;">← Voltar</button>
+                    <h2>${catInfo.icon} ${esc(catInfo.label)} › ${esc(subfolder)}</h2>
+                    <p>${folderDocs.length} documento${folderDocs.length !== 1 ? 's' : ''}</p>
+                </div>
+            </div>
+            ${_bibDocList(folderDocs, u, 'Nenhum documento nesta pasta ainda.')}`;
+    } else if (catKey) {
+        const catInfo = DOC_LIBRARY_TREE.find(c => c.key === catKey);
+        if (!catInfo) return;
+        const catDocs = allDocs.filter(d => d.category === catKey);
+        el.innerHTML = `
+            <div class="section-header">
+                <div>
+                    <button class="secondary-btn" onclick="renderClienteBiblioteca()" style="margin-bottom:10px;font-size:0.82rem;">← Voltar</button>
+                    <h2>${catInfo.icon} ${esc(catInfo.label)}</h2>
+                    <p>${catDocs.length} documento${catDocs.length !== 1 ? 's' : ''}</p>
+                </div>
+            </div>
+            <div class="bib-folders-grid">
+                ${catInfo.folders.map(f => {
+                    const fd = catDocs.filter(d => d.subfolder === f);
+                    const unread = fd.filter(d => !(d.viewedBy || []).includes(u.id)).length;
+                    return `<div class="bib-folder-card" onclick="renderClienteBiblioteca('${esc(catKey)}','${esc(f)}')">
+                        <div class="bib-folder-icon">📂</div>
+                        <div class="bib-folder-name">${esc(f)}</div>
+                        <div class="bib-folder-count">${fd.length} doc${fd.length !== 1 ? 's' : ''}</div>
+                        ${unread > 0 ? `<span class="bib-unread-badge">${unread} novo${unread > 1 ? 's' : ''}</span>` : ''}
+                    </div>`;
+                }).join('')}
+            </div>
+            ${_bibDocList(catDocs.filter(d => !d.subfolder || !catInfo.folders.includes(d.subfolder)), u, '')}`;
+    } else {
+        // Root — folder tree or search results
+        el.innerHTML = `
+            <div class="section-header">
+                <div><h2>📚 Biblioteca de Documentos</h2>
+                <p>${allDocs.length} documento${allDocs.length !== 1 ? 's' : ''} disponíve${allDocs.length !== 1 ? 'is' : 'l'}</p></div>
+            </div>
+            <div style="margin-bottom:16px;">
+                <input id="bibSearch" type="text" placeholder="🔍 Buscar documento por nome..." value="${esc(searchTerm)}"
+                    oninput="renderClienteBiblioteca(null,null,this.value)"
+                    style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:9px 14px;background:var(--bg);font-size:0.95rem;">
+            </div>
+            ${searchTerm ? _bibSearchResults(allDocs, searchTerm, u) : _bibFolderTree(allDocs, u)}`;
+    }
+}
+
+function _bibFolderTree(allDocs, u) {
+    const categories = DOC_LIBRARY_TREE.filter(cat => allDocs.some(d => d.category === cat.key));
+    if (categories.length === 0) return '<div class="card"><p class="text-muted">Nenhum documento disponível ainda. Em breve seu técnico ou gestor irá enviar documentos para você.</p></div>';
+    return categories.map(cat => {
+        const catDocs = allDocs.filter(d => d.category === cat.key);
+        const unread = catDocs.filter(d => !(d.viewedBy || []).includes(u.id)).length;
+        return `<div class="bib-category-row" onclick="renderClienteBiblioteca('${cat.key}')">
+            <div class="bib-cat-icon">${cat.icon}</div>
+            <div class="bib-cat-info">
+                <div class="bib-cat-name">${esc(cat.label)}</div>
+                <div class="bib-cat-count">${catDocs.length} documento${catDocs.length !== 1 ? 's' : ''}</div>
+            </div>
+            ${unread > 0 ? `<span class="bib-unread-badge">${unread} novo${unread > 1 ? 's' : ''}</span>` : ''}
+            <span style="color:var(--text-muted);font-size:1.1rem;">›</span>
+        </div>`;
+    }).join('');
+}
+
+function _bibSearchResults(allDocs, term, u) {
+    const lower = term.toLowerCase();
+    const results = allDocs.filter(d =>
+        d.name.toLowerCase().includes(lower) ||
+        (d.notes || '').toLowerCase().includes(lower) ||
+        (d.fileName || '').toLowerCase().includes(lower)
+    );
+    if (results.length === 0) return `<div class="card"><p class="text-muted">Nenhum documento encontrado para "<strong>${esc(term)}</strong>".</p></div>`;
+    return `<div style="margin-bottom:8px;font-size:0.85rem;color:var(--text-soft);">${results.length} resultado${results.length !== 1 ? 's' : ''}</div>` + _bibDocList(results, u, '');
+}
+
+function _bibDocList(docs, u, emptyMsg) {
+    if (docs.length === 0) return emptyMsg ? `<div class="card"><p class="text-muted">${esc(emptyMsg)}</p></div>` : '';
+    return `<div class="card">${docs.map(d => {
+        const isNew = !(d.viewedBy || []).includes(u.id);
+        const catInfo = DOC_LIBRARY_TREE.find(c => c.key === d.category);
+        const size = d.size > 0 ? (d.size > 1048576 ? (d.size/1048576).toFixed(1)+' MB' : Math.round(d.size/1024)+' KB') : '';
+        const typeIcon = d.type && d.type.includes('pdf') ? '📄' : (d.type && d.type.includes('image') ? '🖼' : '📎');
+        return `<div class="bib-doc-row">
+            <div class="bib-doc-icon">${typeIcon}</div>
+            <div class="bib-doc-info">
+                <div class="bib-doc-name">${esc(d.name)}${isNew ? ' <span class="bib-new-badge">Novo</span>' : ''}</div>
+                <div class="bib-doc-meta">${catInfo ? catInfo.icon + ' ' + catInfo.label : ''}${d.subfolder ? ' › ' + esc(d.subfolder) : ''} · ${d.uploadedAt} · ${esc(d.uploadedBy)}${size ? ' · ' + size : ''}</div>
+                ${d.notes ? `<div class="bib-doc-notes">${esc(d.notes)}</div>` : ''}
+            </div>
+            <div class="bib-doc-actions">
+                ${d.data ? `
+                    ${(d.type && (d.type.includes('pdf') || d.type.includes('image')))
+                        ? `<button class="small-btn" onclick="bibPreviewDoc('${esc(d.id)}')">👁 Ver</button>` : ''}
+                    <button class="small-btn" onclick="clienteDownloadDoc('${esc(d.id)}');markDocViewed('${esc(d.id)}')">⬇ Baixar</button>
+                ` : `<span class="badge badge-warn" style="font-size:0.78rem;">Demo</span>`}
+            </div>
+        </div>`;
+    }).join('')}</div>`;
+}
+
+function markDocViewed(docId) {
+    const doc = (app.state.clientDocuments || []).find(d => d.id === docId);
+    if (!doc || !app.currentUser) return;
+    if (!doc.viewedBy) doc.viewedBy = [];
+    const uid = app.currentUser.id;
+    if (!doc.viewedBy.includes(uid)) { doc.viewedBy.push(uid); saveState(); }
+}
+
+function bibPreviewDoc(docId) {
+    markDocViewed(docId);
+    const doc = (app.state.clientDocuments || []).find(d => d.id === docId);
+    if (!doc || !doc.data) return;
+    if (doc.type && doc.type.includes('image')) {
+        showModal(esc(doc.name), `<div style="text-align:center;"><img src="${doc.data}" style="max-width:100%;max-height:70vh;border-radius:8px;"></div>`);
+    } else {
+        const arr = doc.data.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]);
+        let n = bstr.length; const u8 = new Uint8Array(n);
+        while (n--) u8[n] = bstr.charCodeAt(n);
+        const url = URL.createObjectURL(new Blob([u8], { type: mime }));
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 15000);
+    }
+}
+
+function _docUnreadCount(clientId, userId) {
+    return (app.state.clientDocuments || [])
+        .filter(d => d.clientId === clientId && !(d.viewedBy || []).includes(userId))
+        .length;
+}
+
+function renderClienteChecklistBoard() {
+    const u = app.currentUser;
+    const el = document.getElementById('clientePageContent');
+    if (!el) return;
+    const allItems = (app.state.docChecklists || {})[u.id] || [];
+    const total = allItems.length;
+    const approved = allItems.filter(i => _chkStatus(i) === 'concluido').length;
+    const pct = total > 0 ? Math.round(approved / total * 100) : 0;
+    const today = todayISO();
+
+    if (total === 0) {
+        el.innerHTML = `
+            <div class="section-header"><div><h2>📋 Documentos Requeridos</h2><p>Documentos solicitados pelo técnico responsável.</p></div></div>
+            <div class="card" style="text-align:center;padding:40px 24px;">
+                <div style="font-size:2.5rem;margin-bottom:12px;">📋</div>
+                <h3>Nenhum documento requerido</h3>
+                <p class="text-muted">Seu técnico ainda não adicionou documentos necessários ao seu checklist.</p>
+            </div>`;
+        return;
+    }
+
+    const aguardando = allItems.filter(i => _chkStatus(i) === 'aguardando');
+    const recusado   = allItems.filter(i => _chkStatus(i) === 'recusado');
+    const enviado    = allItems.filter(i => _chkStatus(i) === 'enviado');
+    const concluido  = allItems.filter(i => _chkStatus(i) === 'concluido');
+
+    const mkCard = (item, showUpload) => {
+        const st = _chkStatus(item);
+        const daysLeft = item.deadline ? Math.ceil((new Date(item.deadline) - new Date(today)) / 86400000) : null;
+        const deadlineHtml = item.deadline
+            ? `<div style="font-size:0.78rem;margin-top:4px;color:${daysLeft !== null && daysLeft < 0 ? '#dc3545' : daysLeft !== null && daysLeft <= 7 ? '#f59e0b' : 'var(--text-soft)'};">
+                ${daysLeft !== null && daysLeft < 0 ? `⚠️ Prazo vencido há ${Math.abs(daysLeft)} dia${Math.abs(daysLeft) !== 1 ? 's' : ''}` :
+                  daysLeft !== null && daysLeft <= 7 ? `⚠️ Vence em ${daysLeft} dia${daysLeft !== 1 ? 's' : ''}` :
+                  `📅 Prazo: ${item.deadline}`}
+               </div>` : '';
+        const instructionHtml = item.instruction ? `<div style="font-size:0.8rem;color:var(--text-soft);margin-top:4px;line-height:1.4;">${esc(item.instruction)}</div>` : '';
+        const rejectedHtml = st === 'recusado' && item.rejectedReason
+            ? `<div style="font-size:0.8rem;color:#dc3545;margin-top:6px;padding:6px 10px;background:#fff3f3;border-radius:8px;">❌ Motivo da recusa: ${esc(item.rejectedReason)}</div>` : '';
+        const uploadBtn = showUpload
+            ? `<button class="primary-btn" style="margin-top:10px;font-size:0.82rem;padding:7px 14px;" onclick="openClienteChecklistUpload('${item.id}')">📎 Enviar documento</button>`
+            : '';
+        return `
+        <div style="padding:14px 16px;border-radius:12px;border:1.5px solid var(--border);background:var(--card-bg);margin-bottom:10px;">
+            <div style="display:flex;align-items:flex-start;gap:10px;">
+                <span style="font-size:1.1rem;margin-top:2px;flex-shrink:0;">${st === 'concluido' ? '✅' : st === 'enviado' ? '📤' : st === 'recusado' ? '❌' : '⏳'}</span>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;font-size:0.9rem;${st === 'concluido' ? 'text-decoration:line-through;color:var(--text-soft);' : ''}">${esc(item.label)}</div>
+                    ${!item.required ? `<span style="font-size:0.72rem;color:var(--text-soft);background:#f0f4ff;padding:1px 6px;border-radius:999px;">Opcional</span>` : ''}
+                    ${instructionHtml}${deadlineHtml}${rejectedHtml}
+                    ${st === 'concluido' && item.completedAt ? `<div style="font-size:0.78rem;color:#10b981;margin-top:4px;">Aprovado em ${item.completedAt}</div>` : ''}
+                    ${st === 'enviado' ? `<div style="font-size:0.78rem;color:#856404;margin-top:4px;">Aguardando revisão do técnico…</div>` : ''}
+                    ${uploadBtn}
+                </div>
+            </div>
+        </div>`;
+    };
+
+    const section = (title, items, showUpload) => items.length === 0 ? '' : `
+        <div class="card" style="margin-bottom:16px;">
+            <h4 style="margin:0 0 12px;font-size:0.95rem;">${title} <span style="font-size:0.82rem;color:var(--text-soft);font-weight:400;">(${items.length})</span></h4>
+            ${items.map(i => mkCard(i, showUpload)).join('')}
+        </div>`;
+
+    el.innerHTML = `
+        <div class="section-header"><div><h2>📋 Documentos Requeridos</h2><p>Documentos solicitados pelo técnico responsável. Envie cada um para aprovação.</p></div></div>
+        <div class="card" style="margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span style="font-size:0.9rem;"><strong>${approved}</strong> de <strong>${total}</strong> documentos aprovados</span>
+                <strong style="color:${pct === 100 ? '#10b981' : 'var(--accent)'};">${pct}%</strong>
+            </div>
+            <div class="seg-progress-track"><div class="seg-progress-fill" style="width:${pct}%;${pct === 100 ? 'background:linear-gradient(90deg,#10b981,#059669);' : ''}"></div></div>
+            ${pct === 100 ? `<div class="info-box" style="margin-top:10px;background:#e6f7ec;border-color:#a3d9b5;color:#1a6e35;">🎉 Todos os documentos foram aprovados!</div>` : ''}
+        </div>
+        ${section('⏳ Aguardando envio', aguardando, true)}
+        ${section('❌ Recusados — reenvie o documento', recusado, true)}
+        ${section('📤 Aguardando aprovação do técnico', enviado, false)}
+        ${section('✅ Aprovados', concluido, false)}`;
+}
+
+function openClienteChecklistUpload(itemId) {
+    const u = app.currentUser;
+    const items = (app.state.docChecklists || {})[u.id] || [];
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+    showModal(`📎 Enviar documento: ${esc(item.label)}`, `
+        ${item.instruction ? `<div class="info-box" style="margin-bottom:14px;">${esc(item.instruction)}</div>` : ''}
+        <div class="form-grid" style="gap:14px;">
+            <div class="field">
+                <label>Arquivo (PDF, imagem, Word — máx. 2MB) *</label>
+                <input type="file" id="chkUploadFile" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;width:100%;" />
+            </div>
+        </div>
+        <div class="actions" style="margin-top:16px;">
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+            <button class="primary-btn" onclick="submitClienteChecklistDoc('${itemId}')">📤 Enviar para aprovação</button>
+        </div>
+    `);
+}
+
+function submitClienteChecklistDoc(itemId) {
+    const u = app.currentUser;
+    const fileInput = document.getElementById('chkUploadFile');
+    const file = fileInput?.files?.[0];
+    if (!file) { alert('Selecione um arquivo.'); return; }
+    if (file.size > 2 * 1024 * 1024) { alert('Arquivo muito grande. Máximo 2MB.'); return; }
+    const items = (app.state.docChecklists || {})[u.id] || [];
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const docId = `cdoc_chk_${Date.now()}`;
+        if (!app.state.clientDocuments) app.state.clientDocuments = [];
+        app.state.clientDocuments.push({
+            id: docId, clientId: u.clientId,
+            category: item.category || 'geral', subfolder: null,
+            name: item.label, fileName: file.name, data: e.target.result,
+            type: file.type, size: file.size,
+            uploadedAt: new Date().toISOString(), uploadedBy: u.name, uploadedByRole: 'cliente',
+            visibility: 'tecnico', viewedBy: [u.id],
+            notes: `Enviado pelo cliente para checklist: ${item.label}`, checklistItemId: itemId
+        });
+        item.status = 'enviado'; item.done = false; item.uploadedDocId = docId;
+        saveState();
+        const assignedTecId = Object.keys(app.state.tecnicoClients || {}).find(tId =>
+            (app.state.tecnicoClients[tId] || []).includes(u.clientId));
+        if (assignedTecId) {
+            addNotification(assignedTecId, 'doc_submitted', `📎 ${u.name} enviou documento para aprovação: ${item.label}`, null);
+        }
+        closeModal();
+        renderClienteChecklistBoard();
+    };
+    reader.readAsDataURL(file);
 }
 
 function clienteVehicleInput(inp) {
@@ -5871,31 +6976,59 @@ function renderInstPendentesList() {
 }
 
 function renderGestorDocsPendentes() {
-    const el = document.getElementById('pageContent');
+    const el = document.getElementById('dynamicContent');
     if (!el) return;
     const clientes = (app.state.users || []).filter(u => u.role === 'cliente');
-    const withPending = clientes.filter(u => {
+    const allWithChecklist = clientes.filter(u => {
         const items = (app.state.docChecklists || {})[u.id] || [];
-        return items.some(i => !i.done);
+        return items.length > 0;
     });
-    const rows = withPending.length ? withPending.map(u => {
+    const summary = allWithChecklist.map(u => {
         const items = (app.state.docChecklists || {})[u.id] || [];
-        const done = items.filter(i => i.done).length;
+        const approved = items.filter(i => _chkStatus(i) === 'concluido').length;
+        const enviado  = items.filter(i => _chkStatus(i) === 'enviado').length;
+        const pending  = items.filter(i => { const s = _chkStatus(i); return s === 'aguardando' || s === 'recusado'; }).length;
+        const pct = Math.round(approved / items.length * 100);
+        return { u, items, approved, enviado, pending, pct, total: items.length };
+    }).sort((a, b) => b.pending - a.pending);
+
+    const rows = summary.length ? summary.map(({ u, items, approved, enviado, pending, pct, total }) => {
+        const statusChip = pending > 0
+            ? `<span style="color:#dc3545;font-weight:700;">🔴 ${pending} pendente${pending !== 1 ? 's' : ''}</span>`
+            : enviado > 0
+            ? `<span style="color:#856404;font-weight:700;">📤 ${enviado} aguardando</span>`
+            : `<span style="color:#10b981;font-weight:700;">✅ Completo</span>`;
+        const tec = Object.keys(app.state.tecnicoClients || {}).find(tId =>
+            (app.state.tecnicoClients[tId] || []).includes(u.clientId));
+        const tecName = tec ? (app.state.users || []).find(usr => usr.id === tec)?.name || '—' : '—';
         return `<tr>
-            <td>${esc(u.name)}</td>
-            <td>${esc(u.email)}</td>
-            <td>${done}/${items.length}</td>
-            <td>${items.length - done} pendente${items.length - done !== 1 ? 's' : ''}</td>
+            <td><strong>${esc(u.name)}</strong><br><small style="color:var(--text-soft);">${esc(u.email)}</small></td>
+            <td>${esc(tecName)}</td>
+            <td>
+                <div style="font-size:0.82rem;margin-bottom:4px;">${approved}/${total} aprovados</div>
+                <div class="seg-progress-track" style="height:6px;"><div class="seg-progress-fill" style="width:${pct}%;height:6px;${pct === 100 ? 'background:linear-gradient(90deg,#10b981,#059669);' : ''}"></div></div>
+            </td>
+            <td>${statusChip}</td>
+            <td>
+                ${enviado > 0 ? items.filter(i => _chkStatus(i) === 'enviado').map(i =>
+                    `<div style="font-size:0.8rem;margin-bottom:4px;"><strong>${esc(i.label)}</strong>
+                     <button class="small-btn" style="font-size:0.72rem;background:#e6f7ec;color:#1a6e35;border-color:#a3d9b5;" onclick="approveChecklistItem('${u.id}','${i.id}');renderGestorDocsPendentes()">✅ Aprovar</button>
+                     <button class="small-btn danger-btn" style="font-size:0.72rem;" onclick="rejectChecklistItem('${u.id}','${i.id}');renderGestorDocsPendentes()">❌ Recusar</button></div>`
+                ).join('') : ''}
+            </td>
+            <td><button class="small-btn" onclick="openDocChecklistModal('${u.id}')">📋 Gerenciar</button></td>
         </tr>`;
-    }).join('') : `<tr><td colspan="4" style="text-align:center;color:var(--text-soft);">Nenhum documento pendente.</td></tr>`;
+    }).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--text-soft);">Nenhum cliente com checklist configurado.</td></tr>`;
+
     el.innerHTML = `
-        <div class="section-header"><div><h2>Documentos Pendentes</h2><p>Clientes com documentos não enviados.</p></div></div>
+        <div class="section-header"><div><h2>Documentos Requeridos</h2><p>Checklists de documentos por cliente — gerencie e aprove documentos enviados.</p></div></div>
         <div class="card" style="overflow-x:auto;">
             <table>
-                <thead><tr><th>Cliente</th><th>E-mail</th><th>Progresso</th><th>Pendências</th></tr></thead>
+                <thead><tr><th>Cliente</th><th>Técnico</th><th>Progresso</th><th>Status</th><th>Aguardando aprovação</th><th>Ação</th></tr></thead>
                 <tbody>${rows}</tbody>
             </table>
         </div>`;
+    showSection('dynamicContent');
 }
 
 function renderGestorFormsIncompletos() {
@@ -6389,7 +7522,9 @@ function addNotification(targetUserId, type, message, linkAction) {
 function updateNotifBadge() {
     if (!app.currentUser) return;
     const uid = app.currentUser.id;
-    const unread = (app.state.notifications || []).filter(n => n.targetUserId === uid && !n.read).length;
+    const unreadNotifs = (app.state.notifications || []).filter(n => n.targetUserId === uid && !n.read).length;
+    const unreadComs = getComunicadosNaoLidos().length;
+    const unread = unreadNotifs + unreadComs;
     const badge = document.getElementById('notifBadge');
     if (badge) {
         badge.textContent = unread > 99 ? '99+' : String(unread);
@@ -6423,6 +7558,19 @@ function renderNotifPanel() {
         .filter(n => n.targetUserId === uid && n.createdAt >= cutoff)
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
+    const naoLidos = getComunicadosNaoLidos();
+    const comHtml = naoLidos.length === 0 ? '' : `
+        <div class="notif-section-label">📢 Comunicados não lidos</div>
+        ${naoLidos.map(c => `<div class="notif-item unread comunicado-notif" data-cid="${esc(c.id)}">
+            <div class="notif-item-icon">${c.prioridade === 'urgente' ? '🚨' : c.prioridade === 'importante' ? '⚠️' : '📢'}</div>
+            <div class="notif-item-body">
+                <p class="notif-item-msg"><strong>${esc(c.titulo)}</strong></p>
+                <span class="notif-item-time">${esc(c.criadoEm)}</span>
+            </div>
+            <div class="notif-item-dot"></div>
+        </div>`).join('')}
+        <div class="notif-section-label">🔔 Notificações</div>`;
+
     const listHtml = notifs.length === 0
         ? `<div class="notif-empty">Nenhuma notificação nos últimos 30 dias.</div>`
         : notifs.map(n => {
@@ -6442,14 +7590,25 @@ function renderNotifPanel() {
             <strong>Notificações</strong>
             <button type="button" id="markAllReadBtn">✓ Marcar todas lidas</button>
         </div>
-        <div class="notif-list">${listHtml}</div>`;
+        <div class="notif-list">${comHtml}${listHtml}</div>`;
 
     document.getElementById('markAllReadBtn')?.addEventListener('click', () => {
         (app.state.notifications || []).forEach(n => { if (n.targetUserId === uid) n.read = true; });
+        getComunicadosAtivos().forEach(c => markComunicadoRead(c.id));
         saveState(); updateNotifBadge(); renderNotifPanel();
     });
 
-    panel.querySelectorAll('.notif-item').forEach(el => {
+    panel.querySelectorAll('.comunicado-notif').forEach(el => {
+        el.addEventListener('click', () => {
+            markComunicadoRead(el.dataset.cid);
+            saveState(); updateNotifBadge();
+            panel.classList.add('hidden');
+            showSection('dynamicContent');
+            renderComunicadosMural();
+        });
+    });
+
+    panel.querySelectorAll('.notif-item:not(.comunicado-notif)').forEach(el => {
         el.addEventListener('click', () => {
             const n = (app.state.notifications || []).find(x => x.id === el.dataset.nid);
             if (n) { n.read = true; saveState(); updateNotifBadge(); }
@@ -7087,6 +8246,11 @@ function renderTecnicoClientes() {
                 ${clients.map(c => {
                     const chams = (app.state.chamados || []).filter(ch => ch.clientId === c.id && ch.tecnicoId === uid);
                     const openCount = chams.filter(ch => ['Aberto','Em andamento','Aguardando cliente'].includes(ch.status)).length;
+                    const portalUser = (app.state.users || []).find(u => u.role === 'cliente' && u.clientId === c.id);
+                    const chkItems = portalUser ? (app.state.docChecklists || {})[portalUser.id] || [] : [];
+                    const chkPending = chkItems.filter(i => _chkStatus(i) === 'enviado').length;
+                    const chkTotal = chkItems.length;
+                    const chkLabel = chkTotal === 0 ? '📋 Checklist' : chkPending > 0 ? `📋 Checklist 🔔${chkPending}` : `📋 Checklist (${chkItems.filter(i=>_chkStatus(i)==='concluido').length}/${chkTotal})`;
                     return `<tr>
                         <td><strong>${esc(c.name)}</strong></td>
                         <td>${esc(c.phone || '—')}</td>
@@ -7098,6 +8262,8 @@ function renderTecnicoClientes() {
                         <td class="table-actions">
                             <button class="secondary-btn" onclick="openChamadoModal('${c.id}')">+ Chamado</button>
                             <button class="secondary-btn" onclick="renderTecnicoClienteChamados('${c.id}')">Ver chamados</button>
+                            <button class="secondary-btn" onclick="openTecnicoDocModal('${c.id}')">📄 Documentos</button>
+                            ${portalUser ? `<button class="secondary-btn${chkPending > 0 ? '" style="border-color:#ffd700;background:#fffbf0;' : '"'} onclick="openDocChecklistModal('${portalUser.id}')">${chkLabel}</button>` : ''}
                         </td>
                     </tr>`;
                 }).join('')}
@@ -7121,6 +8287,107 @@ function renderTecnicoClienteChamados(clientId) {
             ? '<p class="text-muted">Nenhum chamado registrado para este cliente.</p>'
             : chams.map(ch => renderChamadoCard(ch)).join('')}
     `);
+}
+
+/* ─── FEATURE 2: ENVIO DE ARQUIVOS DO TÉCNICO PARA O CLIENTE ─── */
+
+function openTecnicoDocModal(clientId) {
+    const client = (app.state.clients || []).find(x => x.id === clientId);
+    if (!client) return;
+    const uid = app.currentUser.id;
+    const docs = (app.state.clientDocuments || []).filter(d => d.clientId === clientId && d.tecnicoId === uid);
+
+    const catOpts = DOC_LIBRARY_TREE.map(cat =>
+        `<optgroup label="${cat.icon} ${cat.label}">
+            ${cat.folders.map(f => `<option value="${cat.key}|${f}">${f}</option>`).join('')}
+        </optgroup>`
+    ).join('');
+
+    const docsHtml = docs.length === 0
+        ? '<p class="text-muted">Nenhum documento enviado ainda para este cliente.</p>'
+        : docs.map(d => {
+            const catInfo = DOC_LIBRARY_TREE.find(c => c.key === d.category);
+            const vis = d.visibility === 'cliente' ? 'Só cliente' : 'Cliente e Gestor';
+            return `
+                <div class="extrato-item" style="align-items:center;margin-bottom:6px;">
+                    <div>
+                        <strong>${esc(d.name)}</strong>
+                        <small style="display:block;color:var(--text-soft);">${catInfo ? catInfo.icon + ' ' + catInfo.label : d.category}${d.subfolder ? ' › ' + d.subfolder : ''} · ${d.uploadedAt} · ${vis}</small>
+                        ${d.notes ? `<small style="color:var(--text-soft);">${esc(d.notes)}</small>` : ''}
+                    </div>
+                    <button style="background:none;border:none;cursor:pointer;font-size:1rem;padding:4px 8px;color:#dc3545;" onclick="deleteTecnicoDoc('${d.id}','${clientId}')">🗑</button>
+                </div>`;
+        }).join('');
+
+    showModal(`Documentos — ${esc(client.name)}`, `
+        <div style="margin-bottom:20px;">
+            <h4 style="margin:0 0 12px;">Meus envios para este cliente (${docs.length})</h4>
+            ${docsHtml}
+        </div>
+        <h4 style="margin:0 0 12px;">Enviar novo documento</h4>
+        <div class="form-grid">
+            <div class="field"><label>Nome do documento *</label>
+                <input id="tecDocName" type="text" placeholder="Ex: Laudo técnico de instalação"></div>
+            <div class="field"><label>Pasta de destino *</label>
+                <select id="tecDocFolder" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;">${catOpts}</select></div>
+            <div class="field"><label>Descrição (opcional)</label>
+                <input id="tecDocDesc" type="text" placeholder="Observação adicional"></div>
+            <div class="field"><label>Visibilidade</label>
+                <select id="tecDocVis" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;">
+                    <option value="cliente_gestor">Cliente e Gestor</option>
+                    <option value="cliente">Apenas Cliente</option>
+                </select></div>
+            <div class="field full-width"><label>Arquivo (PDF, imagem, doc — máx. 2 MB)</label>
+                <input id="tecDocFile" type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.ppt,.pptx" style="margin-top:4px;"></div>
+        </div>
+        <div id="tecDocError" class="error-text" style="margin-top:8px;"></div>
+        <div class="actions" style="margin-top:12px;">
+            <button class="primary-btn" id="tecDocSaveBtn">📤 Enviar documento</button>
+            <button class="secondary-btn" onclick="closeModal()">Fechar</button>
+        </div>
+    `);
+
+    document.getElementById('tecDocSaveBtn').addEventListener('click', () => {
+        const name = document.getElementById('tecDocName').value.trim();
+        const folderVal = document.getElementById('tecDocFolder').value;
+        const desc = document.getElementById('tecDocDesc').value.trim();
+        const vis = document.getElementById('tecDocVis').value;
+        const file = document.getElementById('tecDocFile').files[0];
+        const err = document.getElementById('tecDocError');
+        err.textContent = '';
+        if (!name) { err.textContent = 'Nome do documento é obrigatório.'; return; }
+        if (!file) { err.textContent = 'Selecione um arquivo para enviar.'; return; }
+        if (file.size > 2097152) { err.textContent = 'Arquivo muito grande. Máximo 2 MB.'; return; }
+
+        const [category, subfolder] = folderVal.split('|');
+        const reader = new FileReader();
+        reader.onload = e => {
+            if (!app.state.clientDocuments) app.state.clientDocuments = [];
+            app.state.clientDocuments.push({
+                id: `tdoc_${Date.now()}`, clientId, category, subfolder: subfolder || '',
+                name, fileName: file.name, data: e.target.result,
+                type: file.type, size: file.size, uploadedAt: todayISO(),
+                uploadedBy: app.currentUser.name, uploadedByRole: 'tecnico',
+                tecnicoId: uid, visibility: vis, viewedBy: [], notes: desc
+            });
+            const clientUser = (app.state.users || []).find(u => u.clientId === clientId && u.role === 'cliente');
+            if (clientUser) addNotification(clientUser.id, 'new_document', `📄 Novo documento disponível: "${name}"`, null);
+            if (vis === 'cliente_gestor') {
+                const gestorU = (app.state.users || []).find(u => u.role === 'gestor');
+                if (gestorU) addNotification(gestorU.id, 'new_document', `📄 Técnico ${app.currentUser.name} enviou "${name}" para ${client.name}`, null);
+            }
+            saveState();
+            openTecnicoDocModal(clientId);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function deleteTecnicoDoc(docId, clientId) {
+    if (!confirm('Remover este documento?')) return;
+    app.state.clientDocuments = (app.state.clientDocuments || []).filter(d => d.id !== docId);
+    saveState();
+    openTecnicoDocModal(clientId);
 }
 
 function renderTecnicoChamados() {
@@ -7342,8 +8609,9 @@ function renderGestorTecnicos() {
     const tecnicos = (app.state.users || []).filter(u => u.role === 'tecnico');
     const chamados = app.state.chamados || [];
     const tClients = app.state.tecnicoClients || {};
-
-    document.getElementById('pageContent').innerHTML = `
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    el.innerHTML = `
         <div class="section-header">
             <div><h2>Técnicos</h2><p>Cadastre técnicos e gerencie clientes atribuídos.</p></div>
             <button class="primary-btn" onclick="openTecnicoModal()">+ Novo técnico</button>
@@ -7471,8 +8739,9 @@ function renderGestorChamados() {
     const chamados = (app.state.chamados || []).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     const tecnicos = (app.state.users || []).filter(u => u.role === 'tecnico');
     const clients  = app.state.clients || [];
-
-    document.getElementById('pageContent').innerHTML = `
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    el.innerHTML = `
         <div class="section-header">
             <div><h2>Todos os chamados</h2><p>Visão consolidada de todos os chamados do sistema.</p></div>
         </div>
@@ -7522,6 +8791,906 @@ function filterGestorChamados(status) {
     chams = chams.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     const el = document.getElementById('gestorChamadosList');
     if (el) el.innerHTML = _gestorChamadosListHtml(chams, clients, tecnicos);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   GESTÃO DE PRODUTOS
+═══════════════════════════════════════════════════════════════════ */
+
+function getProdutosVisiveis(role) {
+    return (app.state.produtos_config || []).filter(p =>
+        p.status === 'ativo' && (p.visibilidade || []).includes(role || app.currentUser?.role)
+    );
+}
+
+function getPlanosProduto(productName) {
+    const prod = (app.state.produtos_config || []).find(p => p.nome === productName);
+    if (prod && (prod.planos || []).length > 0) return prod.planos;
+    return planList.map(p => ({ id: p.name, nome: p.name, valor: p.price }));
+}
+
+function buildPlanOptsForProduct(productName, selectedPlan) {
+    const plans = getPlanosProduto(productName);
+    return plans.map(p => `<option value="${esc(p.nome)}" ${selectedPlan === p.nome ? 'selected' : ''}>${esc(p.nome)}${p.valor !== null && p.valor !== undefined ? ' — R$ ' + p.valor.toFixed(2).replace('.', ',') : ' (personalizado)'}</option>`).join('');
+}
+
+function renderGestorProdutos() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const prods = app.state.produtos_config || [];
+    el.innerHTML = `
+        <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:12px;">
+            <div>
+                <h2>📦 Gestão de Produtos</h2>
+                <p class="section-subtitle">${prods.length} produto${prods.length !== 1 ? 's' : ''} · ${prods.filter(p => p.status === 'ativo').length} ativo${prods.filter(p => p.status === 'ativo').length !== 1 ? 's' : ''}</p>
+            </div>
+            <button class="primary-btn" onclick="openProdutoModal()">+ Novo Produto</button>
+        </div>
+        <div class="produtos-grid">
+            ${prods.length === 0 ? '<div class="empty-state">Nenhum produto cadastrado.</div>' :
+            prods.map(p => {
+                const catInfo = PROD_CATEGORIES.find(c => c.key === p.categoria) || {};
+                const comTxt = p.comissao
+                    ? (p.comissao.tipo === 'fixo' ? `R$ ${formatCurrency(p.comissao.valor)} fixo` : `${p.comissao.valor}% sobre venda`) + (p.comissao.recorrencia ? ` · ${p.comissao.recorrencia}% rec.` : '')
+                    : '—';
+                const visLabels = (p.visibilidade || []).map(v => v === 'consultor' ? '👥' : '🔧').join(' ');
+                const minVal = (p.planos || []).filter(pl => pl.valor).reduce((m, pl) => (!m || pl.valor < m) ? pl.valor : m, null);
+                return `<div class="produto-card${p.status !== 'ativo' ? ' inativo' : ''}">
+                    <div class="prod-card-header">
+                        <span class="prod-card-icon">${esc(p.icone || '📦')}</span>
+                        <div style="flex:1;min-width:0;">
+                            <div class="prod-card-nome">${esc(p.nome)}${p.destaque ? ' <span class="badge-destaque">★</span>' : ''}</div>
+                            <span class="prod-cat-badge">${catInfo.icon || ''} ${catInfo.label || p.categoria}</span>
+                        </div>
+                        <label class="toggle-switch" title="${p.status === 'ativo' ? 'Desativar' : 'Ativar'}">
+                            <input type="checkbox" ${p.status === 'ativo' ? 'checked' : ''} onchange="toggleProdutoStatus('${esc(p.id)}')">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <p class="prod-card-desc">${esc(p.descricao)}</p>
+                    <div class="prod-card-meta">
+                        <span>💰 ${(p.planos || []).length} planos${minVal ? ` · a partir R$${formatCurrency(minVal)}` : ''}</span>
+                        <span>🤝 ${comTxt}</span>
+                    </div>
+                    <div class="prod-card-vis">${visLabels || '—'} Visível para: ${(p.visibilidade || []).join(', ') || 'ninguém'}</div>
+                    <div class="prod-card-actions">
+                        <button class="secondary-btn" style="flex:1;font-size:0.82rem;padding:6px;" onclick="openProdutoModal('${esc(p.id)}')">✏️ Editar</button>
+                        <button class="secondary-btn" style="flex:1;font-size:0.82rem;padding:6px;" onclick="openGerenciarPlanosModal('${esc(p.id)}')">📋 Planos (${(p.planos || []).length})</button>
+                        <button class="secondary-btn" style="font-size:0.82rem;padding:6px;color:#ef4444;" onclick="deleteProduto('${esc(p.id)}')">🗑</button>
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>`;
+}
+
+function openProdutoModal(id = null) {
+    const ed = id ? (app.state.produtos_config || []).find(p => p.id === id) : null;
+    const catOpts = PROD_CATEGORIES.map(c => `<option value="${c.key}" ${ed?.categoria === c.key ? 'selected' : ''}>${c.icon} ${c.label}</option>`).join('');
+    const pagMap = { pix: 'PIX', boleto: 'Boleto bancário', cartao: 'Cartão de crédito', transferencia: 'Transferência', personalizado: 'Personalizado' };
+    const pagChks = Object.keys(pagMap).map(k => `<label class="checkbox-label"><input type="checkbox" name="prodPag" value="${k}" ${(ed?.pagamentos || ['pix','boleto','cartao']).includes(k) ? 'checked' : ''} /><span>${pagMap[k]}</span></label>`).join('');
+    const visChks = [['consultor','👥 Consultores'],['instalador','🔧 Instaladores']].map(([v,l]) => `<label class="checkbox-label"><input type="checkbox" name="prodVis" value="${v}" ${(ed?.visibilidade || ['consultor','instalador']).includes(v) ? 'checked' : ''} /><span>${l}</span></label>`).join('');
+    showModal(ed ? `Editar: ${ed.nome}` : 'Novo Produto', `
+        <form id="produtoForm" class="form-grid two-columns">
+            <div class="form-section-title">Informações Básicas</div>
+            <div class="field"><label>Nome *</label><input id="pNome" type="text" value="${esc(ed?.nome)}" required /></div>
+            <div class="field"><label>Categoria *</label><select id="pCategoria">${catOpts}</select></div>
+            <div class="field full-width"><label>Descrição</label><textarea id="pDesc" rows="2">${esc(ed?.descricao)}</textarea></div>
+            <div class="field"><label>Ícone (emoji)</label><input id="pIcone" type="text" maxlength="4" placeholder="📦" value="${esc(ed?.icone || '')}" /></div>
+            <div class="field" style="display:flex;gap:16px;align-items:center;padding-top:1.5rem;">
+                <label class="checkbox-label"><input type="checkbox" id="pStatus" ${(ed?.status ?? 'ativo') === 'ativo' ? 'checked' : ''} /><span>Produto ativo</span></label>
+                <label class="checkbox-label"><input type="checkbox" id="pDestaque" ${ed?.destaque ? 'checked' : ''} /><span>★ Destaque</span></label>
+            </div>
+            <div class="form-section-title">Preços</div>
+            <div class="field"><label>Adesão/Instalação (R$)</label><input id="pAdesao" type="number" min="0" step="0.01" value="${ed?.adesao ?? 0}" /></div>
+            <div class="field"><label>Mensalidade base (R$)</label><input id="pMensalidade" type="number" min="0" step="0.01" value="${ed?.mensalidade ?? ''}" /></div>
+            <div class="field"><label>Desconto anual (%)</label><input id="pDescontoAnual" type="number" min="0" max="100" value="${ed?.descontoAnual ?? 0}" /></div>
+            <div class="field"><label>Condições especiais</label><input id="pCondicoes" type="text" placeholder="Ex: combo, indicação..." value="${esc(ed?.condicoesEspeciais || '')}" /></div>
+            <div class="form-section-title">Formas de Pagamento</div>
+            <div class="field full-width"><div class="checkbox-group">${pagChks}</div></div>
+            <div class="field"><label>Parcelas no cartão</label><input id="pParcelas" type="number" min="1" max="24" value="${ed?.parcelasCartao ?? 12}" /></div>
+            <div class="field"><label>Pagamento personalizado</label><input id="pPagPersonalizado" type="text" placeholder="Descreva..." value="${esc(ed?.pagamentoPersonalizado || '')}" /></div>
+            <div class="form-section-title">Comissão por Venda</div>
+            <div class="field"><label>Tipo</label><select id="pComTipo"><option value="fixo" ${(ed?.comissao?.tipo ?? 'fixo') === 'fixo' ? 'selected' : ''}>Valor fixo (R$)</option><option value="percentual" ${ed?.comissao?.tipo === 'percentual' ? 'selected' : ''}>Percentual (%)</option></select></div>
+            <div class="field"><label>Valor de comissão</label><input id="pComValor" type="number" min="0" step="0.01" value="${ed?.comissao?.valor ?? 50}" /></div>
+            <div class="field"><label>% recorrência mensal</label><input id="pComRecorrencia" type="number" min="0" max="100" step="0.1" value="${ed?.comissao?.recorrencia ?? 10}" /></div>
+            <div class="form-section-title">Visibilidade</div>
+            <div class="field full-width"><div class="checkbox-group">${visChks}</div></div>
+            <div id="produtoFormError" class="error-text full-width"></div>
+            <div class="actions full-width"><button type="submit" class="primary-btn">Salvar produto</button><button type="button" class="secondary-btn" onclick="closeModal()">Cancelar</button></div>
+        </form>`);
+    document.getElementById('produtoForm').addEventListener('submit', (e) => { e.preventDefault(); saveProduto(id); });
+}
+
+function saveProduto(id = null) {
+    const nome = document.getElementById('pNome').value.trim();
+    const errEl = document.getElementById('produtoFormError');
+    errEl.textContent = '';
+    if (!nome) { errEl.textContent = 'Nome obrigatório.'; return; }
+    const pagamentos = [...document.querySelectorAll('input[name="prodPag"]:checked')].map(i => i.value);
+    const visibilidade = [...document.querySelectorAll('input[name="prodVis"]:checked')].map(i => i.value);
+    const data = {
+        nome,
+        descricao:    document.getElementById('pDesc').value.trim(),
+        categoria:    document.getElementById('pCategoria').value,
+        icone:        document.getElementById('pIcone').value.trim() || '📦',
+        status:       document.getElementById('pStatus').checked ? 'ativo' : 'inativo',
+        destaque:     document.getElementById('pDestaque').checked,
+        adesao:       Number(document.getElementById('pAdesao').value) || 0,
+        mensalidade:  Number(document.getElementById('pMensalidade').value) || 0,
+        descontoAnual: Number(document.getElementById('pDescontoAnual').value) || 0,
+        condicoesEspeciais: document.getElementById('pCondicoes').value.trim(),
+        pagamentos, parcelasCartao: Number(document.getElementById('pParcelas').value) || 12,
+        pagamentoPersonalizado: document.getElementById('pPagPersonalizado').value.trim(),
+        comissao: { tipo: document.getElementById('pComTipo').value, valor: Number(document.getElementById('pComValor').value) || 0, recorrencia: Number(document.getElementById('pComRecorrencia').value) || 0 },
+        visibilidade
+    };
+    if (id) {
+        const prod = (app.state.produtos_config || []).find(p => p.id === id);
+        if (prod) Object.assign(prod, data);
+    } else {
+        if (!app.state.produtos_config) app.state.produtos_config = [];
+        app.state.produtos_config.push({ id: `prod_${Date.now()}`, planos: [], ...data });
+    }
+    saveState(); closeModal(); renderGestorProdutos();
+}
+
+function deleteProduto(id) {
+    const prod = (app.state.produtos_config || []).find(p => p.id === id);
+    if (!prod || !confirm(`Excluir o produto "${prod.nome}"?`)) return;
+    app.state.produtos_config = app.state.produtos_config.filter(p => p.id !== id);
+    saveState(); renderGestorProdutos();
+}
+
+function toggleProdutoStatus(id) {
+    const prod = (app.state.produtos_config || []).find(p => p.id === id);
+    if (!prod) return;
+    prod.status = prod.status === 'ativo' ? 'inativo' : 'ativo';
+    saveState(); renderGestorProdutos();
+}
+
+function openGerenciarPlanosModal(prodId) {
+    const prod = (app.state.produtos_config || []).find(p => p.id === prodId);
+    if (!prod) return;
+    const renderList = () => {
+        const planos = prod.planos || [];
+        return planos.length === 0
+            ? '<p style="color:var(--text-muted);text-align:center;padding:16px 0;">Nenhum plano criado ainda.</p>'
+            : planos.map(pl => `<div class="plano-row">
+                <div style="flex:1;min-width:0;">
+                    <strong>${esc(pl.nome)}</strong>
+                    <span style="color:var(--text-muted);margin-left:8px;">${pl.valor !== null && pl.valor !== undefined ? `R$ ${formatCurrency(pl.valor)}/mês` : 'Personalizado'}</span>
+                    ${pl.descricao ? `<div style="font-size:0.8rem;color:var(--text-soft);">${esc(pl.descricao)}</div>` : ''}
+                    ${(pl.itens||[]).length ? `<div style="font-size:0.77rem;color:var(--text-muted);">${pl.itens.map(i => `• ${i}`).join('  ')}</div>` : ''}
+                </div>
+                <div style="display:flex;gap:6px;flex-shrink:0;">
+                    <button class="secondary-btn" style="font-size:0.78rem;padding:4px 9px;" onclick="openEditarPlanoModal('${esc(prodId)}','${esc(pl.id)}')">✏️</button>
+                    <button class="secondary-btn" style="font-size:0.78rem;padding:4px 9px;color:#ef4444;" onclick="excluirPlanoProduto('${esc(prodId)}','${esc(pl.id)}')">🗑</button>
+                </div>
+            </div>`).join('');
+    };
+    showModal(`📋 Planos — ${prod.nome}`, `
+        <div id="planosListContainer">${renderList()}</div>
+        <button class="primary-btn" style="width:100%;margin-top:12px;" onclick="openEditarPlanoModal('${esc(prodId)}',null)">+ Adicionar Plano</button>
+        <button class="secondary-btn" style="width:100%;margin-top:8px;" onclick="closeModal()">Fechar</button>`);
+}
+
+function openEditarPlanoModal(prodId, planId) {
+    const prod = (app.state.produtos_config || []).find(p => p.id === prodId);
+    if (!prod) return;
+    const pl = planId ? (prod.planos || []).find(p => p.id === planId) : null;
+    showModal(pl ? 'Editar Plano' : 'Novo Plano', `
+        <form id="planoForm" class="form-grid">
+            <div class="field"><label>Nome *</label><input id="plNome" type="text" value="${esc(pl?.nome)}" required /></div>
+            <div class="field"><label>Valor R$/mês (vazio = personalizado)</label><input id="plValor" type="number" min="0" step="0.01" value="${pl?.valor ?? ''}" placeholder="Ex: 54.90" /></div>
+            <div class="field full-width"><label>Descrição</label><input id="plDesc" type="text" value="${esc(pl?.descricao)}" placeholder="Ex: Ideal para autônomos" /></div>
+            <div class="field full-width"><label>Itens inclusos (um por linha)</label><textarea id="plItens" rows="5" placeholder="Localização em tempo real&#10;Histórico 30 dias&#10;...">${esc((pl?.itens || []).join('\n'))}</textarea></div>
+            <div id="planoError" class="error-text full-width"></div>
+            <div class="actions full-width">
+                <button type="submit" class="primary-btn">Salvar</button>
+                <button type="button" class="secondary-btn" onclick="openGerenciarPlanosModal('${esc(prodId)}')">← Voltar</button>
+            </div>
+        </form>`);
+    document.getElementById('planoForm').addEventListener('submit', (e) => { e.preventDefault(); salvarPlanoProduto(prodId, planId); });
+}
+
+function salvarPlanoProduto(prodId, planId) {
+    const prod = (app.state.produtos_config || []).find(p => p.id === prodId);
+    if (!prod) return;
+    const nome = document.getElementById('plNome').value.trim();
+    const errEl = document.getElementById('planoError');
+    errEl.textContent = '';
+    if (!nome) { errEl.textContent = 'Nome obrigatório.'; return; }
+    const valorRaw = document.getElementById('plValor').value.trim();
+    const valor = valorRaw !== '' ? Number(valorRaw) : null;
+    const itens = document.getElementById('plItens').value.split('\n').map(s => s.trim()).filter(Boolean);
+    const plData = { nome, valor, descricao: document.getElementById('plDesc').value.trim(), itens };
+    if (planId) {
+        const pl = (prod.planos || []).find(p => p.id === planId);
+        if (pl) Object.assign(pl, plData);
+    } else {
+        if (!prod.planos) prod.planos = [];
+        prod.planos.push({ id: `pln_${Date.now()}`, ...plData });
+    }
+    saveState(); openGerenciarPlanosModal(prodId);
+}
+
+function excluirPlanoProduto(prodId, planId) {
+    const prod = (app.state.produtos_config || []).find(p => p.id === prodId);
+    if (!prod || !confirm('Excluir este plano?')) return;
+    prod.planos = (prod.planos || []).filter(p => p.id !== planId);
+    saveState(); openGerenciarPlanosModal(prodId);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   EDITOR DE FORMULÁRIOS
+═══════════════════════════════════════════════════════════════════ */
+
+function getFormFields(formId) {
+    const defaults = DEFAULT_FORM_CONFIGS[formId] || [];
+    const stored = ((app.state.formConfigs || {})[formId] || {}).fields || [];
+    const overrides = {};
+    stored.forEach(f => { overrides[f.id] = f; });
+    const result = defaults.map(def => ({
+        ...def,
+        ...(overrides[def.id] ? { active: overrides[def.id].active, required: overrides[def.id].required, label: overrides[def.id].label ?? def.label, order: overrides[def.id].order ?? def.order } : {})
+    }));
+    stored.filter(f => !f.system).forEach(f => result.push({ ...f }));
+    return result.sort((a, b) => a.order - b.order);
+}
+
+function applyFormConfig(formId) {
+    const fields = getFormFields(formId);
+    const map = FORM_FIELD_INPUT_MAP[formId] || {};
+    fields.filter(f => f.system).forEach(field => {
+        const mapping = map[field.id];
+        if (!mapping) return;
+        let wrapperEl = null;
+        if (mapping.inputs) {
+            const inp = document.getElementById(mapping.inputs[0]);
+            if (inp) wrapperEl = inp.closest('.field');
+        } else if (mapping.selector) {
+            const el = document.querySelector('#genericModal ' + mapping.selector);
+            if (el) wrapperEl = el.closest('.field');
+        }
+        if (!wrapperEl) return;
+        wrapperEl.style.display = field.active === false ? 'none' : '';
+        if (field.active !== false && mapping.inputs) {
+            const inp = document.getElementById(mapping.inputs[0]);
+            if (inp) {
+                if (field.required) inp.setAttribute('required', '');
+                else inp.removeAttribute('required');
+            }
+        }
+    });
+    const customFields = fields.filter(f => !f.system && f.active !== false);
+    if (customFields.length > 0) {
+        const formEl = document.querySelector('#genericModal form');
+        if (formEl) {
+            const actionsEl = formEl.querySelector('.actions');
+            const section = document.createElement('div');
+            section.innerHTML = `<div class="form-section-title">Campos Adicionais</div>${customFields.map(f => renderCustomFieldInput(f, null)).join('')}`;
+            actionsEl ? formEl.insertBefore(section, actionsEl) : formEl.appendChild(section);
+        }
+    }
+}
+
+function renderCustomFieldInput(field, value) {
+    const val = value ?? '';
+    const req = field.required ? ' *' : '';
+    const reqAttr = field.required ? ' required' : '';
+    switch (field.type) {
+        case 'text': case 'email': case 'tel': case 'number':
+            return `<div class="field"><label>${esc(field.label)}${req}</label><input id="cf_${esc(field.id)}" type="${field.type}"${reqAttr} value="${esc(String(val))}" placeholder="${esc(field.label)}" /></div>`;
+        case 'textarea':
+            return `<div class="field full-width"><label>${esc(field.label)}${req}</label><textarea id="cf_${esc(field.id)}"${reqAttr} rows="2">${esc(String(val))}</textarea></div>`;
+        case 'date':
+            return `<div class="field"><label>${esc(field.label)}${req}</label><input id="cf_${esc(field.id)}" type="date"${reqAttr} value="${esc(String(val))}" /></div>`;
+        case 'select': {
+            const opts = (field.options || []).map(o => `<option value="${esc(o)}" ${val === o ? 'selected' : ''}>${esc(o)}</option>`).join('');
+            return `<div class="field"><label>${esc(field.label)}${req}</label><select id="cf_${esc(field.id)}"${reqAttr}><option value="">Selecione...</option>${opts}</select></div>`;
+        }
+        case 'radio': {
+            const rOpts = (field.options || ['Sim', 'Não']).map(o => `<label class="checkbox-label"><input type="radio" name="cf_${esc(field.id)}" value="${esc(o)}" ${val === o ? 'checked' : ''} /><span>${esc(o)}</span></label>`).join('');
+            return `<div class="field"><label>${esc(field.label)}</label><div style="display:flex;gap:12px;">${rOpts}</div></div>`;
+        }
+        case 'checkbox':
+            return `<div class="field"><label class="checkbox-label"><input type="checkbox" id="cf_${esc(field.id)}" ${val ? 'checked' : ''} /><span>${esc(field.label)}</span></label></div>`;
+        case 'multicheck': {
+            const vals = Array.isArray(val) ? val : [];
+            const mcOpts = (field.options || []).map(o => `<label class="checkbox-label"><input type="checkbox" name="cfm_${esc(field.id)}" value="${esc(o)}" ${vals.includes(o) ? 'checked' : ''} /><span>${esc(o)}</span></label>`).join('');
+            return `<div class="field full-width"><label>${esc(field.label)}</label><div class="checkbox-group">${mcOpts}</div></div>`;
+        }
+        default: return '';
+    }
+}
+
+const FIELD_TYPE_LABELS = {
+    text: 'Texto', email: 'E-mail', tel: 'Telefone', number: 'Número', textarea: 'Texto longo',
+    date: 'Data', select: 'Seleção', radio: 'Opção', checkbox: 'Checkbox', multicheck: 'Múltipla'
+};
+
+const FORM_LABELS = { cliente: 'Cadastro de Cliente', consultor: 'Cadastro de Consultor', instalador: 'Cadastro de Instalador' };
+let _activeFormTab = 'cliente';
+
+function renderGestorFormEditor() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const tab = _activeFormTab;
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:1rem;">
+            <h2>🔧 Editor de Formulários</h2>
+            <p class="section-subtitle">Configure campos de qualquer formulário. As alterações refletem imediatamente.</p>
+        </div>
+        <div class="form-editor-tabs">
+            ${Object.entries(FORM_LABELS).map(([key, label]) =>
+                `<button class="form-editor-tab${tab === key ? ' active' : ''}" onclick="_activeFormTab='${key}'; renderGestorFormEditor();">${label}</button>`
+            ).join('')}
+        </div>
+        <div id="formEditorContent">${renderFormFieldsEditor(tab)}</div>`;
+}
+
+function renderFormFieldsEditor(formId) {
+    const fields = getFormFields(formId);
+    const history = ((app.state.formConfigs || {})[formId] || {}).history || [];
+    const LOCKED_REQ = ['fc_name','fc_phone','fc_product','fc_plan','fc_fee','cc_name','cc_email','cc_pass','ic_name','ic_email','ic_pass','ic_cpf','ic_store'];
+    return `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:1rem 0 0.75rem;flex-wrap:wrap;gap:8px;">
+            <span style="font-size:0.83rem;color:var(--text-muted);">${fields.length} campos · ${fields.filter(f => f.active !== false).length} ativos</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="secondary-btn" style="font-size:0.82rem;" onclick="openAddFieldModal('${formId}')">+ Campo personalizado</button>
+                <button class="secondary-btn" style="font-size:0.82rem;color:#f59e0b;" onclick="resetFormConfig('${formId}')">↺ Resetar padrão</button>
+            </div>
+        </div>
+        <div class="form-fields-table">
+            <div class="fft-header">
+                <span style="flex:2;">Campo</span>
+                <span style="flex:1;text-align:center;">Tipo</span>
+                <span style="flex:1;text-align:center;">Obrigatório</span>
+                <span style="flex:1;text-align:center;">Ativo</span>
+                <span style="flex:1;text-align:center;">Ações</span>
+            </div>
+            ${fields.map((f, idx) => {
+                const reqLocked = LOCKED_REQ.includes(f.id);
+                return `<div class="fft-row${f.active === false ? ' fft-inactive' : ''}">
+                    <span style="flex:2;font-weight:${f.system ? '600' : '400'};font-size:0.88rem;">${esc(f.label)}${!f.system ? ' <span class="badge-custom">✦</span>' : ''}</span>
+                    <span style="flex:1;text-align:center;"><span class="field-type-badge">${FIELD_TYPE_LABELS[f.type] || f.type}</span></span>
+                    <span style="flex:1;text-align:center;">${reqLocked
+                        ? '<span title="Obrigatório fixo" style="font-size:0.85rem;">🔒</span>'
+                        : `<label class="toggle-switch toggle-sm"><input type="checkbox" ${f.required ? 'checked' : ''} onchange="toggleFormFieldRequired('${formId}','${f.id}')" /><span class="toggle-slider"></span></label>`
+                    }</span>
+                    <span style="flex:1;text-align:center;"><label class="toggle-switch toggle-sm"><input type="checkbox" ${f.active !== false ? 'checked' : ''} onchange="toggleFormFieldActive('${formId}','${f.id}')" /><span class="toggle-slider"></span></label></span>
+                    <span style="flex:1;display:flex;gap:3px;justify-content:center;align-items:center;">
+                        <button class="icon-btn" title="Cima" ${idx === 0 ? 'disabled' : ''} onclick="moveFormField('${formId}','${f.id}',-1)">↑</button>
+                        <button class="icon-btn" title="Baixo" ${idx === fields.length - 1 ? 'disabled' : ''} onclick="moveFormField('${formId}','${f.id}',1)">↓</button>
+                        <button class="icon-btn" title="Renomear" onclick="openRenameFieldModal('${formId}','${f.id}')">✏️</button>
+                        ${!f.system ? `<button class="icon-btn" title="Excluir" style="color:#ef4444;" onclick="deleteCustomField('${formId}','${f.id}')">🗑</button>` : ''}
+                    </span>
+                </div>`;
+            }).join('')}
+        </div>
+        ${history.length > 0 ? `<details style="margin-top:1.25rem;"><summary style="cursor:pointer;font-size:0.83rem;color:var(--text-muted);">📋 Histórico (${history.length})</summary>
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px;">
+                ${history.slice(-10).reverse().map(h => `<div style="font-size:0.78rem;color:var(--text-muted);padding:4px 8px;background:var(--surface-2);border-radius:6px;">${esc(h.at)} — ${esc(h.action)}</div>`).join('')}
+            </div></details>` : ''}`;
+}
+
+function _saveFormFieldOverride(formId, fieldId, overrideData) {
+    if (!app.state.formConfigs) app.state.formConfigs = {};
+    if (!app.state.formConfigs[formId]) app.state.formConfigs[formId] = { fields: [], history: [] };
+    const config = app.state.formConfigs[formId];
+    const existing = config.fields.find(f => f.id === fieldId);
+    const histAction = overrideData._histAction;
+    delete overrideData._histAction;
+    if (existing) Object.assign(existing, overrideData);
+    else config.fields.push({ id: fieldId, ...overrideData });
+    if (!config.history) config.history = [];
+    if (histAction) config.history.push({ at: new Date().toLocaleString('pt-BR'), action: histAction });
+    saveState();
+}
+
+function toggleFormFieldActive(formId, fieldId) {
+    const f = getFormFields(formId).find(f => f.id === fieldId);
+    if (!f) return;
+    _saveFormFieldOverride(formId, fieldId, { active: f.active === false, _histAction: `"${f.label}" ${f.active === false ? 'ativado' : 'desativado'}` });
+    document.getElementById('formEditorContent').innerHTML = renderFormFieldsEditor(formId);
+}
+
+function toggleFormFieldRequired(formId, fieldId) {
+    const f = getFormFields(formId).find(f => f.id === fieldId);
+    if (!f) return;
+    _saveFormFieldOverride(formId, fieldId, { required: !f.required, _histAction: `"${f.label}" marcado como ${!f.required ? 'obrigatório' : 'opcional'}` });
+    document.getElementById('formEditorContent').innerHTML = renderFormFieldsEditor(formId);
+}
+
+function moveFormField(formId, fieldId, dir) {
+    const fields = getFormFields(formId);
+    const idx = fields.findIndex(f => f.id === fieldId);
+    if (idx < 0) return;
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= fields.length) return;
+    const thisOrder = fields[idx].order;
+    const otherOrder = fields[targetIdx].order;
+    _saveFormFieldOverride(formId, fieldId, { order: otherOrder, _histAction: `"${fields[idx].label}" reordenado` });
+    _saveFormFieldOverride(formId, fields[targetIdx].id, { order: thisOrder });
+    document.getElementById('formEditorContent').innerHTML = renderFormFieldsEditor(formId);
+}
+
+function openAddFieldModal(formId) {
+    showModal('Adicionar Campo Personalizado', `
+        <form id="addFieldForm" class="form-grid">
+            <div class="field"><label>Nome do campo *</label><input id="afLabel" type="text" required placeholder="Ex: CNPJ da empresa" /></div>
+            <div class="field"><label>Tipo *</label>
+                <select id="afType" onchange="document.getElementById('afOptionsRow').style.display=['select','radio','multicheck'].includes(this.value)?'':'none'">
+                    <option value="text">Texto simples</option>
+                    <option value="textarea">Texto longo</option>
+                    <option value="number">Número</option>
+                    <option value="date">Data</option>
+                    <option value="email">E-mail</option>
+                    <option value="tel">Telefone</option>
+                    <option value="checkbox">Sim/Não (checkbox)</option>
+                    <option value="radio">Opção binária (radio)</option>
+                    <option value="select">Seleção única (dropdown)</option>
+                    <option value="multicheck">Múltipla escolha</option>
+                </select>
+            </div>
+            <div class="field full-width" id="afOptionsRow" style="display:none;"><label>Opções (uma por linha)</label><textarea id="afOptions" rows="3" placeholder="Opção 1&#10;Opção 2&#10;Opção 3"></textarea></div>
+            <div class="field"><label class="checkbox-label"><input type="checkbox" id="afRequired" /><span>Campo obrigatório</span></label></div>
+            <div id="addFieldError" class="error-text full-width"></div>
+            <div class="actions full-width">
+                <button type="submit" class="primary-btn">Adicionar</button>
+                <button type="button" class="secondary-btn" onclick="closeModal(); renderGestorFormEditor();">Cancelar</button>
+            </div>
+        </form>`);
+    document.getElementById('addFieldForm').addEventListener('submit', (e) => { e.preventDefault(); saveCustomField(formId); });
+}
+
+function saveCustomField(formId) {
+    const label = document.getElementById('afLabel').value.trim();
+    const errEl = document.getElementById('addFieldError');
+    errEl.textContent = '';
+    if (!label) { errEl.textContent = 'Nome obrigatório.'; return; }
+    const type = document.getElementById('afType').value;
+    const required = document.getElementById('afRequired').checked;
+    const options = ['select','radio','multicheck'].includes(type)
+        ? document.getElementById('afOptions').value.split('\n').map(s => s.trim()).filter(Boolean) : [];
+    const fields = getFormFields(formId);
+    const maxOrder = fields.reduce((mx, f) => Math.max(mx, f.order), -1);
+    if (!app.state.formConfigs) app.state.formConfigs = {};
+    if (!app.state.formConfigs[formId]) app.state.formConfigs[formId] = { fields: [], history: [] };
+    const config = app.state.formConfigs[formId];
+    config.fields.push({ id: `cf_${Date.now()}`, label, type, required, active: true, system: false, order: maxOrder + 1, options });
+    if (!config.history) config.history = [];
+    config.history.push({ at: new Date().toLocaleString('pt-BR'), action: `Campo "${label}" adicionado` });
+    saveState(); closeModal(); renderGestorFormEditor();
+}
+
+function deleteCustomField(formId, fieldId) {
+    const f = getFormFields(formId).find(f => f.id === fieldId);
+    if (!f || f.system || !confirm(`Excluir o campo "${f.label}"?`)) return;
+    if (!app.state.formConfigs) app.state.formConfigs = {};
+    if (!app.state.formConfigs[formId]) app.state.formConfigs[formId] = { fields: [], history: [] };
+    const config = app.state.formConfigs[formId];
+    config.fields = config.fields.filter(cf => cf.id !== fieldId);
+    if (!config.history) config.history = [];
+    config.history.push({ at: new Date().toLocaleString('pt-BR'), action: `Campo "${f.label}" excluído` });
+    saveState();
+    document.getElementById('formEditorContent').innerHTML = renderFormFieldsEditor(formId);
+}
+
+function openRenameFieldModal(formId, fieldId) {
+    const f = getFormFields(formId).find(f => f.id === fieldId);
+    if (!f) return;
+    showModal('Renomear Campo', `
+        <div class="field"><label>Novo nome</label><input id="rfLabel" type="text" value="${esc(f.label)}" required /></div>
+        <div id="rfError" class="error-text" style="margin-top:6px;"></div>
+        <div class="actions" style="margin-top:1rem;">
+            <button class="primary-btn" onclick="saveFieldRename('${formId}','${fieldId}')">Salvar</button>
+            <button class="secondary-btn" onclick="closeModal(); renderGestorFormEditor();">Cancelar</button>
+        </div>`);
+}
+
+function saveFieldRename(formId, fieldId) {
+    const newLabel = document.getElementById('rfLabel').value.trim();
+    if (!newLabel) { document.getElementById('rfError').textContent = 'Nome obrigatório.'; return; }
+    const f = getFormFields(formId).find(f => f.id === fieldId);
+    _saveFormFieldOverride(formId, fieldId, { label: newLabel, _histAction: `"${f?.label}" renomeado para "${newLabel}"` });
+    closeModal(); renderGestorFormEditor();
+}
+
+function resetFormConfig(formId) {
+    if (!confirm(`Resetar "${FORM_LABELS[formId]}" para o padrão? Campos personalizados serão excluídos.`)) return;
+    if (!app.state.formConfigs) app.state.formConfigs = {};
+    app.state.formConfigs[formId] = { fields: [], history: [{ at: new Date().toLocaleString('pt-BR'), action: 'Formulário resetado para o padrão' }] };
+    saveState();
+    document.getElementById('formEditorContent').innerHTML = renderFormFieldsEditor(formId);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOUR GUIADO DO TRAK
+═══════════════════════════════════════════════════════════════════ */
+
+const TOUR_STORAGE_KEY = 'tracktiv_tours';
+
+const TOUR_STEPS = [
+    { navId: null,           title: 'Bem-vindo ao Portal! 👋', message: 'Olá! Sou o TRAK, seu assistente virtual. Vou te mostrar tudo que você precisa para começar a vender e ganhar comissões. Leva menos de 1 minuto!' },
+    { navId: 'c_dashboard',  title: 'Dashboard 📊',            message: 'Aqui você acompanha seu desempenho em tempo real: vendas do mês, comissões, leads no funil e seus rankings. Tudo numa tela só!' },
+    { navId: 'c_crm',        title: 'CRM de Vendas 🎯',         message: 'Seu funil de vendas completo. Cadastre leads, mova entre etapas, acompanhe follow-ups e nunca perca uma oportunidade de fechar negócio.' },
+    { navId: 'c_clientes',   title: 'Clientes 🌐',              message: 'Lista de todos os seus clientes ativos. Aqui você acessa o histórico, edita dados e cadastra novos clientes com facilidade.' },
+    { navId: 'c_financeiro', title: 'Financeiro 💰',            message: 'Acompanhe suas comissões, recorrências e bônus de indicação. Use o simulador para calcular quanto você vai ganhar em cada cenário de venda.' },
+    { navId: 'c_treinamentos', title: 'Treinamentos 🎓',        message: 'Módulos de treinamento completos para você dominar todos os produtos Tracktiv. Quanto mais você aprende, mais vende. Comece pelo Módulo 1!' },
+    { navId: 'c_comunicados', title: 'Comunicados 📢',           message: 'Fique por dentro das novidades, metas e recados do gestor. Comunicados urgentes aparecem como alertas automáticos assim que você entrar.' },
+    { navId: null,           title: 'Tudo pronto! 🚀',          message: 'Agora você conhece o portal. Minha dica: comece pelo Dashboard e depois cadastre seu primeiro lead no CRM. Qualquer dúvida, estou aqui!' }
+];
+
+function isTourCompleted(userId) {
+    try {
+        const data = JSON.parse(localStorage.getItem(TOUR_STORAGE_KEY) || '{}');
+        return !!data[userId];
+    } catch { return false; }
+}
+
+function setTourCompleted(userId) {
+    try {
+        const data = JSON.parse(localStorage.getItem(TOUR_STORAGE_KEY) || '{}');
+        data[userId] = true;
+        localStorage.setItem(TOUR_STORAGE_KEY, JSON.stringify(data));
+    } catch {}
+}
+
+let _tourStep = 0;
+
+function startTour() {
+    _tourStep = 0;
+    document.getElementById('tourOverlay').classList.remove('hidden');
+    document.body.classList.add('tour-active');
+    showTourStep(_tourStep);
+}
+
+function showTourStep(idx) {
+    const steps = TOUR_STEPS;
+    const step = steps[idx];
+    if (!step) { tourEnd(); return; }
+
+    document.getElementById('tourStepTitle').textContent = step.title;
+    document.getElementById('tourMessage').textContent = step.message;
+
+    // Progress fill
+    const pct = ((idx) / (steps.length - 1)) * 100;
+    document.getElementById('tourProgressFill').style.width = pct + '%';
+
+    // Dots
+    const dotsEl = document.getElementById('tourDots');
+    dotsEl.innerHTML = steps.map((_, i) =>
+        `<span class="tour-dot${i === idx ? ' active' : ''}"></span>`
+    ).join('');
+
+    // Nav/prev buttons
+    const prevBtn = document.getElementById('tourPrevBtn');
+    const nextBtn = document.getElementById('tourNextBtn');
+    prevBtn.style.visibility = idx === 0 ? 'hidden' : 'visible';
+    nextBtn.textContent = idx === steps.length - 1 ? 'Concluir ✓' : 'Próximo →';
+
+    // Highlight nav item
+    document.querySelectorAll('#navigationTabs .tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+    if (step.navId) {
+        const navBtn = document.querySelector(`#navigationTabs [data-nav-id="${step.navId}"]`);
+        if (navBtn) navBtn.classList.add('tour-highlight');
+    }
+}
+
+function tourNext() {
+    const steps = TOUR_STEPS;
+    if (_tourStep >= steps.length - 1) { tourEnd(); return; }
+    _tourStep++;
+    showTourStep(_tourStep);
+}
+
+function tourPrev() {
+    if (_tourStep <= 0) return;
+    _tourStep--;
+    showTourStep(_tourStep);
+}
+
+function tourEnd() {
+    document.getElementById('tourOverlay').classList.add('hidden');
+    document.body.classList.remove('tour-active');
+    document.querySelectorAll('#navigationTabs .tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+    if (app.currentUser) setTourCompleted(app.currentUser.id);
+}
+
+function reopenTour() {
+    if (!app.currentUser) return;
+    // Reset completion so it can be replayed
+    try {
+        const data = JSON.parse(localStorage.getItem(TOUR_STORAGE_KEY) || '{}');
+        delete data[app.currentUser.id];
+        localStorage.setItem(TOUR_STORAGE_KEY, JSON.stringify(data));
+    } catch {}
+    startTour();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RECUPERAÇÃO DE SENHA
+═══════════════════════════════════════════════════════════════════ */
+
+let _resetCode = '';
+let _resetEmail = '';
+
+function showForgotPassword() {
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('resetSection').classList.remove('hidden');
+    document.getElementById('resetStep1').classList.remove('hidden');
+    document.getElementById('resetStep2').classList.add('hidden');
+    document.getElementById('resetStep3').classList.add('hidden');
+    document.getElementById('resetEmailInput').value = '';
+    document.getElementById('resetError1').textContent = '';
+}
+
+function showLoginForm() {
+    document.getElementById('loginSection').classList.remove('hidden');
+    document.getElementById('resetSection').classList.add('hidden');
+}
+
+function resetStep1Submit() {
+    const email = document.getElementById('resetEmailInput').value.trim().toLowerCase();
+    const errEl = document.getElementById('resetError1');
+    errEl.textContent = '';
+    const user = (app.state.users || []).find(u => u.email === email);
+    if (!user) { errEl.textContent = 'E-mail não encontrado.'; return; }
+    _resetEmail = email;
+    _resetCode = String(Math.floor(100000 + Math.random() * 900000));
+    document.getElementById('resetCodeDisplay').textContent = _resetCode;
+    document.getElementById('resetStep1').classList.add('hidden');
+    document.getElementById('resetStep2').classList.remove('hidden');
+    document.getElementById('resetCodeInput').value = '';
+    document.getElementById('resetError2').textContent = '';
+}
+
+function resetStep2Submit() {
+    const entered = document.getElementById('resetCodeInput').value.trim();
+    const errEl = document.getElementById('resetError2');
+    errEl.textContent = '';
+    if (entered !== _resetCode) { errEl.textContent = 'Código incorreto. Tente novamente.'; return; }
+    document.getElementById('resetStep2').classList.add('hidden');
+    document.getElementById('resetStep3').classList.remove('hidden');
+    document.getElementById('resetNewPass').value = '';
+    document.getElementById('resetConfirmPass').value = '';
+    document.getElementById('resetError3').textContent = '';
+}
+
+function resetStep3Submit() {
+    const newPass     = document.getElementById('resetNewPass').value;
+    const confirmPass = document.getElementById('resetConfirmPass').value;
+    const errEl       = document.getElementById('resetError3');
+    errEl.textContent = '';
+    if (newPass.length < 6) { errEl.textContent = 'A senha deve ter pelo menos 6 caracteres.'; return; }
+    if (newPass !== confirmPass) { errEl.textContent = 'As senhas não coincidem.'; return; }
+    const user = (app.state.users || []).find(u => u.email === _resetEmail);
+    if (!user) { errEl.textContent = 'Erro interno. Tente novamente.'; return; }
+    user.password = newPass;
+    saveState();
+    document.getElementById('resetStep3').classList.add('hidden');
+    document.getElementById('resetSuccess').classList.remove('hidden');
+    setTimeout(() => {
+        document.getElementById('resetSuccess').classList.add('hidden');
+        showLoginForm();
+    }, 2500);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MURAL DE COMUNICADOS
+═══════════════════════════════════════════════════════════════════ */
+
+function getComunicadosAtivos() {
+    if (!app.state || !app.state.comunicados) return [];
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const cutoffISO = cutoff.toISOString().slice(0, 10);
+    return (app.state.comunicados || []).filter(c => c.criadoEm >= cutoffISO);
+}
+
+function getComunicadosNaoLidos() {
+    if (!app.currentUser) return [];
+    const uid = app.currentUser.id;
+    return getComunicadosAtivos().filter(c => !(c.lidos || []).includes(uid));
+}
+
+function markComunicadoRead(comId) {
+    if (!app.currentUser) return;
+    const uid = app.currentUser.id;
+    const com = (app.state.comunicados || []).find(c => c.id === comId);
+    if (com && !(com.lidos || []).includes(uid)) {
+        com.lidos = [...(com.lidos || []), uid];
+        saveState();
+    }
+}
+
+let _urgenteQueue = [];
+let _urgenteIdx = 0;
+
+function checkUrgentePopup() {
+    if (!app.currentUser) return;
+    const uid = app.currentUser.id;
+    _urgenteQueue = getComunicadosAtivos().filter(c =>
+        c.prioridade === 'urgente' && !(c.lidos || []).includes(uid)
+    );
+    _urgenteIdx = 0;
+    if (_urgenteQueue.length > 0) showUrgentePopupItem(0);
+}
+
+function showUrgentePopupItem(idx) {
+    const com = _urgenteQueue[idx];
+    if (!com) return;
+    document.getElementById('urgentePopupTitulo').textContent = com.titulo;
+    document.getElementById('urgentePopupMeta').textContent = `📅 ${com.criadoEm} · Por: Gestor`;
+    document.getElementById('urgentePopupMsg').textContent = com.mensagem;
+    const nextBtn = document.getElementById('urgentePopupNext');
+    if (nextBtn) nextBtn.classList.toggle('hidden', _urgenteQueue.length <= 1 || idx >= _urgenteQueue.length - 1);
+    document.getElementById('urgentePopup').classList.remove('hidden');
+}
+
+function urgentePopupNext() {
+    markComunicadoRead(_urgenteQueue[_urgenteIdx].id);
+    _urgenteIdx++;
+    if (_urgenteIdx < _urgenteQueue.length) {
+        showUrgentePopupItem(_urgenteIdx);
+    } else {
+        urgentePopupClose();
+    }
+    updateNotifBadge();
+}
+
+function urgentePopupClose() {
+    if (_urgenteQueue[_urgenteIdx]) markComunicadoRead(_urgenteQueue[_urgenteIdx].id);
+    document.getElementById('urgentePopup').classList.add('hidden');
+    updateNotifBadge();
+}
+
+function renderGestorComunicados() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const coms = (app.state.comunicados || []).sort((a, b) => b.criadoEm.localeCompare(a.criadoEm));
+    const allUsers = (app.state.users || []).filter(u => ['consultor', 'instalador', 'tecnico'].includes(u.role));
+
+    el.innerHTML = `
+        <div class="section-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <div>
+                <h2>📢 Mural de Comunicados</h2>
+                <p class="section-subtitle">Crie e gerencie comunicados para consultores e instaladores.</p>
+            </div>
+            <button class="primary-btn" onclick="openComunicadoModal()">+ Novo Comunicado</button>
+        </div>
+        ${coms.length === 0 ? '<div class="empty-state">Nenhum comunicado criado ainda.</div>' :
+        coms.map(c => {
+            const lidos = (c.lidos || []).length;
+            const total = allUsers.length;
+            const priLabel = c.prioridade === 'urgente' ? '<span class="pill-urgente">🚨 Urgente</span>' :
+                             c.prioridade === 'importante' ? '<span class="pill-importante">⚠️ Importante</span>' :
+                             '<span class="pill-normal">📋 Normal</span>';
+            return `<div class="comunicado-card ${c.prioridade}">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;flex-wrap:wrap;">
+                    <div style="flex:1;">
+                        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+                            ${priLabel}
+                            <span class="comunicado-titulo">${esc(c.titulo)}</span>
+                        </div>
+                        <div class="comunicado-meta">📅 ${esc(c.criadoEm)}</div>
+                        <div class="comunicado-msg">${esc(c.mensagem)}</div>
+                    </div>
+                    <div style="display:flex;gap:0.5rem;flex-shrink:0;align-items:flex-start;">
+                        <button class="secondary-btn" style="padding:4px 10px;font-size:0.78rem;" onclick="openComunicadoLidosModal('${esc(c.id)}')">👁 ${lidos}/${total} lidos</button>
+                        <button class="secondary-btn" style="padding:4px 10px;font-size:0.78rem;color:#ef4444;" onclick="deleteComunicado('${esc(c.id)}')">🗑</button>
+                    </div>
+                </div>
+            </div>`;
+        }).join('')}
+    `;
+}
+
+function openComunicadoModal() {
+    const modal = document.getElementById('genericModal');
+    const body  = document.getElementById('modalBody');
+    body.innerHTML = `
+        <h3 style="margin-bottom:1rem;">📢 Novo Comunicado</h3>
+        <label class="form-label">Título *</label>
+        <input id="comTitulo" class="form-input" maxlength="80" placeholder="Ex: Meta de julho anunciada!">
+        <label class="form-label" style="margin-top:0.75rem;">Mensagem *</label>
+        <textarea id="comMensagem" class="form-input" rows="4" placeholder="Escreva o comunicado aqui..."></textarea>
+        <label class="form-label" style="margin-top:0.75rem;">Prioridade</label>
+        <select id="comPrioridade" class="form-input">
+            <option value="normal">📋 Normal</option>
+            <option value="importante">⚠️ Importante</option>
+            <option value="urgente">🚨 Urgente</option>
+        </select>
+        <div id="comError" style="color:#ef4444;margin-top:0.5rem;font-size:0.85rem;"></div>
+        <div style="display:flex;gap:0.75rem;margin-top:1.25rem;">
+            <button class="primary-btn" style="flex:1;" onclick="saveComunicado()">Publicar</button>
+            <button class="btn-outline" onclick="closeModal()">Cancelar</button>
+        </div>`;
+    modal.classList.remove('hidden');
+}
+
+function saveComunicado() {
+    const titulo    = document.getElementById('comTitulo').value.trim();
+    const mensagem  = document.getElementById('comMensagem').value.trim();
+    const prioridade = document.getElementById('comPrioridade').value;
+    const errEl     = document.getElementById('comError');
+    errEl.textContent = '';
+    if (!titulo) { errEl.textContent = 'Título obrigatório.'; return; }
+    if (!mensagem) { errEl.textContent = 'Mensagem obrigatória.'; return; }
+    const novo = {
+        id: 'com_' + Date.now(),
+        autorId: app.currentUser.id,
+        titulo, mensagem, prioridade,
+        criadoEm: todayISO(),
+        lidos: []
+    };
+    app.state.comunicados = [novo, ...(app.state.comunicados || [])];
+    saveState();
+    closeModal();
+    renderGestorComunicados();
+}
+
+function deleteComunicado(comId) {
+    if (!confirm('Excluir este comunicado?')) return;
+    app.state.comunicados = (app.state.comunicados || []).filter(c => c.id !== comId);
+    saveState();
+    renderGestorComunicados();
+}
+
+function openComunicadoLidosModal(comId) {
+    const com = (app.state.comunicados || []).find(c => c.id === comId);
+    if (!com) return;
+    const allUsers = (app.state.users || []).filter(u => ['consultor', 'instalador', 'tecnico'].includes(u.role));
+    const lidosIds = com.lidos || [];
+    const modal = document.getElementById('genericModal');
+    const body  = document.getElementById('modalBody');
+    body.innerHTML = `
+        <h3 style="margin-bottom:1rem;">👁 Quem leu: ${esc(com.titulo)}</h3>
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+            ${allUsers.length === 0 ? '<div class="empty-state">Nenhum usuário.</div>' :
+            allUsers.map(u => {
+                const leu = lidosIds.includes(u.id);
+                return `<div style="display:flex;justify-content:space-between;padding:0.5rem;background:var(--surface-2);border-radius:8px;">
+                    <span>${esc(u.name)}</span>
+                    <span style="color:${leu ? '#10b981' : '#6b7280'}">${leu ? '✓ Leu' : '— Não leu'}</span>
+                </div>`;
+            }).join('')}
+        </div>
+        <button class="btn-outline" style="margin-top:1rem;width:100%;" onclick="closeModal()">Fechar</button>`;
+    modal.classList.remove('hidden');
+}
+
+function renderComunicadosMural() {
+    const el = document.getElementById('dynamicContent');
+    if (!el || !app.currentUser) return;
+    const uid = app.currentUser.id;
+    const coms = getComunicadosAtivos().sort((a, b) => b.criadoEm.localeCompare(a.criadoEm));
+
+    // Mark all as read when opening the mural
+    coms.forEach(c => markComunicadoRead(c.id));
+    updateNotifBadge();
+
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:1rem;">
+            <h2>📢 Mural de Comunicados</h2>
+            <p class="section-subtitle">Comunicados do gestor para você. Últimos 30 dias.</p>
+        </div>
+        ${coms.length === 0 ? '<div class="empty-state">Nenhum comunicado recente.</div>' :
+        coms.map(c => {
+            const priLabel = c.prioridade === 'urgente' ? '<span class="pill-urgente">🚨 Urgente</span>' :
+                             c.prioridade === 'importante' ? '<span class="pill-importante">⚠️ Importante</span>' :
+                             '<span class="pill-normal">📋 Normal</span>';
+            return `<div class="comunicado-card ${c.prioridade}">
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+                    ${priLabel}
+                    <span class="comunicado-titulo">${esc(c.titulo)}</span>
+                </div>
+                <div class="comunicado-meta">📅 ${esc(c.criadoEm)}</div>
+                <div class="comunicado-msg">${esc(c.mensagem)}</div>
+            </div>`;
+        }).join('')}
+    `;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
