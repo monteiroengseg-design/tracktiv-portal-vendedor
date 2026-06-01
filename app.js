@@ -7,7 +7,7 @@ const INSTALL_FEE = 60;
 const SALE_COMMISSION = 50;
 
 const NAV_ICONS = {
-    gestorDashboard:'📊', gestorConsultores:'👥', gestorInstaladores:'🔧',
+    gestorDashboard:'📊', gestorConsultores:'👥', gestorParceiros:'🤝',
     gestorCupons:'🏷️', gestorConfig:'⚙️', gestorClientesPortal:'🌐',
     consultorDashboard:'📊', consultorCRM:'🎯', consultorClientes:'👤',
     consultorProdutos:'📦', consultorTreinamento:'🎓', consultorSimulador:'🧮',
@@ -58,11 +58,11 @@ const NAV_TREE = {
             { id: 'g_cons_ind',     label: 'Indicações Pendentes',  icon: '⏳', render: () => renderGestorIndicacoes() },
             { id: 'g_cons_rank',    label: 'Ranking',               icon: '🏆', render: () => renderGestorRankingPage() }
         ]},
-        { id: 'g_instaladores', label: 'Instaladores',   icon: '🔧', children: [
-            { id: 'g_inst_lista',   label: 'Lista de Instaladores',  icon: '📋', section: 'gestorInstaladores' },
-            { id: 'g_inst_new',     label: 'Cadastrar Novo',         icon: '➕', action: () => openInstaladorModal() },
-            { id: 'g_inst_pend',    label: 'Instalações Pendentes',  icon: '⏳', render: () => renderInstPendentesList() },
-            { id: 'g_inst_reg',     label: 'Registro de Instalações',icon: '📊', section: 'gestorInstaladores' }
+        { id: 'g_parceiros', label: 'Parceiros', icon: '🤝', children: [
+            { id: 'g_par_lista', label: 'Lista de Parceiros',     icon: '📋', section: 'gestorInstaladores' },
+            { id: 'g_par_new',   label: 'Cadastrar Novo',          icon: '➕', action: () => openParceirosModal() },
+            { id: 'g_par_pend',  label: 'Instalações Pendentes',   icon: '⏳', render: () => renderInstPendentesList() },
+            { id: 'g_par_reg',   label: 'Registro de Instalações', icon: '📊', section: 'gestorInstaladores' }
         ]},
         { id: 'g_tecnicos',    label: 'Técnicos',        icon: '🛠️', children: [
             { id: 'g_tec_lista',    label: 'Lista de Técnicos',    icon: '📋', render: () => renderGestorTecnicos() },
@@ -78,7 +78,9 @@ const NAV_TREE = {
         { id: 'g_vendas',      label: 'Vendas',          icon: '💼', children: [
             { id: 'g_vend_aprov',   label: 'Aprovações Pendentes',  icon: '⏳', section: 'gestorDashboard' },
             { id: 'g_vend_hist',    label: 'Histórico de Vendas',   icon: '📊', render: () => renderHistoricoVendas() },
-            { id: 'g_vend_rel',     label: 'Relatórios',            icon: '📈', render: () => renderGestorRelatorios() }
+            { id: 'g_vend_rel',     label: 'Relatórios',            icon: '📈', render: () => renderGestorRelatorios() },
+            { id: 'g_vend_risco',   label: 'Clientes em Risco',     icon: '⚠️', render: () => renderGestorRisco() },
+            { id: 'g_vend_upsell',  label: 'Oport. de Upsell',      icon: '📈', render: () => renderGestorUpsell() }
         ]},
         { id: 'g_financeiro',  label: 'Financeiro',      icon: '💰', children: [
             { id: 'g_fin_comis',    label: 'Comissões do Mês',      icon: '💵', render: () => renderGestorComissoes() },
@@ -97,6 +99,7 @@ const NAV_TREE = {
             { id: 'g_cfg_forms',    label: 'Editor de Formulários', icon: '🔧', render: () => renderGestorFormEditor() }
         ]},
         { id: 'g_produtos_cfg', label: 'Produtos',        icon: '📦', render: () => renderGestorProdutos() },
+        { id: 'g_mural',       label: 'Mural e Desafios',icon: '🏆', render: () => renderGestorMuralConfig() },
         { id: 'g_comunicados', label: 'Comunicados',     icon: '📢', render: () => renderGestorComunicados() },
         { id: 'g_followups',   label: 'Follow-ups',      icon: '📅', render: () => renderFollowUpCalendar() },
         { id: 'g_mensagens',   label: 'Mensagens',       icon: '💬', render: () => renderGestorChatPage() }
@@ -104,10 +107,14 @@ const NAV_TREE = {
     consultor: [
         { id: 'c_dashboard',   label: 'Dashboard',      icon: '📊', section: 'consultorDashboard' },
         { id: 'c_crm',         label: 'CRM',            icon: '🎯', children: [
-            { id: 'c_crm_funil',    label: 'Funil de Vendas',  icon: '📊', section: 'consultorCRM' },
-            { id: 'c_crm_etapa',    label: 'Leads por Etapa',  icon: '🎯', render: () => renderLeadsPorEtapa() },
-            { id: 'c_crm_score',    label: 'Score de Leads',   icon: '⭐', render: () => renderScoreLeads() },
-            { id: 'c_crm_followup', label: 'Follow-ups',       icon: '📅', render: () => renderFollowUpCalendar() }
+            { id: 'c_crm_funil',    label: 'Funil de Vendas',   icon: '📊', section: 'consultorCRM' },
+            { id: 'c_crm_etapa',    label: 'Leads por Etapa',   icon: '🎯', render: () => renderLeadsPorEtapa() },
+            { id: 'c_crm_score',    label: 'Score de Leads',    icon: '⭐', render: () => renderScoreLeads() },
+            { id: 'c_crm_followup', label: 'Follow-ups',        icon: '📅', render: () => renderFollowUpCalendar() },
+            { id: 'c_crm_reativar', label: 'Leads p/ Reativar', icon: '🔄', render: () => renderLeadsReativar() },
+            { id: 'c_crm_risco',    label: 'Clientes em Risco', icon: '⚠️', render: () => renderClientesEmRisco() },
+            { id: 'c_crm_upsell',   label: 'Oport. de Upsell',  icon: '📈', render: () => renderUpsellCentral() },
+            { id: 'c_crm_proposta', label: 'Gerar Proposta',    icon: '📄', render: () => renderPropostaLista() }
         ]},
         { id: 'c_clientes',    label: 'Clientes',       icon: '🌐', children: [
             { id: 'c_cli_lista',    label: 'Lista de Clientes', icon: '📋', section: 'consultorClientes' },
@@ -129,6 +136,8 @@ const NAV_TREE = {
             { id: 'c_ind_indicar',  label: 'Indicar Consultor', icon: '➕', render: () => renderIndicarConsultor() },
             { id: 'c_ind_minha',    label: 'Minha Indicação',   icon: '📋', render: () => renderMinhaIndicacao() }
         ]},
+        { id: 'c_mural',       label: 'Mural',          icon: '🏆', render: () => renderMural() },
+        { id: 'c_link',        label: 'Meu Link',        icon: '🔗', render: () => renderMeuLink() },
         { id: 'c_comunicados', label: 'Comunicados',     icon: '📢', render: () => renderComunicadosMural() },
         { id: 'c_mensagens',   label: 'Mensagens',      icon: '💬', action: () => openChatOverlay('gestor') }
     ],
@@ -154,6 +163,7 @@ const NAV_TREE = {
             { id: 'i_trei_cert',    label: 'Meu Certificado',       icon: '🏅', render: () => renderConsCertificados() }
         ]},
         { id: 'i_produtos',    label: 'Produtos',       icon: '📦', section: 'consultorProdutos' },
+        { id: 'i_mural',       label: 'Mural',          icon: '🏆', render: () => renderMural() },
         { id: 'i_comunicados', label: 'Comunicados',     icon: '📢', render: () => renderComunicadosMural() },
         { id: 'i_mensagens',   label: 'Mensagens',      icon: '💬', action: () => openChatOverlay('gestor') }
     ],
@@ -164,6 +174,14 @@ const NAV_TREE = {
         { id: 't_mensagens', label: 'Mensagens',     icon: '💬', action: () => openChatOverlay('gestor') }
     ]
 };
+
+const NAV_TREE_INDICADOR = [
+    { id: 'pi_dashboard',  label: 'Dashboard',          icon: '📊', section: 'instaladorDashboard' },
+    { id: 'pi_indicacoes', label: 'Minhas Indicações',  icon: '🤝', render: () => renderIndicadorReferrals() },
+    { id: 'pi_financeiro', label: 'Financeiro',         icon: '💰', render: () => renderIndicadorExtrato() },
+    { id: 'pi_comunicados',label: 'Comunicados',        icon: '📢', render: () => renderComunicadosMural() },
+    { id: 'pi_mensagens',  label: 'Mensagens',          icon: '💬', action: () => openChatOverlay('gestor') }
+];
 
 const stageOrder = ['Novo Lead', 'Contato Feito', 'Apresentação', 'Proposta', 'Fechado', 'Perdido'];
 
@@ -1372,8 +1390,10 @@ const sampleState = {
           cpf: '123.456.789-00', address: 'Rua das Orquídeas, 450 - São Paulo/SP', whatsapp: '(11) 91111-2222', pixKey: 'laura@tracktiv.com' },
         { id: 'consultor_2', name: 'Bruno Silva', email: 'bruno@tracktiv.com', password: 'Bruno123', role: 'consultor',
           cpf: '987.654.321-00', address: 'Av. Paulista, 1200 - São Paulo/SP', whatsapp: '(21) 93333-4444', pixKey: 'bruno@tracktiv.com' },
-        { id: 'instalador_1', name: 'Carlos Pereira', email: 'instalador@tracktiv.com', password: 'Instalador123', role: 'instalador',
-          cpf: '111.222.333-44', address: 'Av. Industrial, 500 - Guarulhos/SP', whatsapp: '(11) 98888-7777', pixKey: 'carlos@tracktiv.com', storeName: 'Moto Peças Carlos' },
+        { id: 'instalador_1', name: 'Carlos Pereira', email: 'instalador@tracktiv.com', password: 'Instalador123', role: 'instalador', partnerType: 'instalador',
+          cpf: '111.222.333-44', address: 'Av. Industrial, 500 - Guarulhos/SP', whatsapp: '(11) 98888-7777', pixKey: 'carlos@tracktiv.com', storeName: 'Moto Peças Carlos', region: 'Guarulhos/SP' },
+        { id: 'indicador_1', name: 'Fernanda Lima', email: 'parceiro@tracktiv.com', password: 'Parceiro123', role: 'instalador', partnerType: 'indicador',
+          cpf: '222.333.444-55', address: 'Rua das Acácias, 200 - Campinas/SP', whatsapp: '(19) 97777-8888', pixKey: 'fernanda@indicacao.com', region: 'Campinas/SP', commissionPct: 10 },
         { id: 'cliente_demo', name: 'Auto Prime', email: 'cliente@tracktiv.com', password: 'Cliente123', role: 'cliente',
           clientId: 'c1', referralCode: 'AUTOPRIME23', points: 150, contractedServices: ['rastreamento'] },
         { id: 'tecnico_1', name: 'Rafael Santos', email: 'tecnico@tracktiv.com', password: 'Tecnico123', role: 'tecnico',
@@ -1507,7 +1527,37 @@ const sampleState = {
           descontoAnual: 10, condicoesEspeciais: '', pagamentos: ['pix', 'cartao', 'boleto'], pagamentoPersonalizado: '', parcelasCartao: 6,
           comissao: { tipo: 'percentual', valor: 10, recorrencia: 5 }, visibilidade: ['consultor'] }
     ],
-    formConfigs: {}
+    formConfigs: {},
+    muralConfig: {
+        enabled: true,
+        showRanking: true,
+        showMeta: true,
+        showFeed: true,
+        showChallenges: true,
+        showComissions: false,
+        hideFeedNames: false,
+        metaValue: 10
+    },
+    challenges: [
+        {
+            id: 'ch_demo1',
+            title: '🚀 Sprint de Vendas — Junho',
+            description: 'Feche 3 contratos no mês e ganhe o prêmio!',
+            type: 'vendas',
+            goal: 3,
+            startDate: '2026-06-01',
+            endDate: '2026-06-30',
+            prize: 'Jantar para 2 + R$ 200 em crédito Tracktiv',
+            prizeVisible: true,
+            visibility: 'publico',
+            status: 'ativo',
+            createdAt: '2026-06-01'
+        }
+    ],
+    salesFeed: [
+        { id: 'feed_demo1', consultorName: 'Laura Mendes', consultorId: 'consultor_1', clientName: 'Auto Prime', plan: 'Profissional', date: '2026-06-01', timestamp: 1748779200000 },
+        { id: 'feed_demo2', consultorName: 'Bruno Silva', consultorId: 'consultor_2', clientName: 'SmartFleet', plan: 'Controle Total', date: '2026-06-01', timestamp: 1748775600000 }
+    ]
 };
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1815,6 +1865,19 @@ function loadState() {
                     if (item.required === undefined) item.required = true;
                 });
             });
+            // Migração: novos campos para as 5 features avançadas
+            if (!app.state.reengagementQueue)  app.state.reengagementQueue  = [];
+            if (!app.state.recoveryHistory)     app.state.recoveryHistory    = [];
+            if (!app.state.churnAlertsSent)     app.state.churnAlertsSent    = {};
+            // Migração: Portal de Parceiros
+            if (!app.state.indicadorReferrals) app.state.indicadorReferrals = [];
+            (app.state.users || []).forEach(u => {
+                if (u.role === 'instalador' && !u.partnerType) u.partnerType = 'instalador';
+            });
+            // Migração: Mural e Desafios / Link de Cadastro
+            if (!app.state.muralConfig) app.state.muralConfig = { enabled: true, showRanking: true, showMeta: true, showFeed: true, showChallenges: true, showComissions: false, hideFeedNames: false, metaValue: 10 };
+            if (!app.state.challenges)  app.state.challenges  = [];
+            if (!app.state.salesFeed)   app.state.salesFeed   = [];
         } catch (e) {
             app.state = JSON.parse(JSON.stringify(sampleState));
         }
@@ -1849,7 +1912,8 @@ function renderNavigation() {
     const tabs = document.getElementById('navigationTabs');
     tabs.innerHTML = '';
     const role = app.currentUser.role;
-    const tree = NAV_TREE[role] || [];
+    const isIndicador = role === 'instalador' && app.currentUser.partnerType === 'indicador';
+    const tree = isIndicador ? NAV_TREE_INDICADOR : (NAV_TREE[role] || []);
     const expandedId = app.navState.expandedGroup;
 
     if (expandedId) {
@@ -1919,7 +1983,8 @@ function navItemClick(item, parent) {
 
     // Build breadcrumb path
     const role = app.currentUser.role;
-    const roleLabel = role === 'gestor' ? 'Gestor' : role === 'consultor' ? 'Consultor' : role === 'tecnico' ? 'Técnico' : 'Instalador';
+    const roleLabel = role === 'gestor' ? 'Gestor' : role === 'consultor' ? 'Consultor' : role === 'tecnico' ? 'Técnico'
+        : (app.currentUser.partnerType === 'indicador' ? 'Parceiro Indicador' : 'Parceiro Instalador');
     const path = [{ label: roleLabel, groupId: null }];
     if (parent) {
         path.push({ label: parent.label, groupId: parent.id });
@@ -2181,25 +2246,66 @@ function renderGestorInstaladores() {
     if (!tbody || !instBody) return;
 
     tbody.innerHTML = '';
-    (app.state.users || []).filter(u => u.role === 'instalador').forEach(u => {
-        const m = getInstaladorMetrics(u);
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><strong>${esc(u.name)}</strong><br><small>${esc(u.email)}</small></td>
-            <td>${esc(u.storeName || '—')}</td>
-            <td>${m.clientCount}</td>
-            <td>${m.monthlyInstalls.length}</td>
-            <td>R$ ${formatCurrency(m.installCommission)}</td>
-            <td><span class="badge ${m.recurrence.badge}">${m.recurrence.label}</span></td>
-            <td><div class="table-actions">
-                <button class="small-btn" data-action="edit" data-id="${u.id}">Editar</button>
-                <button class="small-btn danger-btn" data-action="delete" data-id="${u.id}">Excluir</button>
-            </div></td>
-        `;
-        tbody.appendChild(tr);
-    });
-    tbody.querySelectorAll('[data-action="edit"]').forEach(b => b.addEventListener('click', () => openInstaladorModal(b.dataset.id)));
+    const allParceiros = (app.state.users || []).filter(u => u.role === 'instalador');
+    const parcInstals = allParceiros.filter(u => u.partnerType !== 'indicador');
+    const parcIndicadores = allParceiros.filter(u => u.partnerType === 'indicador');
+
+    if (parcInstals.length) {
+        const hdr = document.createElement('tr');
+        hdr.innerHTML = `<td colspan="7" style="background:var(--bg);font-weight:700;color:var(--primary);padding:10px 14px;font-size:0.85rem;letter-spacing:.04em;">PARCEIROS INSTALADORES</td>`;
+        tbody.appendChild(hdr);
+        parcInstals.forEach(u => {
+            const m = getInstaladorMetrics(u);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${esc(u.name)}</strong><br><small>${esc(u.email)}</small></td>
+                <td>${esc(u.storeName || '—')}<br><small style="color:var(--text-soft);">${esc(u.region || '')}</small></td>
+                <td>${m.clientCount}</td>
+                <td>${m.monthlyInstalls.length}</td>
+                <td>R$ ${formatCurrency(m.installCommission)}</td>
+                <td><span class="badge ${m.recurrence.badge}">${m.recurrence.label}</span></td>
+                <td><div class="table-actions">
+                    <button class="small-btn" data-action="edit" data-id="${u.id}">Editar</button>
+                    <button class="small-btn danger-btn" data-action="delete" data-id="${u.id}">Excluir</button>
+                </div></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    if (parcIndicadores.length) {
+        const hdr = document.createElement('tr');
+        hdr.innerHTML = `<td colspan="7" style="background:var(--bg);font-weight:700;color:var(--primary);padding:10px 14px;font-size:0.85rem;letter-spacing:.04em;border-top:2px solid var(--border);">PARCEIROS INDICADORES</td>`;
+        tbody.appendChild(hdr);
+        parcIndicadores.forEach(u => {
+            const refs = (app.state.indicadorReferrals || []).filter(r => r.indicadorId === u.id);
+            const fechados = refs.filter(r => r.status === 'fechado').length;
+            const commTotal = refs.filter(r => r.status === 'fechado').reduce((s, r) => s + (r.commissionValue || 0), 0);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${esc(u.name)}</strong><br><small>${esc(u.email)}</small></td>
+                <td><span class="badge badge-info">Indicador</span><br><small style="color:var(--text-soft);">${esc(u.region || '')}</small></td>
+                <td>${refs.length}</td>
+                <td>${fechados}</td>
+                <td>R$ ${formatCurrency(commTotal)}</td>
+                <td><span class="badge badge-active">${u.commissionPct || 0}% comissão</span></td>
+                <td><div class="table-actions">
+                    <button class="small-btn" data-action="indicacoes" data-id="${u.id}">Indicações</button>
+                    <button class="small-btn" data-action="edit" data-id="${u.id}">Editar</button>
+                    <button class="small-btn danger-btn" data-action="delete" data-id="${u.id}">Excluir</button>
+                </div></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    if (!allParceiros.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="padding:28px;text-align:center;color:var(--text-soft);">Nenhum parceiro cadastrado ainda.</td></tr>';
+    }
+
+    tbody.querySelectorAll('[data-action="edit"]').forEach(b => b.addEventListener('click', () => openParceirosModal(b.dataset.id)));
     tbody.querySelectorAll('[data-action="delete"]').forEach(b => b.addEventListener('click', () => deleteInstalador(b.dataset.id)));
+    tbody.querySelectorAll('[data-action="indicacoes"]').forEach(b => b.addEventListener('click', () => openGestorIndicacoesParceiro(b.dataset.id)));
 
     instBody.innerHTML = '';
     const sorted = [...(app.state.installations || [])].sort((a, b) => b.date.localeCompare(a.date));
@@ -2336,8 +2442,11 @@ function renderFunnelBoard() {
                 const score = calcScore(client);
                 const temp  = getScoreTemp(score);
                 const awaitBadge = client.awaitingApproval ? `<div style="font-size:0.72rem;background:#fff3cd;color:#7a4f00;border-radius:8px;padding:2px 8px;margin-bottom:4px;font-weight:700;">⏳ Aguardando aprovação</div>` : '';
+                const churn = client.stage === 'Fechado' ? calculateChurnScore(client) : null;
+                const cb = churn !== null ? getChurnBadge(churn) : null;
+                const churnTag = (cb && churn >= 40) ? `<span class="churn-mini-badge churn-${cb.cls}" style="display:inline-block;margin-bottom:4px;">${cb.icon} Risco ${cb.label}</span><br>` : '';
                 card.innerHTML = `
-                    ${awaitBadge}
+                    ${churnTag}${awaitBadge}
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:4px;">
                         <strong style="line-height:1.3;">${esc(client.name)}</strong>
                         <button class="score-badge ${temp.cls}" type="button" data-action="trak" title="Sugestão do TRAK">${temp.emoji} ${score}</button>
@@ -2391,10 +2500,13 @@ function renderClientTable() {
         const ph    = (c.phone || '').replace(/\D/g, '');
         const score = calcScore(c);
         const temp  = getScoreTemp(score);
+        const churn = c.stage === 'Fechado' ? calculateChurnScore(c) : null;
+        const churnBadge = churn !== null ? getChurnBadge(churn) : null;
         const row   = document.createElement('tr');
         row.innerHTML = `
             <td>
                 <button type="button" class="client-name-btn" data-action="profile" data-id="${c.id}">${esc(c.name)}</button>
+                ${churnBadge && churn >= 40 ? `<br><span class="churn-mini-badge churn-${churnBadge.cls}">${churnBadge.icon} Risco ${churnBadge.label}</span>` : ''}
                 ${c.notes ? `<br><small class="text-muted">${esc(c.notes)}</small>` : ''}
             </td>
             <td>
@@ -2411,16 +2523,18 @@ function renderClientTable() {
             <td><button class="score-badge ${temp.cls}" type="button" data-action="score" data-id="${c.id}" title="Abrir checklist de score">${temp.emoji} ${score}</button></td>
             <td><div class="table-actions">
                 <button class="small-btn" data-action="profile" data-id="${c.id}">Ver perfil</button>
+                <button class="small-btn" data-action="proposta" data-id="${c.id}">📄 Proposta</button>
                 <button class="small-btn" data-action="edit" data-id="${c.id}">Editar</button>
                 <button class="small-btn danger-btn" data-action="delete" data-id="${c.id}">Excluir</button>
             </div></td>
         `;
         body.appendChild(row);
     });
-    body.querySelectorAll('[data-action="profile"]').forEach(b => b.addEventListener('click', () => openClientProfile(b.dataset.id)));
-    body.querySelectorAll('[data-action="score"]').forEach(b   => b.addEventListener('click', () => openScoreModal(b.dataset.id)));
-    body.querySelectorAll('[data-action="edit"]').forEach(b   => b.addEventListener('click', () => openClientModal(b.dataset.id)));
-    body.querySelectorAll('[data-action="delete"]').forEach(b => b.addEventListener('click', () => deleteClient(b.dataset.id)));
+    body.querySelectorAll('[data-action="profile"]').forEach(b   => b.addEventListener('click', () => openClientProfile(b.dataset.id)));
+    body.querySelectorAll('[data-action="score"]').forEach(b     => b.addEventListener('click', () => openScoreModal(b.dataset.id)));
+    body.querySelectorAll('[data-action="proposta"]').forEach(b  => b.addEventListener('click', () => generateProposta(b.dataset.id)));
+    body.querySelectorAll('[data-action="edit"]').forEach(b      => b.addEventListener('click', () => openClientModal(b.dataset.id)));
+    body.querySelectorAll('[data-action="delete"]').forEach(b    => b.addEventListener('click', () => deleteClient(b.dataset.id)));
 }
 
 function renderProducts() {
@@ -3221,6 +3335,9 @@ function approveSale(approvalId) {
     if (approval.instaladorId) addNotification(approval.instaladorId, 'install_pending', `🔧 Novo veículo aprovado para instalação: ${client.name} — ${client.plates || 'placa a informar'}`, { section: 'instaladorFotos' });
     // Checar metas após aprovar venda
     if (approval.consultantId) checkMetaAlerts(approval.consultantId);
+    // Feed de vendas do mural
+    const consultorObj = (app.state.users || []).find(u => u.id === approval.consultantId);
+    addToSalesFeed(client, consultorObj);
     saveState(); renderAppViews();
 }
 
@@ -3244,6 +3361,7 @@ function rejectSale(approvalId) {
 
 function renderInstaladorFunnelBoard() {
     if (app.currentUser?.role !== 'instalador') return;
+    if (app.currentUser.partnerType === 'indicador') return;
     const funnel = document.getElementById('instaladorFunnelBoard');
     if (!funnel) return;
     funnel.innerHTML = '';
@@ -3313,6 +3431,7 @@ function renderInstaladorFunnelBoard() {
 }
 
 function renderInstaladorInformativos() {
+    if (app.currentUser?.partnerType === 'indicador') return;
     const area = document.getElementById('instaladorInformativosArea');
     if (!area || area.dataset.rendered) return;
     area.dataset.rendered = '1';
@@ -3459,6 +3578,7 @@ function formatDuration(seconds) {
 
 function renderInstaladorFotos() {
     if (app.currentUser?.role !== 'instalador') return;
+    if (app.currentUser.partnerType === 'indicador') return;
     const content = document.getElementById('instaladorFotosContent');
     if (!content) return;
     const pending   = (app.state.pendingInstallations || []).filter(p => p.instaladorId === app.currentUser.id);
@@ -3637,6 +3757,7 @@ async function handlePhotoInstallSave(pendingInstId, pInst, durationSeconds) {
 
 function renderInstaladorDashboard() {
     if (app.currentUser?.role !== 'instalador') return;
+    if (app.currentUser.partnerType === 'indicador') { renderIndicadorDashboard(); return; }
     const m = getInstaladorMetrics(app.currentUser);
 
     document.getElementById('instaladorStats').innerHTML = `
@@ -3703,6 +3824,7 @@ function renderInstaladorClientes() {
 
 function renderInstaladorExtrato() {
     if (app.currentUser?.role !== 'instalador') return;
+    if (app.currentUser.partnerType === 'indicador') { renderIndicadorExtrato(); return; }
     const m = getInstaladorMetrics(app.currentUser);
     const content = document.getElementById('extratoContent');
     if (!content) return;
@@ -3744,9 +3866,10 @@ function showApp() {
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('appScreen').classList.remove('hidden');
     document.getElementById('userNameLabel').textContent = app.currentUser.name;
+    const _isIndicador = app.currentUser.role === 'instalador' && app.currentUser.partnerType === 'indicador';
     document.getElementById('pageRoleLabel').textContent =
         app.currentUser.role === 'gestor'     ? 'Área do Gestor' :
-        app.currentUser.role === 'instalador' ? 'Portal do Instalador' :
+        app.currentUser.role === 'instalador' ? (_isIndicador ? 'Portal do Parceiro Indicador' : 'Portal do Parceiro Instalador') :
         app.currentUser.role === 'tecnico'    ? 'Portal do Técnico' : 'Portal do Consultor';
 
     // Initialize nav state
@@ -3754,13 +3877,14 @@ function showApp() {
 
     // Set initial view from first nav tree item
     const role = app.currentUser.role;
-    const tree = NAV_TREE[role] || [];
+    const tree = _isIndicador ? NAV_TREE_INDICADOR : (NAV_TREE[role] || []);
     const firstItem = tree[0];
     if (firstItem) {
         if (firstItem.section) {
             app.activeView = firstItem.section;
             app.navState.activeItemId = firstItem.id;
-            const roleLabel = role === 'gestor' ? 'Gestor' : role === 'consultor' ? 'Consultor' : role === 'tecnico' ? 'Técnico' : 'Instalador';
+            const roleLabel = role === 'gestor' ? 'Gestor' : role === 'consultor' ? 'Consultor' : role === 'tecnico' ? 'Técnico'
+                : (_isIndicador ? 'Parceiro Indicador' : 'Parceiro Instalador');
             app.navState.path = [{ label: roleLabel, groupId: null }, { label: firstItem.label, groupId: null, active: true }];
         }
     }
@@ -3850,14 +3974,18 @@ function renderAppViews() {
     }
 
     if (role === 'instalador') {
-        renderInstaladorDashboard();
-        renderInstaladorFunnelBoard();
-        renderInstaladorClientes();
-        renderInstaladorFotos();
-        renderInstaladorExtrato();
-        const iiEl = document.getElementById('instaladorInformativosArea');
-        if (iiEl) delete iiEl.dataset.rendered;
-        if (app.activeView === 'instaladorInformativos') renderInstaladorInformativos();
+        if (app.currentUser.partnerType === 'indicador') {
+            renderIndicadorDashboard();
+        } else {
+            renderInstaladorDashboard();
+            renderInstaladorFunnelBoard();
+            renderInstaladorClientes();
+            renderInstaladorFotos();
+            renderInstaladorExtrato();
+            const iiEl = document.getElementById('instaladorInformativosArea');
+            if (iiEl) delete iiEl.dataset.rendered;
+            if (app.activeView === 'instaladorInformativos') renderInstaladorInformativos();
+        }
     }
 
     if (role === 'consultor' || role === 'instalador') {
@@ -3897,6 +4025,7 @@ function openClientProfile(clientId) {
             ${c.email ? `<a href="mailto:${esc(c.email)}" class="profile-action-btn">✉️ Email</a>` : ''}
             <button type="button" class="profile-action-btn" id="profileEditBtn">✏️ Editar</button>
             <button type="button" class="profile-action-btn" id="profileFormBtn">📝 Formulário</button>
+            <button type="button" class="profile-action-btn" id="profilePropostaBtn">📄 Proposta PDF</button>
             ${isGestor ? `<button type="button" class="profile-action-btn" id="profileEncaminharBtn">🔧 Encaminhar para Técnico</button>` : ''}
         </div>
 
@@ -3980,6 +4109,7 @@ function openClientProfile(clientId) {
     document.getElementById('profileScoreBtn').addEventListener('click', () => { closeModal(); openScoreModal(clientId); });
     document.getElementById('saveNoteBtn').addEventListener('click', () => handleAddNote(clientId));
     document.getElementById('profileFormBtn')?.addEventListener('click', () => { closeModal(); openSegmentFormModal(clientId); });
+    document.getElementById('profilePropostaBtn')?.addEventListener('click', () => { closeModal(); generateProposta(clientId); });
     document.getElementById('profileEncaminharBtn')?.addEventListener('click', () => { closeModal(); openEncaminharTecnicoModal(clientId); });
 }
 
@@ -4333,10 +4463,21 @@ function updateClientStage(id, stage) {
         openProposalChecklist(id);
         return;
     }
+    const prevStage = c.stage;
     c.stage = stage;
-    if (stage === 'Fechado') c.closedDate = todayISO();
-    else { delete c.closedDate; delete c.awaitingApproval; }
+    if (stage === 'Fechado') {
+        c.closedDate = todayISO();
+        // Feed de vendas do mural
+        const _feedUser = c.consultantId
+            ? (app.state.users || []).find(u => u.id === c.consultantId)
+            : app.currentUser;
+        addToSalesFeed(c, _feedUser);
+    } else { delete c.closedDate; delete c.awaitingApproval; }
     saveState(); renderAppViews();
+    // Feature 3: Re-engajamento ao marcar como Perdido
+    if (stage === 'Perdido' && prevStage !== 'Perdido') {
+        openReengagementModal(id);
+    }
 }
 
 function deleteClient(id) {
@@ -4350,21 +4491,40 @@ function deleteClient(id) {
    INSTALADOR CRUD
 ═══════════════════════════════════════════════════════════════════ */
 
-function openInstaladorModal(id = null) {
+function openInstaladorModal(id = null) { openParceirosModal(id); }
+
+function openParceirosModal(id = null) {
     app.editingInstaladorId = id;
     const ed = id ? (app.state.users || []).find(u => u.id === id) : null;
-    showModal(ed ? 'Editar instalador' : 'Novo instalador', `
+    const isInd = ed?.partnerType === 'indicador';
+    showModal(ed ? 'Editar parceiro' : 'Cadastrar novo parceiro', `
         <form id="instaladorForm" class="form-grid two-columns">
-            <div class="form-section-title">Dados de acesso</div>
-            <div class="field"><label>Nome *</label><input id="iName" type="text" value="${esc(ed?.name)}" required /></div>
-            <div class="field"><label>E-mail *</label><input id="iEmail" type="email" value="${esc(ed?.email)}" required /></div>
-            <div class="field"><label>Senha *</label><input id="iPass" type="text" value="${esc(ed?.password)}" required /></div>
-            <div class="field"><label>WhatsApp *</label><input id="iWa" type="tel" placeholder="(11) 99999-9999" value="${esc(ed?.whatsapp)}" required /></div>
-            <div class="form-section-title">Dados pessoais e loja</div>
-            <div class="field"><label>CPF *</label><input id="iCpf" type="text" placeholder="000.000.000-00" value="${esc(ed?.cpf)}" required /></div>
-            <div class="field"><label>Nome da loja física *</label><input id="iStore" type="text" placeholder="Ex: Moto Peças João" value="${esc(ed?.storeName)}" required /></div>
-            <div class="field"><label>Chave Pix</label><input id="iPix" type="text" placeholder="CPF, e-mail ou celular" value="${esc(ed?.pixKey)}" /></div>
-            <div class="field full-width"><label>Endereço completo</label><input id="iAddr" type="text" placeholder="Rua, nº, bairro, cidade/UF" value="${esc(ed?.address)}" /></div>
+            <div class="form-section-title full-width">Tipo de parceiro</div>
+            <div class="field full-width">
+                <label>Tipo *</label>
+                <select id="iPartnerType">
+                    <option value="instalador" ${!isInd ? 'selected' : ''}>Parceiro Instalador — realiza instalações físicas</option>
+                    <option value="indicador" ${isInd ? 'selected' : ''}>Parceiro Indicador — indica leads e recebe comissão</option>
+                </select>
+            </div>
+            <div class="form-section-title full-width">Dados de acesso</div>
+            <div class="field"><label>Nome *</label><input id="iName" type="text" value="${esc(ed?.name || '')}" required /></div>
+            <div class="field"><label>E-mail *</label><input id="iEmail" type="email" value="${esc(ed?.email || '')}" required /></div>
+            <div class="field"><label>Senha *</label><input id="iPass" type="text" value="${esc(ed?.password || '')}" required /></div>
+            <div class="field"><label>WhatsApp *</label><input id="iWa" type="tel" placeholder="(11) 99999-9999" value="${esc(ed?.whatsapp || '')}" required /></div>
+            <div class="form-section-title full-width">Dados pessoais</div>
+            <div class="field"><label>CPF *</label><input id="iCpf" type="text" placeholder="000.000.000-00" value="${esc(ed?.cpf || '')}" required /></div>
+            <div class="field"><label>Região de atuação</label><input id="iRegion" type="text" placeholder="Ex: São Paulo/SP" value="${esc(ed?.region || '')}" /></div>
+            <div class="field"><label>Chave Pix</label><input id="iPix" type="text" placeholder="CPF, e-mail ou celular" value="${esc(ed?.pixKey || '')}" /></div>
+            <div class="field full-width"><label>Endereço completo</label><input id="iAddr" type="text" placeholder="Rua, nº, bairro, cidade/UF" value="${esc(ed?.address || '')}" /></div>
+            <div id="instaladorOnlyFields" style="display:contents;">
+                <div class="form-section-title full-width">Dados da loja (Instalador)</div>
+                <div class="field full-width"><label>Nome da loja física *</label><input id="iStore" type="text" placeholder="Ex: Moto Peças João" value="${esc(ed?.storeName || '')}" /></div>
+            </div>
+            <div id="indicadorOnlyFields" style="display:contents;">
+                <div class="form-section-title full-width">Comissão (Indicador)</div>
+                <div class="field full-width"><label>% de comissão por fechamento</label><input id="iComm" type="number" min="0" max="100" step="0.5" placeholder="Ex: 10" value="${ed?.commissionPct ?? ''}" /></div>
+            </div>
             <div class="actions full-width" style="margin-top:8px;">
                 <button type="submit" class="primary-btn">Salvar</button>
                 <button type="button" id="cancelInstaladorBtn" class="secondary-btn">Cancelar</button>
@@ -4372,41 +4532,60 @@ function openInstaladorModal(id = null) {
             <div id="instaladorFormError" class="error-text full-width"></div>
         </form>
     `);
+
+    function toggleFields() {
+        const type = document.getElementById('iPartnerType').value;
+        document.getElementById('instaladorOnlyFields').style.display = type === 'instalador' ? 'contents' : 'none';
+        document.getElementById('indicadorOnlyFields').style.display = type === 'indicador' ? 'contents' : 'none';
+    }
+    toggleFields();
+    document.getElementById('iPartnerType').addEventListener('change', toggleFields);
     document.getElementById('cancelInstaladorBtn').addEventListener('click', closeModal);
-    document.getElementById('instaladorForm').addEventListener('submit', handleInstaladorSave);
-    applyFormConfig('instalador');
+    document.getElementById('instaladorForm').addEventListener('submit', handleParceiroSave);
 }
 
-function handleInstaladorSave(e) {
+function handleParceiroSave(e) {
     e.preventDefault();
-    const name  = document.getElementById('iName').value.trim();
-    const email = document.getElementById('iEmail').value.trim().toLowerCase();
-    const pass  = document.getElementById('iPass').value.trim();
-    const cpf   = document.getElementById('iCpf').value.trim();
-    const store = document.getElementById('iStore').value.trim();
-    const err   = document.getElementById('instaladorFormError');
+    const name        = document.getElementById('iName').value.trim();
+    const email       = document.getElementById('iEmail').value.trim().toLowerCase();
+    const pass        = document.getElementById('iPass').value.trim();
+    const cpf         = document.getElementById('iCpf').value.trim();
+    const partnerType = document.getElementById('iPartnerType').value;
+    const store       = partnerType === 'instalador' ? document.getElementById('iStore').value.trim() : '';
+    const err         = document.getElementById('instaladorFormError');
     err.textContent = '';
-    if (!name || !email || !pass || !cpf || !store) { err.textContent = 'Preencha todos os campos obrigatórios.'; return; }
+
+    if (!name || !email || !pass || !cpf) { err.textContent = 'Preencha todos os campos obrigatórios.'; return; }
+    if (partnerType === 'instalador' && !store) { err.textContent = 'Informe o nome da loja para Parceiro Instalador.'; return; }
     if ((app.state.users || []).some(u => u.email === email && u.id !== app.editingInstaladorId)) {
         err.textContent = 'Já existe um usuário com este e-mail.'; return;
     }
+
     const data = {
-        name, email, password: pass, cpf, storeName: store,
-        whatsapp: document.getElementById('iWa').value.trim(),
-        pixKey:   document.getElementById('iPix').value.trim(),
-        address:  document.getElementById('iAddr').value.trim()
+        name, email, password: pass, cpf, partnerType,
+        storeName:     partnerType === 'instalador' ? store : '',
+        whatsapp:      document.getElementById('iWa').value.trim(),
+        pixKey:        document.getElementById('iPix').value.trim(),
+        address:       document.getElementById('iAddr').value.trim(),
+        region:        document.getElementById('iRegion').value.trim(),
+        commissionPct: partnerType === 'indicador' ? parseFloat(document.getElementById('iComm').value) || 0 : 0
     };
+
     if (app.editingInstaladorId) {
         Object.assign(app.state.users.find(u => u.id === app.editingInstaladorId), data);
     } else {
-        app.state.users.push({ id: `instalador_${Date.now()}`, role: 'instalador', ...data });
+        const prefix = partnerType === 'indicador' ? 'indicador' : 'instalador';
+        app.state.users.push({ id: `${prefix}_${Date.now()}`, role: 'instalador', ...data });
     }
     saveState(); closeModal(); renderAppViews();
 }
 
+function handleInstaladorSave(e) { handleParceiroSave(e); }
+
 function deleteInstalador(id) {
     const u = (app.state.users || []).find(u => u.id === id);
-    if (!u || !confirm(`Excluir o instalador ${u.name}? Clientes e instalações vinculados também serão removidos.`)) return;
+    const label = u?.partnerType === 'indicador' ? 'parceiro indicador' : 'parceiro instalador';
+    if (!u || !confirm(`Excluir o ${label} ${u.name}? Dados vinculados também serão removidos.`)) return;
     app.state.users         = app.state.users.filter(u => u.id !== id);
     app.state.clients       = app.state.clients.filter(c => c.instaladorId !== id);
     app.state.installations = (app.state.installations || []).filter(i => i.instaladorId !== id);
@@ -4420,8 +4599,8 @@ function deleteInstalador(id) {
 function openInstallationModal(id = null) {
     app.editingInstallId = id;
     const ed = id ? (app.state.installations || []).find(i => i.id === id) : null;
-    const instaladores = (app.state.users || []).filter(u => u.role === 'instalador');
-    if (!instaladores.length) { alert('Cadastre ao menos um instalador primeiro.'); return; }
+    const instaladores = (app.state.users || []).filter(u => u.role === 'instalador' && u.partnerType !== 'indicador');
+    if (!instaladores.length) { alert('Cadastre ao menos um Parceiro Instalador primeiro.'); return; }
     const instOpts = instaladores.map(u => `<option value="${u.id}" ${ed?.instaladorId === u.id ? 'selected' : ''}>${esc(u.name)} — ${esc(u.storeName || '')}</option>`).join('');
     showModal(ed ? 'Editar instalação' : 'Registrar instalação', `
         <form id="installForm" class="form-grid">
@@ -5160,7 +5339,19 @@ function renderClienteHome() {
                 <button class="secondary-btn" onclick="clienteNavTo(1,'documentos')">📁 Documentos</button>
                 ${chkTotal > 0 ? `<button class="secondary-btn${_chkPendingCount(u.id) > 0 ? '" style="border-color:#dc3545;color:#dc3545;' : '"'} onclick="clienteNavTo(1,'requeridos')">📋 Requeridos${_chkPendingCount(u.id) > 0 ? ` (${_chkPendingCount(u.id)})` : ''}</button>` : ''}
             </div>
-        </div>`}`;
+        </div>
+        ${crm && crm.stage === 'Fechado' ? `
+        <div class="recovery-emergency-card">
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                <div style="font-size:2.2rem;flex-shrink:0;">🚨</div>
+                <div style="flex:1;min-width:180px;">
+                    <strong style="font-size:1rem;display:block;margin-bottom:2px;">Kit de Recuperação de Veículo</strong>
+                    <p style="margin:0;font-size:0.85rem;color:var(--text-soft);">Em caso de roubo ou furto, gere um documento com os dados do veículo e contatos de emergência.</p>
+                </div>
+                <button class="recovery-btn" onclick="openRecoveryKit('${u.id}')">🚨 Acionar Kit</button>
+            </div>
+        </div>` : ''}
+        `}`;
 }
 
 function renderClienteDocumentos(category) {
@@ -9700,6 +9891,9 @@ function renderComunicadosMural() {
 function init() {
     loadState();
 
+    // Verificar se é acesso via link de cadastro público
+    if (checkPublicCadastroParam()) return;
+
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
     document.getElementById('demoButton').addEventListener('click', handleDemo);
 
@@ -9769,6 +9963,1782 @@ function init() {
             panel.classList.add('hidden');
         }
     });
+
+    // Feature 3: Check re-engagement queue on load
+    checkReengagementQueue();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FEATURE 1 — MOTOR DE CHURN PREDITIVO
+═══════════════════════════════════════════════════════════════════ */
+
+function calculateChurnScore(client) {
+    if (!client || client.stage !== 'Fechado') return 0;
+    let score = 0;
+
+    // Sinal 1: Sem follow-up há 45+ dias (max 30pts)
+    const fups = (app.state.followUps || []).filter(f => f.clientId === client.id);
+    const lastFup = fups.length ? fups.sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||'')).find(f=>f.done) : null;
+    if (lastFup) {
+        const daysSince = Math.floor((Date.now() - new Date(lastFup.createdAt).getTime()) / 86400000);
+        if (daysSince > 90) score += 30;
+        else if (daysSince > 45) score += 20;
+        else if (daysSince > 20) score += 10;
+    } else {
+        score += 25; // nunca teve follow-up
+    }
+
+    // Sinal 2: Chamado aberto há 7+ dias sem solução (max 25pts)
+    const openChams = (app.state.chamados || []).filter(ch => ch.clientId === client.id && ['Aberto','Em andamento'].includes(ch.status));
+    if (openChams.length > 0) {
+        const oldest = openChams.sort((a,b) => a.createdAt.localeCompare(b.createdAt))[0];
+        const daysOpen = Math.floor((Date.now() - new Date(oldest.createdAt).getTime()) / 86400000);
+        if (daysOpen > 14) score += 25;
+        else if (daysOpen > 7) score += 15;
+        else score += 8;
+    }
+
+    // Sinal 3: Plano Essencial há mais de 6 meses (sem upgrade) (max 20pts)
+    if (client.plan === 'Essencial' && client.closedDate) {
+        const monthsClosed = Math.floor((Date.now() - new Date(client.closedDate + 'T00:00:00').getTime()) / (86400000 * 30));
+        if (monthsClosed > 12) score += 20;
+        else if (monthsClosed > 6) score += 12;
+    }
+
+    // Sinal 4: Sem anotações de contato há 60+ dias (max 15pts)
+    const history = client.contactHistory || [];
+    if (history.length === 0) {
+        score += 10;
+    } else {
+        const last = history[history.length - 1];
+        const ld = last.rawDate || (last.date ? new Date(last.date.split('/').reverse().join('-')).getTime() : 0);
+        const daysSinceContact = Math.floor((Date.now() - ld) / 86400000);
+        if (daysSinceContact > 60) score += 15;
+        else if (daysSinceContact > 30) score += 8;
+    }
+
+    // Sinal 5: Score de propensão original baixo (<30) — comprou por preço, não por valor (max 10pts)
+    const propScore = calcScore(client);
+    if (propScore < 20) score += 10;
+    else if (propScore < 30) score += 5;
+
+    return Math.min(100, score);
+}
+
+function getChurnBadge(score) {
+    if (score >= 70) return { label: 'Alto',   cls: 'high',   icon: '🔴', color: '#dc2626' };
+    if (score >= 40) return { label: 'Médio',  cls: 'medium', icon: '🟡', color: '#d97706' };
+    return                  { label: 'Baixo',  cls: 'low',    icon: '🟢', color: '#059669' };
+}
+
+function getChurnTrakMsg(score, client) {
+    const badge = getChurnBadge(score);
+    if (score >= 70) return `⚠️ Risco ALTO de churn! ${esc(client.name)} tem ${score} pontos de risco. Ligue agora — um cliente retido vale muito mais que reconquistar um perdido.`;
+    if (score >= 40) return `🌡️ Atenção: risco MÉDIO detectado em ${esc(client.name)} (${score} pts). Uma chamada proativa pode fazer toda a diferença. Não espere o cliente reclamar.`;
+    return `✅ ${esc(client.name)} está estável (${score} pts de risco). Ótimo trabalho! Continue o follow-up regular para manter assim.`;
+}
+
+function renderClientesEmRisco() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const uid   = app.currentUser.id;
+    const role  = app.currentUser.role;
+    const myClients = (app.state.clients || []).filter(c => c.stage === 'Fechado' && (role === 'gestor' || c.consultantId === uid || c.instaladorId === uid));
+    const withScore = myClients.map(c => ({ c, score: calculateChurnScore(c) })).sort((a, b) => b.score - a.score);
+    const atRisk = withScore.filter(x => x.score >= 40);
+
+    const rows = withScore.map(({ c, score }) => {
+        const badge = getChurnBadge(score);
+        const cons = (app.state.users || []).find(u => u.id === c.consultantId);
+        return `<tr>
+            <td><strong>${esc(c.name)}</strong></td>
+            ${role === 'gestor' ? `<td>${esc(cons?.name || '—')}</td>` : ''}
+            <td>${esc(c.plan || '—')}</td>
+            <td>R$ ${formatCurrency(c.monthlyFee)}</td>
+            <td><span class="churn-score-badge churn-${badge.cls}">${badge.icon} ${score} pts — ${badge.label}</span></td>
+            <td><div class="table-actions">
+                <button class="small-btn" onclick="openChurnDetail('${c.id}')">🔍 Detalhes</button>
+                ${c.isWhatsapp ? `<a href="https://wa.me/55${(c.phone||'').replace(/\D/g,'')}" target="_blank" class="small-btn" style="text-decoration:none;">💬 WhatsApp</a>` : ''}
+            </div></td>
+        </tr>`;
+    }).join('');
+
+    el.innerHTML = `
+        <div class="section-header">
+            <div><h2>⚠️ Clientes em Risco de Churn</h2>
+            <p>Clientes ativos monitorados por sinais de desengajamento. Priorize os de risco alto.</p></div>
+        </div>
+        <div class="cards-grid" style="margin-bottom:16px;">
+            <div class="card"><h3>Clientes monitorados</h3><div class="metric">${withScore.length}</div><small>com plano ativo</small></div>
+            <div class="card" style="border-color:${atRisk.length > 0 ? 'var(--danger)' : 'var(--border)'}"><h3 style="color:${atRisk.length > 0 ? 'var(--danger)' : 'inherit'}">Em risco (≥40 pts)</h3><div class="metric" style="color:${atRisk.length > 0 ? 'var(--danger)' : 'var(--success)'};">${atRisk.length}</div><small>requerem atenção</small></div>
+            <div class="card"><h3>Risco alto (≥70 pts)</h3><div class="metric" style="color:var(--danger);">${withScore.filter(x=>x.score>=70).length}</div><small>ação urgente</small></div>
+        </div>
+        ${atRisk.length > 0 ? `<div class="trak-bubble" style="margin-bottom:16px;"><div class="trak-avatar">🤖</div><div class="trak-text">TRAK detectou <strong>${atRisk.length}</strong> cliente${atRisk.length>1?'s':''} em risco. Clientes com risco alto têm maior probabilidade de cancelar nos próximos 30 dias. Priorize um contato proativo — uma ligada de 5 minutos pode salvar meses de recorrência.</div></div>` : `<div class="trak-bubble" style="margin-bottom:16px;"><div class="trak-avatar">🤖</div><div class="trak-text">Ótimo trabalho! Nenhum cliente em risco neste momento. Continue fazendo follow-ups regulares para manter essa situação.</div></div>`}
+        <div class="card" style="overflow-x:auto;">
+            <table>
+                <thead><tr><th>Cliente</th>${role === 'gestor' ? '<th>Consultor</th>' : ''}<th>Plano</th><th>Mensalidade</th><th>Score de Risco</th><th>Ações</th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="6" style="text-align:center;color:var(--text-soft);">Nenhum cliente ativo cadastrado.</td></tr>'}</tbody>
+            </table>
+        </div>`;
+    showSection('dynamicContent');
+
+    // Auto-alert: notifica consultor se clientes novos em risco alto
+    withScore.filter(x => x.score >= 70).forEach(({ c }) => {
+        const key = `churn_${c.id}`;
+        if (!(app.state.churnAlertsSent || {})[key]) {
+            addNotification(app.currentUser.id, 'churn', `⚠️ ${esc(c.name)} atingiu risco ALTO de churn (${calculateChurnScore(c)} pts)`, null);
+            if (!app.state.churnAlertsSent) app.state.churnAlertsSent = {};
+            app.state.churnAlertsSent[key] = todayISO();
+            saveState();
+        }
+    });
+}
+
+function openChurnDetail(clientId) {
+    const c = (app.state.clients || []).find(x => x.id === clientId);
+    if (!c) return;
+    const score = calculateChurnScore(c);
+    const badge = getChurnBadge(score);
+    const msg   = getChurnTrakMsg(score, c);
+
+    const fups = (app.state.followUps || []).filter(f => f.clientId === clientId && f.done).length;
+    const openChams = (app.state.chamados || []).filter(ch => ch.clientId === clientId && ['Aberto','Em andamento'].includes(ch.status)).length;
+    const monthsClosed = c.closedDate ? Math.floor((Date.now() - new Date(c.closedDate + 'T00:00:00').getTime()) / (86400000 * 30)) : 0;
+    const histLen = (c.contactHistory || []).length;
+    const propScore = calcScore(c);
+
+    showModal(`⚠️ Análise de Risco — ${esc(c.name)}`, `
+        <div style="text-align:center;padding:12px 0 18px;">
+            <div class="churn-score-circle churn-${badge.cls}">${score}</div>
+            <div style="font-size:0.8rem;color:var(--text-soft);margin-top:4px;">pontos de risco de churn</div>
+            <div style="font-size:1.1rem;font-weight:700;margin-top:4px;">${badge.icon} Risco ${badge.label}</div>
+        </div>
+        <div class="trak-bubble" style="margin-bottom:20px;"><div class="trak-avatar">🤖</div><div class="trak-text">${msg}</div></div>
+        <div style="display:grid;gap:10px;margin-bottom:20px;">
+            <div class="churn-signal-row">
+                <span>Follow-ups registrados</span>
+                <strong style="color:${fups > 2 ? 'var(--success)' : 'var(--warning)'};">${fups} realizados</strong>
+            </div>
+            <div class="churn-signal-row">
+                <span>Chamados em aberto</span>
+                <strong style="color:${openChams > 0 ? 'var(--danger)' : 'var(--success)'};">${openChams}</strong>
+            </div>
+            <div class="churn-signal-row">
+                <span>Tempo como cliente</span>
+                <strong>${monthsClosed} ${monthsClosed === 1 ? 'mês' : 'meses'}</strong>
+            </div>
+            <div class="churn-signal-row">
+                <span>Anotações de contato</span>
+                <strong style="color:${histLen > 0 ? 'var(--success)' : 'var(--warning)'};">${histLen}</strong>
+            </div>
+            <div class="churn-signal-row">
+                <span>Score de propensão original</span>
+                <strong>${propScore} pts</strong>
+            </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            <button class="primary-btn" onclick="openFollowUpModal('${clientId}');closeModal();">📅 Agendar follow-up</button>
+            ${c.isWhatsapp ? `<a href="https://wa.me/55${(c.phone||'').replace(/\D/g,'')}" target="_blank" class="secondary-btn" style="text-decoration:none;">💬 WhatsApp</a>` : ''}
+            <button class="secondary-btn" onclick="generateProposta('${clientId}');closeModal();">📄 Proposta Upsell</button>
+        </div>
+    `);
+}
+
+function renderGestorRisco() {
+    renderClientesEmRisco();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FEATURE 2 — GERADOR DE PROPOSTA PDF PROFISSIONAL
+═══════════════════════════════════════════════════════════════════ */
+
+const PLAN_FEATURES = {
+    'Essencial':      { price: 44.90, items: ['Localização em tempo real', 'Histórico de rotas (30 dias)', 'Alertas de ignição', 'App mobile para Android e iOS', 'Suporte por WhatsApp'] },
+    'Profissional':   { price: 54.90, items: ['Tudo do Essencial', 'Bloqueio remoto seguro', 'Histórico de rotas (90 dias)', 'Alerta de bateria fraca', 'Cerca eletrônica virtual', 'Relatório mensal'] },
+    'Controle Total': { price: 64.90, items: ['Tudo do Profissional', 'Múltiplos usuários/perfis', 'Relatórios avançados', 'Suporte prioritário 24h', 'Histórico ilimitado', 'Painel web completo'] },
+    'Empresas':       { price: null,  items: ['Tudo do Controle Total', 'Gestor de frota dedicado', 'API de integração', 'SLA garantido', 'Gerente de conta exclusivo', 'Treinamento da equipe'] }
+};
+
+function generateProposta(clientId) {
+    const c = (app.state.clients || []).find(x => x.id === clientId);
+    if (!c) return;
+
+    const planInfo = PLAN_FEATURES[c.plan] || PLAN_FEATURES['Essencial'];
+    const cons     = (app.state.users || []).find(u => u.id === (c.consultantId || c.instaladorId));
+    const dateStr  = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const validUntil = new Date(Date.now() + 7 * 86400000).toLocaleDateString('pt-BR');
+
+    // Save to proposal history
+    if (!c.proposalHistory) c.proposalHistory = [];
+    c.proposalHistory.push({ date: todayISO(), plan: c.plan, fee: c.monthlyFee, generatedBy: app.currentUser?.name });
+    saveState();
+
+    const featuresHtml = planInfo.items.map(item => `<li style="padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:0.93rem;">✅ ${esc(item)}</li>`).join('');
+
+    const waMsg = encodeURIComponent(`Olá ${c.name}! Segue sua proposta personalizada Tracktiv:\n\n📡 Plano: ${c.plan || 'Personalizado'}\n💰 Mensalidade: R$ ${formatCurrency(c.monthlyFee)}\n📅 Válida até: ${validUntil}\n\nEntro em contato para agendar a instalação! 🚀`);
+    const waLink = (c.phone && c.isWhatsapp) ? `https://wa.me/55${(c.phone||'').replace(/\D/g,'')}?text=${waMsg}` : null;
+
+    showModal(`📄 Proposta — ${esc(c.name)}`, `
+        <div id="propostaDoc" class="proposta-doc">
+            <div class="proposta-header">
+                <div>
+                    <div class="proposta-logo">📡 Tracktiv</div>
+                    <div style="font-size:0.85rem;color:#64748b;margin-top:4px;">Rastreamento Veicular Premium</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.85rem;color:#64748b;">Proposta Comercial</div>
+                    <div style="font-size:0.85rem;font-weight:700;color:#0f1c2e;">${dateStr}</div>
+                </div>
+            </div>
+
+            <div class="proposta-section">
+                <div class="proposta-section-title">DADOS DO CLIENTE</div>
+                <div class="proposta-grid">
+                    <div><span>Nome</span><strong>${esc(c.name)}</strong></div>
+                    ${c.cpf ? `<div><span>CPF/CNPJ</span><strong>${esc(c.cpf)}</strong></div>` : ''}
+                    ${c.phone ? `<div><span>Telefone</span><strong>${esc(c.phone)}</strong></div>` : ''}
+                    ${c.email ? `<div><span>E-mail</span><strong>${esc(c.email)}</strong></div>` : ''}
+                    ${c.address ? `<div style="grid-column:1/-1"><span>Endereço</span><strong>${esc(c.address)}</strong></div>` : ''}
+                </div>
+            </div>
+
+            <div class="proposta-section">
+                <div class="proposta-section-title">PLANO CONTRATADO</div>
+                <div style="background:linear-gradient(135deg,#0f1c2e,#1a2e4a);border-radius:12px;padding:20px 24px;color:#fff;margin-bottom:16px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                        <div>
+                            <div style="font-size:1.3rem;font-weight:800;">📡 ${esc(c.plan || 'Personalizado')}</div>
+                            <div style="font-size:0.85rem;opacity:0.8;margin-top:2px;">${esc(c.product || 'Rastreador Veicular')}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:0.8rem;opacity:0.7;">Mensalidade</div>
+                            <div style="font-size:2rem;font-weight:800;color:#f5820d;">R$ ${formatCurrency(c.monthlyFee)}</div>
+                            <div style="font-size:0.75rem;opacity:0.7;">/mês · cancele quando quiser</div>
+                        </div>
+                    </div>
+                </div>
+                <ul style="list-style:none;padding:0;margin:0;">
+                    ${featuresHtml}
+                </ul>
+            </div>
+
+            <div class="proposta-section">
+                <div class="proposta-section-title">CONDIÇÕES COMERCIAIS</div>
+                <div class="proposta-grid">
+                    <div><span>Taxa de instalação</span><strong>R$ ${formatCurrency(INSTALL_FEE)} (única)</strong></div>
+                    <div><span>Fidelidade mínima</span><strong>Sem fidelidade</strong></div>
+                    <div><span>Validade da proposta</span><strong style="color:#dc2626;">${validUntil}</strong></div>
+                    <div><span>Pagamento</span><strong>PIX, Boleto ou Cartão</strong></div>
+                </div>
+            </div>
+
+            <div class="proposta-section">
+                <div class="proposta-section-title">CONSULTOR RESPONSÁVEL</div>
+                <div class="proposta-grid">
+                    <div><span>Nome</span><strong>${esc(cons?.name || 'Tracktiv')}</strong></div>
+                    ${cons?.whatsapp ? `<div><span>WhatsApp</span><strong>${esc(cons.whatsapp)}</strong></div>` : ''}
+                    ${cons?.email ? `<div><span>E-mail</span><strong>${esc(cons.email)}</strong></div>` : ''}
+                </div>
+            </div>
+
+            <div style="text-align:center;padding:16px 0 8px;border-top:2px solid #e2e8f0;margin-top:20px;">
+                <div style="font-size:0.8rem;color:#64748b;">Esta proposta é válida até <strong>${validUntil}</strong>. Após esse prazo, os valores poderão ser reajustados.</div>
+                <div style="font-size:0.75rem;color:#94a3b8;margin-top:4px;">Tracktiv — Rastreamento Veicular · contato@tracktiv.com.br · tracktiv.com.br</div>
+            </div>
+        </div>
+
+        <div class="proposta-actions" style="margin-top:16px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;">
+            <button class="primary-btn" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+            ${waLink ? `<a href="${waLink}" target="_blank" class="secondary-btn" style="text-decoration:none;">💬 Enviar por WhatsApp</a>` : ''}
+            ${c.email ? `<a href="mailto:${esc(c.email)}?subject=Proposta Tracktiv — ${esc(c.plan)}&body=Olá ${esc(c.name)}, segue sua proposta Tracktiv. Plano: ${esc(c.plan)}, Mensalidade: R$ ${formatCurrency(c.monthlyFee)}/mês. Válida até ${validUntil}. Qualquer dúvida estou à disposição!" class="secondary-btn" style="text-decoration:none;">✉️ Enviar por E-mail</a>` : ''}
+        </div>
+        ${c.proposalHistory && c.proposalHistory.length > 1 ? `<div style="margin-top:12px;font-size:0.82rem;color:var(--text-soft);text-align:center;">Histórico: ${c.proposalHistory.length} proposta${c.proposalHistory.length>1?'s':''} gerada${c.proposalHistory.length>1?'s':''}</div>` : ''}
+    `);
+}
+
+function renderPropostaLista() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const uid = app.currentUser.id;
+    const role = app.currentUser.role;
+    const myClients = (app.state.clients || []).filter(c =>
+        role === 'gestor' ? true : (c.consultantId === uid || c.instaladorId === uid)
+    );
+    const withHistory = myClients.filter(c => c.proposalHistory && c.proposalHistory.length > 0);
+
+    const rows = myClients.sort((a,b) => a.name.localeCompare(b.name)).map(c => {
+        const ph = withHistory.includes(c) ? c.proposalHistory : [];
+        return `<tr>
+            <td><strong>${esc(c.name)}</strong></td>
+            <td>${esc(c.plan || '—')}</td>
+            <td>R$ ${formatCurrency(c.monthlyFee)}</td>
+            <td><span class="pill ${stagePillClass(c.stage)}">${c.stage}</span></td>
+            <td>${ph.length > 0 ? `<span style="font-size:0.82rem;color:var(--text-soft);">Última: ${formatDate(ph[ph.length-1].date)}</span>` : '<span style="color:var(--text-muted);">—</span>'}</td>
+            <td><button class="small-btn" onclick="generateProposta('${c.id}')">📄 Gerar Proposta</button></td>
+        </tr>`;
+    }).join('');
+
+    el.innerHTML = `
+        <div class="section-header"><div><h2>📄 Gerador de Propostas</h2><p>Crie propostas profissionais personalizadas para cada cliente em segundos.</p></div></div>
+        <div class="card" style="overflow-x:auto;">
+            <table>
+                <thead><tr><th>Cliente</th><th>Plano</th><th>Mensalidade</th><th>Etapa</th><th>Última proposta</th><th>Ação</th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="6" style="text-align:center;color:var(--text-soft);">Nenhum cliente cadastrado ainda.</td></tr>'}</tbody>
+            </table>
+        </div>`;
+    showSection('dynamicContent');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FEATURE 3 — RE-ENGAJAMENTO DE LEADS PERDIDOS
+═══════════════════════════════════════════════════════════════════ */
+
+const REENGAGEMENT_MSGS = {
+    'Preço muito alto':    'Oi {nome}! 👋 Sei que o investimento pesou na sua decisão. Que tal conversarmos sobre uma opção mais acessível? Temos condições especiais que podem se encaixar no seu orçamento.',
+    'Escolheu concorrente':'Oi {nome}! 👋 Soube que você foi com outra solução. Tudo bem! Caso precise de suporte ou queira comparar funcionalidades, pode contar comigo. Qualquer dúvida, é só falar!',
+    'Não tinha interesse': 'Oi {nome}! 👋 Passaram alguns meses desde nossa última conversa. Surgiu alguma novidade que tornaria o rastreamento útil pra você? Temos novidades que podem mudar de ideia 😉',
+    'Timing ruim':         'Oi {nome}! 👋 Quando conversamos, o momento não era ideal. Agora que passou um tempo, gostaria de retomar? Posso te apresentar uma solução que cabe no seu orçamento atual.',
+    'default':             'Oi {nome}! 👋 Passamos por aqui para ver se podemos ajudar. Ainda tem interesse em proteção veicular? Temos condições especiais para quem retomar o contato este mês!'
+};
+
+function openReengagementModal(clientId) {
+    const c = (app.state.clients || []).find(x => x.id === clientId);
+    if (!c) return;
+
+    const reasons = ['Preço muito alto', 'Escolheu concorrente', 'Não tinha interesse', 'Timing ruim', 'Outro'];
+
+    showModal('🔄 Configurar Re-engajamento', `
+        <p style="color:var(--text-soft);margin-bottom:20px;">Lead marcado como perdido. Configure um lembrete automático para retomar o contato no futuro.</p>
+        <div class="field">
+            <label>Motivo da perda</label>
+            <select id="reenReason" style="border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;background:var(--bg);width:100%;">
+                <option value="">Selecione o motivo...</option>
+                ${reasons.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('')}
+            </select>
+        </div>
+        <div class="field" style="margin-top:14px;">
+            <label>Reativar em</label>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="reenDays" value="30" checked> 30 dias</label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="reenDays" value="60"> 60 dias</label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="reenDays" value="90"> 90 dias</label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="reenDays" value="0"> Não reativar</label>
+            </div>
+        </div>
+        <div class="field" style="margin-top:14px;">
+            <label>Observação (opcional)</label>
+            <textarea id="reenNote" rows="2" placeholder="Anote o contexto da perda..." style="width:100%;resize:vertical;border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;"></textarea>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;">
+            <button class="primary-btn" id="reenSaveBtn">✅ Confirmar</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+
+    document.getElementById('reenSaveBtn').addEventListener('click', () => {
+        const reason  = document.getElementById('reenReason').value;
+        const days    = parseInt(document.querySelector('input[name="reenDays"]:checked').value);
+        const note    = document.getElementById('reenNote').value.trim();
+
+        c.lostReason = reason || 'Não informado';
+        if (note) {
+            if (!c.contactHistory) c.contactHistory = [];
+            c.contactHistory.push({ date: new Date().toLocaleDateString('pt-BR'), rawDate: Date.now(), time: new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}), text: `Lead perdido — motivo: ${c.lostReason}. ${note}` });
+        }
+
+        if (days > 0) {
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + days);
+            const dueDateISO = dueDate.toISOString().slice(0, 10);
+
+            if (!app.state.reengagementQueue) app.state.reengagementQueue = [];
+            app.state.reengagementQueue = app.state.reengagementQueue.filter(r => r.clientId !== clientId);
+            app.state.reengagementQueue.push({
+                id: `reen_${Date.now()}`,
+                clientId,
+                consultantId: c.consultantId || app.currentUser.id,
+                reason: c.lostReason,
+                dueDate: dueDateISO,
+                days,
+                note,
+                done: false,
+                createdAt: todayISO()
+            });
+        }
+
+        saveState();
+        closeModal();
+        if (days > 0) {
+            const d = new Date(); d.setDate(d.getDate() + days);
+            alert(`Re-engajamento configurado! Você receberá um lembrete em ${days} dias (${d.toLocaleDateString('pt-BR')}).`);
+        }
+    });
+}
+
+function checkReengagementQueue() {
+    if (!app.state || !app.state.reengagementQueue) return;
+    const today = todayISO();
+    app.state.reengagementQueue
+        .filter(r => !r.done && r.dueDate <= today)
+        .forEach(r => {
+            const c = (app.state.clients || []).find(x => x.id === r.clientId);
+            if (!c) return;
+            // Create a follow-up reminder
+            const fuId = `fu_reen_${Date.now()}_${Math.random().toString(36).slice(2,5)}`;
+            if (!app.state.followUps) app.state.followUps = [];
+            const alreadyExists = app.state.followUps.some(f => f.id.startsWith('fu_reen_') && f.clientId === r.clientId && !f.done);
+            if (!alreadyExists) {
+                app.state.followUps.push({
+                    id: fuId, clientId: r.clientId, consultantId: r.consultantId,
+                    date: today, time: '09:00', type: 'Re-engajamento',
+                    notes: `Re-engajamento automático — motivo da perda: ${r.reason}`,
+                    done: false, createdAt: new Date().toISOString()
+                });
+                addNotification(r.consultantId, 'reengajamento', `🔄 Lead para reativar: ${esc(c.name)} — Motivo: ${esc(r.reason)}`, null);
+            }
+            r.done = true;
+        });
+    saveState();
+}
+
+function renderLeadsReativar() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const uid  = app.currentUser.id;
+    const role = app.currentUser.role;
+
+    const queue = (app.state.reengagementQueue || [])
+        .filter(r => role === 'gestor' || r.consultantId === uid)
+        .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+
+    const hoje    = todayISO();
+    const pending = queue.filter(r => !r.done);
+    const done    = queue.filter(r => r.done);
+
+    const cardHtml = (r) => {
+        const c = (app.state.clients || []).find(x => x.id === r.clientId);
+        if (!c) return '';
+        const isOverdue = r.dueDate <= hoje && !r.done;
+        const isToday   = r.dueDate === hoje && !r.done;
+        const template  = (REENGAGEMENT_MSGS[r.reason] || REENGAGEMENT_MSGS['default']).replace('{nome}', esc(c.name));
+        const waMsg = encodeURIComponent(template.replace('{nome}', c.name));
+        const waLink = (c.phone && c.isWhatsapp) ? `https://wa.me/55${(c.phone||'').replace(/\D/g,'')}?text=${waMsg}` : null;
+
+        return `
+        <div class="reeng-card${isOverdue ? ' reeng-overdue' : isToday ? ' reeng-today' : ''}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+                <div>
+                    <strong style="font-size:1rem;">${esc(c.name)}</strong>
+                    ${isOverdue ? `<span class="badge" style="background:#fef2f2;color:#dc2626;border-color:#fecaca;margin-left:6px;font-size:0.72rem;">Vencido</span>` : isToday ? `<span class="badge" style="background:#fffbeb;color:#d97706;border-color:#fde68a;margin-left:6px;font-size:0.72rem;">Hoje</span>` : ''}
+                    <div style="font-size:0.83rem;color:var(--text-soft);margin-top:2px;">Reativar em: <strong>${formatDate(r.dueDate)}</strong> · Motivo: ${esc(r.reason || '—')}</div>
+                    ${r.note ? `<div style="font-size:0.8rem;color:var(--text-soft);margin-top:2px;font-style:italic;">"${esc(r.note)}"</div>` : ''}
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    ${waLink ? `<a href="${waLink}" target="_blank" class="small-btn" style="text-decoration:none;background:#e7faf0;color:#15803d;border-color:#a7f3d0;">💬 WhatsApp</a>` : ''}
+                    <button class="small-btn" style="background:#e0e7ff;color:#3730a3;border-color:#c7d2fe;" onclick="generateProposta('${c.id}')">📄 Proposta</button>
+                    <button class="small-btn danger-btn" onclick="removeReengagement('${r.id}')">✓ Concluído</button>
+                </div>
+            </div>
+            <details style="margin-top:10px;">
+                <summary style="cursor:pointer;font-size:0.82rem;color:var(--text-soft);">💬 Ver mensagem sugerida</summary>
+                <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:6px;font-size:0.88rem;line-height:1.5;">${template}</div>
+            </details>
+        </div>`;
+    };
+
+    el.innerHTML = `
+        <div class="section-header"><div><h2>🔄 Leads para Reativar</h2><p>Leads perdidos com timer de re-engajamento configurado. Retome no momento certo.</p></div></div>
+        <div class="cards-grid" style="margin-bottom:16px;">
+            <div class="card"><h3>Na fila</h3><div class="metric">${pending.length}</div><small>aguardando reativação</small></div>
+            <div class="card" style="${pending.filter(r=>r.dueDate<=hoje).length>0?'border-color:var(--danger)':''}"><h3>Vencidos</h3><div class="metric" style="${pending.filter(r=>r.dueDate<=hoje).length>0?'color:var(--danger)':''}">${pending.filter(r=>r.dueDate<=hoje).length}</div><small>ação urgente</small></div>
+            <div class="card"><h3>Concluídos</h3><div class="metric" style="color:var(--success);">${done.length}</div><small>re-engajados</small></div>
+        </div>
+        ${pending.length === 0 ? `<div class="card" style="text-align:center;padding:40px 24px;"><div style="font-size:2.5rem;margin-bottom:12px;">🎉</div><h3>Fila limpa!</h3><p class="text-muted">Nenhum lead aguardando reativação. Quando um lead for marcado como Perdido, você poderá configurar um lembrete aqui.</p></div>` : `<div style="display:grid;gap:12px;">${pending.map(cardHtml).join('')}</div>`}
+        ${done.length > 0 ? `<div style="margin-top:20px;"><h4 style="color:var(--text-soft);margin-bottom:12px;">✓ Concluídos (${done.length})</h4><div style="display:grid;gap:8px;opacity:0.7;">${done.slice(0,5).map(r => { const c = (app.state.clients||[]).find(x=>x.id===r.clientId); return c ? `<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:0.85rem;"><strong>${esc(c.name)}</strong> · Motivo: ${esc(r.reason||'—')} · ${formatDate(r.dueDate)}</div>` : ''; }).join('')}</div></div>` : ''}
+    `;
+    showSection('dynamicContent');
+}
+
+function removeReengagement(id) {
+    const r = (app.state.reengagementQueue || []).find(x => x.id === id);
+    if (r) { r.done = true; saveState(); renderLeadsReativar(); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FEATURE 4 — CENTRAL DE UPSELL INTELIGENTE
+═══════════════════════════════════════════════════════════════════ */
+
+const PLAN_ORDER = ['Essencial', 'Profissional', 'Controle Total', 'Empresas'];
+
+function detectUpsellOpportunities(consultantId) {
+    const role = app.currentUser?.role;
+    const clients = (app.state.clients || []).filter(c => {
+        if (c.stage !== 'Fechado') return false;
+        return role === 'gestor' ? true : (c.consultantId === consultantId || c.instaladorId === consultantId);
+    });
+
+    return clients.map(c => {
+        const signals = [];
+        const planIdx = PLAN_ORDER.indexOf(c.plan);
+        if (planIdx < 0) return null;
+
+        const monthsClosed = c.closedDate ? Math.floor((Date.now() - new Date(c.closedDate + 'T00:00:00').getTime()) / (86400000 * 30)) : 0;
+        const isCNPJ = c.cpf && (c.cpf.includes('/') || c.cpf.replace(/\D/g,'').length === 14);
+        const vehicles = (c.vehicles || []).length || (c.plates ? c.plates.split(',').filter(Boolean).length : 0);
+
+        // Sinal: CNPJ no Essencial → sugerir Empresas
+        if (isCNPJ && planIdx === 0) signals.push({ type: 'cnpj', msg: 'CNPJ identificado no plano Essencial', weight: 30 });
+        // Sinal: múltiplos veículos no Essencial → Profissional ou Controle Total
+        if (vehicles > 1 && planIdx < 2) signals.push({ type: 'fleet', msg: `${vehicles} veículos no plano ${c.plan}`, weight: 25 });
+        // Sinal: 6+ meses no plano sem upgrade
+        if (monthsClosed >= 6 && planIdx < 3) signals.push({ type: 'time', msg: `${monthsClosed} meses sem upgrade`, weight: 20 });
+        // Sinal: plano Essencial sem bloqueio remoto
+        if (planIdx === 0 && c.product === 'Rastreador Veicular') signals.push({ type: 'block', msg: 'Sem bloqueio remoto (plano Essencial)', weight: 15 });
+        // Sinal: score de propensão original alto
+        if (calcScore(c) >= 50 && planIdx < 2) signals.push({ type: 'score', msg: `Score de propensão alto (${calcScore(c)} pts)`, weight: 10 });
+
+        if (signals.length === 0) return null;
+
+        const totalWeight = signals.reduce((s, sg) => s + sg.weight, 0);
+        const nextPlan = PLAN_ORDER[Math.min(planIdx + 1, PLAN_ORDER.length - 1)];
+        const nextPrice = planList.find(p => p.name === nextPlan)?.price;
+        const revenueGain = nextPrice && c.monthlyFee ? nextPrice - c.monthlyFee : 0;
+
+        return { c, signals, totalWeight, nextPlan, nextPrice, revenueGain, currentPlanIdx: planIdx };
+    }).filter(Boolean).sort((a, b) => b.totalWeight - a.totalWeight);
+}
+
+function getUpsellScript(opp) {
+    const { c, signals, nextPlan } = opp;
+    const topSignal = signals[0]?.type;
+    const scripts = {
+        cnpj:  `Oi ${c.name}! Notei que você usa o rastreador para sua empresa. Com o plano ${nextPlan}, você teria relatórios avançados e múltiplos perfis de acesso — ideal pra gerenciar sua equipe. Posso te mostrar como funciona?`,
+        fleet: `Oi ${c.name}! Você tem ${(c.vehicles||[]).length || signals[0].msg.match(/\d+/)?.[0] || 'vários'} veículos. Com o ${nextPlan}, você gerencia todos com relatórios consolidados e muito mais controle. Vale uma conversa rápida?`,
+        time:  `Oi ${c.name}! Você já está com a gente há bastante tempo, obrigado pela confiança! Gostaria de te apresentar o plano ${nextPlan} que tem recursos que você ainda não tem acesso. Posso te mostrar o que muda?`,
+        block: `Oi ${c.name}! Sabia que no plano ${nextPlan} você ganha bloqueio remoto? Se o veículo for roubado, você pode impedí-lo de ligar novamente com um clique. Por apenas R$ ${opp.revenueGain > 0 ? formatCurrency(opp.revenueGain) : '10'}/mês a mais. Vale muito!`,
+        score: `Oi ${c.name}! Você sempre demonstrou muito interesse nos nossos serviços. Tenho uma proposta especial de upgrade pro ${nextPlan} que vai te surpreender. Posso te explicar em 2 minutos?`
+    };
+    return scripts[topSignal] || scripts.time;
+}
+
+function renderUpsellCentral() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const uid  = app.currentUser.id;
+    const opps = detectUpsellOpportunities(uid);
+    const totalRevenue = opps.reduce((s, o) => s + o.revenueGain, 0);
+
+    const cards = opps.map(opp => {
+        const { c, signals, nextPlan, revenueGain } = opp;
+        const script = getUpsellScript(opp);
+        const waMsg  = encodeURIComponent(script);
+        const waLink = (c.phone && c.isWhatsapp) ? `https://wa.me/55${(c.phone||'').replace(/\D/g,'')}?text=${waMsg}` : null;
+
+        return `
+        <div class="upsell-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                <div>
+                    <strong style="font-size:1rem;">${esc(c.name)}</strong>
+                    <div style="font-size:0.83rem;color:var(--text-soft);margin-top:2px;">${esc(c.plan)} → <strong style="color:var(--primary);">${esc(nextPlan)}</strong></div>
+                </div>
+                ${revenueGain > 0 ? `<div style="background:var(--success-bg);border:1px solid var(--success-border);border-radius:10px;padding:4px 12px;text-align:center;"><div style="font-size:0.72rem;color:var(--success);">ganho/mês</div><div style="font-size:1.1rem;font-weight:800;color:var(--success);">+R$ ${formatCurrency(revenueGain)}</div></div>` : ''}
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+                ${signals.map(sg => `<span style="font-size:0.76rem;background:var(--info-bg);color:var(--info);border:1px solid var(--info-border);border-radius:20px;padding:2px 10px;">💡 ${esc(sg.msg)}</span>`).join('')}
+            </div>
+            <details>
+                <summary style="cursor:pointer;font-size:0.85rem;font-weight:600;margin-bottom:8px;">💬 Script de abordagem</summary>
+                <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:0.88rem;line-height:1.5;margin-top:6px;">${esc(script)}</div>
+            </details>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+                ${waLink ? `<a href="${waLink}" target="_blank" class="small-btn" style="text-decoration:none;background:#e7faf0;color:#15803d;border-color:#a7f3d0;">💬 Enviar via WA</a>` : ''}
+                <button class="small-btn" style="background:#e0e7ff;color:#3730a3;border-color:#c7d2fe;" onclick="generateProposta('${c.id}')">📄 Gerar Proposta</button>
+                <button class="small-btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(${JSON.stringify(script)}).then(()=>alert('Script copiado!'))">📋 Copiar script</button>
+            </div>
+        </div>`;
+    }).join('');
+
+    el.innerHTML = `
+        <div class="section-header"><div><h2>📈 Oportunidades de Upsell</h2><p>Clientes com potencial de upgrade identificados automaticamente pelo sistema.</p></div></div>
+        <div class="cards-grid" style="margin-bottom:16px;">
+            <div class="card"><h3>Oportunidades</h3><div class="metric" style="color:var(--accent);">${opps.length}</div><small>clientes com potencial</small></div>
+            <div class="card"><h3>Receita adicional/mês</h3><div class="metric" style="color:var(--success);font-size:1.5rem;">R$ ${formatCurrency(totalRevenue)}</div><small>se todos fizerem upgrade</small></div>
+        </div>
+        ${opps.length === 0
+            ? `<div class="card" style="text-align:center;padding:40px 24px;"><div style="font-size:2.5rem;margin-bottom:12px;">🎉</div><h3>Carteira maximizada!</h3><p class="text-muted">Todos os clientes estão em planos adequados ao perfil. Continue adicionando novos clientes para novas oportunidades.</p></div>`
+            : `<div class="trak-bubble" style="margin-bottom:16px;"><div class="trak-avatar">🤖</div><div class="trak-text">Detectei <strong>${opps.length}</strong> oportunidade${opps.length>1?'s':''} de upsell. O potencial total é <strong>+R$ ${formatCurrency(totalRevenue)}/mês</strong> em receita recorrente. Use os scripts prontos abaixo para abordar com naturalidade — sem pressão.</div></div><div style="display:grid;gap:12px;">${cards}</div>`
+        }
+    `;
+    showSection('dynamicContent');
+}
+
+function renderGestorUpsell() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const consultores = (app.state.users || []).filter(u => u.role === 'consultor');
+    const allOpps = detectUpsellOpportunities(null);
+    const totalRevenue = allOpps.reduce((s, o) => s + o.revenueGain, 0);
+
+    const rows = allOpps.slice(0, 20).map(opp => {
+        const { c, signals, nextPlan, revenueGain } = opp;
+        const cons = consultores.find(u => u.id === c.consultantId);
+        return `<tr>
+            <td><strong>${esc(c.name)}</strong></td>
+            <td>${esc(cons?.name || '—')}</td>
+            <td>${esc(c.plan)}</td>
+            <td style="color:var(--primary);font-weight:700;">${esc(nextPlan)}</td>
+            <td style="color:var(--success);font-weight:700;">${revenueGain > 0 ? `+R$ ${formatCurrency(revenueGain)}/mês` : '—'}</td>
+            <td><div style="display:flex;flex-wrap:wrap;gap:4px;">${signals.slice(0,2).map(sg => `<span style="font-size:0.72rem;background:var(--info-bg);color:var(--info);border:1px solid var(--info-border);border-radius:20px;padding:2px 8px;">${esc(sg.msg)}</span>`).join('')}</div></td>
+        </tr>`;
+    }).join('');
+
+    el.innerHTML = `
+        <div class="section-header"><div><h2>📈 Oportunidades de Upsell — Visão Geral</h2><p>Todas as oportunidades de upgrade identificadas na carteira completa.</p></div></div>
+        <div class="cards-grid" style="margin-bottom:16px;">
+            <div class="card"><h3>Total de oportunidades</h3><div class="metric" style="color:var(--accent);">${allOpps.length}</div></div>
+            <div class="card"><h3>Receita adicional potencial</h3><div class="metric" style="color:var(--success);font-size:1.4rem;">R$ ${formatCurrency(totalRevenue)}</div><small>/mês se todos fizerem upgrade</small></div>
+        </div>
+        <div class="card" style="overflow-x:auto;">
+            <table>
+                <thead><tr><th>Cliente</th><th>Consultor</th><th>Plano atual</th><th>Sugestão</th><th>Ganho/mês</th><th>Motivo</th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="6" style="text-align:center;color:var(--text-soft);">Nenhuma oportunidade identificada no momento.</td></tr>'}</tbody>
+            </table>
+        </div>
+    `;
+    showSection('dynamicContent');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FEATURE 5 — KIT DE RECUPERAÇÃO DE VEÍCULO
+═══════════════════════════════════════════════════════════════════ */
+
+function openRecoveryKit(clientUserId) {
+    const u    = (app.state.users || []).find(x => x.id === clientUserId);
+    const crm  = (app.state.clients || []).find(c => c.id === u?.clientId);
+    if (!u || !crm) return;
+
+    showModal('🚨 Kit de Recuperação de Veículo', `
+        <div style="background:#fef2f2;border:2px solid #fecaca;border-radius:12px;padding:16px 20px;margin-bottom:20px;">
+            <div style="font-size:1rem;font-weight:700;color:#dc2626;margin-bottom:6px;">⚠️ Este recurso é para emergências reais</div>
+            <p style="margin:0;font-size:0.9rem;color:#7f1d1d;">Use apenas em caso de roubo ou furto do veículo. Isso irá notificar o gestor Tracktiv imediatamente.</p>
+        </div>
+        <div class="field">
+            <label>O que aconteceu?</label>
+            <select id="recoveryType" style="border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;background:var(--bg);width:100%;">
+                <option value="roubo">Roubo (sob ameaça)</option>
+                <option value="furto">Furto (sem violência)</option>
+                <option value="perda">Veículo perdido / não localizo</option>
+            </select>
+        </div>
+        <div class="field" style="margin-top:12px;">
+            <label>Informações adicionais (opcional)</label>
+            <textarea id="recoveryNotes" rows="2" placeholder="Última localização conhecida, horário aproximado, etc." style="width:100%;resize:vertical;border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;"></textarea>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;">
+            <button class="primary-btn" style="background:linear-gradient(135deg,#dc2626,#b91c1c);" id="recoveryConfirmBtn">🚨 Acionar Kit de Recuperação</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+
+    document.getElementById('recoveryConfirmBtn').addEventListener('click', () => {
+        const type  = document.getElementById('recoveryType').value;
+        const notes = document.getElementById('recoveryNotes').value.trim();
+        closeModal();
+        activateRecoveryKit(clientUserId, type, notes);
+    });
+}
+
+function activateRecoveryKit(clientUserId, type, notes) {
+    const u   = (app.state.users || []).find(x => x.id === clientUserId);
+    const crm = (app.state.clients || []).find(c => c.id === u?.clientId);
+    if (!u || !crm) return;
+
+    const timestamp = new Date().toLocaleString('pt-BR');
+    const typeLabel = { roubo: 'ROUBO', furto: 'FURTO', perda: 'VEÍCULO NÃO LOCALIZADO' }[type] || type.toUpperCase();
+
+    // Save to recovery history
+    if (!app.state.recoveryHistory) app.state.recoveryHistory = [];
+    const rec = {
+        id: `rec_${Date.now()}`,
+        clientUserId,
+        clientId: crm.id,
+        type, typeLabel, notes,
+        activatedAt: new Date().toISOString(),
+        timestamp
+    };
+    app.state.recoveryHistory.push(rec);
+
+    // Notify gestor
+    const gestorUser = (app.state.users || []).find(u => u.role === 'gestor');
+    if (gestorUser) {
+        addNotification(gestorUser.id, 'recuperacao', `🚨 KIT DE RECUPERAÇÃO ACIONADO — ${esc(u.name)} reportou ${typeLabel} do veículo. Ação imediata necessária.`, null);
+    }
+    saveState();
+
+    // Show recovery document
+    showRecoveryDocument(rec, u, crm);
+}
+
+function showRecoveryDocument(rec, u, crm) {
+    const vehicles = (crm.vehicles || []);
+    const plates   = crm.plates ? crm.plates.split(',').map(p => p.trim()).filter(Boolean) : [];
+    const cons     = (app.state.users || []).find(x => x.id === crm.consultantId);
+
+    // Simulate last GPS (would come from real API in production)
+    const simCoords = '- 23.5505° S, 46.6333° O (São Paulo - SP) *';
+
+    const vehicleSection = plates.length > 0 || vehicles.length > 0 ? `
+        <div class="recovery-section">
+            <div class="recovery-section-title">🚗 VEÍCULO(S)</div>
+            ${plates.map(p => `<div class="recovery-field"><span>Placa</span><strong>${esc(p)}</strong></div>`).join('')}
+            ${vehicles.map(v => `
+                <div class="recovery-field"><span>Modelo</span><strong>${esc([v.marca, v.modelo, v.ano].filter(Boolean).join(' '))}</strong></div>
+                ${v.placa ? `<div class="recovery-field"><span>Placa</span><strong>${esc(v.placa)}</strong></div>` : ''}
+                ${v.cor ? `<div class="recovery-field"><span>Cor</span><strong>${esc(v.cor)}</strong></div>` : ''}
+                ${v.chassi ? `<div class="recovery-field"><span>Chassi</span><strong>${esc(v.chassi)}</strong></div>` : ''}
+                ${v.renavam ? `<div class="recovery-field"><span>RENAVAM</span><strong>${esc(v.renavam)}</strong></div>` : ''}
+            `).join('')}
+        </div>` : '';
+
+    showModal('🚨 Documento de Recuperação', `
+        <div id="recoveryDoc" class="recovery-doc">
+            <div class="recovery-doc-header">
+                <div>
+                    <div style="font-size:1.5rem;font-weight:900;color:#dc2626;">🚨 TRACKTIV — KIT DE RECUPERAÇÃO</div>
+                    <div style="font-size:0.85rem;opacity:0.8;margin-top:2px;">${rec.typeLabel} · ${rec.timestamp}</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.2);border-radius:8px;padding:6px 14px;font-size:0.8rem;font-weight:700;">ID: ${rec.id.slice(-8).toUpperCase()}</div>
+            </div>
+
+            <div class="recovery-section">
+                <div class="recovery-section-title">👤 TITULAR</div>
+                <div class="recovery-field"><span>Nome</span><strong>${esc(u.name)}</strong></div>
+                ${crm.cpf ? `<div class="recovery-field"><span>CPF/CNPJ</span><strong>${esc(crm.cpf)}</strong></div>` : ''}
+                ${crm.phone ? `<div class="recovery-field"><span>Telefone</span><strong>${esc(crm.phone)}</strong></div>` : ''}
+                ${crm.address ? `<div class="recovery-field"><span>Endereço</span><strong>${esc(crm.address)}</strong></div>` : ''}
+            </div>
+
+            ${vehicleSection}
+
+            <div class="recovery-section">
+                <div class="recovery-section-title">📍 RASTREAMENTO</div>
+                <div class="recovery-field"><span>Última posição conhecida</span><strong>${simCoords}</strong></div>
+                <div class="recovery-field"><span>Plano ativo</span><strong>${esc(crm.plan || '—')}</strong></div>
+                <div style="font-size:0.75rem;color:#64748b;margin-top:6px;">* Posição simulada para demonstração. O sistema real exibe a última coordenada GPS transmitida pelo dispositivo.</div>
+            </div>
+
+            <div class="recovery-section">
+                <div class="recovery-section-title">📞 CONTATOS DE EMERGÊNCIA</div>
+                <div class="recovery-field"><span>Polícia Civil</span><strong>197</strong></div>
+                <div class="recovery-field"><span>Polícia Militar</span><strong>190</strong></div>
+                <div class="recovery-field"><span>Consultor Tracktiv</span><strong>${esc(cons?.name || 'Tracktiv')}${cons?.whatsapp ? ' · ' + esc(cons.whatsapp) : ''}</strong></div>
+                <div class="recovery-field"><span>Suporte Tracktiv</span><strong>0800-XXX-XXXX (24h)</strong></div>
+            </div>
+
+            <div class="recovery-section" style="${notes ? '' : 'display:none'}">
+                <div class="recovery-section-title">📝 OBSERVAÇÕES</div>
+                <p style="margin:0;font-size:0.9rem;">${esc(notes || '')}</p>
+            </div>
+
+            <div style="text-align:center;padding:14px 0 4px;border-top:2px solid #e2e8f0;margin-top:16px;font-size:0.78rem;color:#64748b;">
+                Este documento foi gerado automaticamente em ${rec.timestamp} · Tracktiv Rastreamento Veicular
+            </div>
+        </div>
+
+        <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;">
+            <button class="primary-btn" style="background:linear-gradient(135deg,#dc2626,#b91c1c);" onclick="window.print()">🖨️ Imprimir Documento</button>
+            ${crm.phone && crm.isWhatsapp ? `<a href="https://wa.me/55${(crm.phone||'').replace(/\D/g,'')}?text=${encodeURIComponent('🚨 KIT DE RECUPERAÇÃO ACIONADO!\n\nSeu documento de recuperação foi gerado. Protocolo: '+rec.id.slice(-8).toUpperCase()+'\n\nSeu consultor Tracktiv foi notificado e entrará em contato em breve.')}" target="_blank" class="secondary-btn" style="text-decoration:none;">💬 Enviar para cliente</a>` : ''}
+            <button class="secondary-btn" onclick="closeModal()">Fechar</button>
+        </div>
+        <div style="margin-top:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:0.85rem;color:#991b1b;">
+            ✅ Gestor Tracktiv notificado automaticamente. Próximos passos: registre um boletim de ocorrência (B.O.) e entre em contato com sua seguradora.
+        </div>
+    `);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PARCEIRO INDICADOR
+═══════════════════════════════════════════════════════════════════ */
+
+function renderIndicadorDashboard() {
+    const u = app.currentUser;
+    if (!u) return;
+    const refs = (app.state.indicadorReferrals || []).filter(r => r.indicadorId === u.id);
+    const thisMonth = new Date().toISOString().slice(0, 7);
+    const refsMes = refs.filter(r => (r.createdAt || '').startsWith(thisMonth));
+    const fechados = refs.filter(r => r.status === 'fechado');
+    const fechadosMes = fechados.filter(r => (r.closedAt || '').startsWith(thisMonth));
+    const commMes = fechadosMes.reduce((s, r) => s + (r.commissionValue || 0), 0);
+    const commTotal = fechados.reduce((s, r) => s + (r.commissionValue || 0), 0);
+
+    const statsEl = document.getElementById('instaladorStats');
+    if (statsEl) statsEl.innerHTML = `
+        <div class="card"><h3>Indicações no mês</h3><div class="metric">${refsMes.length}</div><small>Leads enviados</small></div>
+        <div class="card"><h3>Fechamentos no mês</h3><div class="metric">${fechadosMes.length}</div><small>Convertidos</small></div>
+        <div class="card"><h3>Comissão no mês</h3><div class="metric" style="font-size:1.6rem;">R$&nbsp;${formatCurrency(commMes)}</div></div>
+        <div class="card"><h3>Comissão acumulada</h3><div class="metric" style="font-size:1.6rem;">R$&nbsp;${formatCurrency(commTotal)}</div></div>
+    `;
+
+    const tbody = document.getElementById('instDashTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (!refs.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-soft);">Nenhuma indicação enviada ainda. Clique em "Minhas Indicações" para começar!</td></tr>';
+        return;
+    }
+    const recent = [...refs].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 10);
+    const statusLabel = { pendente: 'Pendente', em_andamento: 'Em andamento', fechado: 'Fechado', perdido: 'Perdido' };
+    const statusBadge = { pendente: 'badge-warn', em_andamento: 'badge-info', fechado: 'badge-active', perdido: 'badge-danger' };
+    recent.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${formatDate(r.createdAt)}</td><td><strong>${esc(r.clientName)}</strong></td><td><span class="badge ${statusBadge[r.status] || 'badge-warn'}">${statusLabel[r.status] || r.status}</span></td><td>${r.commissionValue ? 'R$ ' + formatCurrency(r.commissionValue) : '—'}</td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+function renderIndicadorReferrals() {
+    const u = app.currentUser;
+    const refs = (app.state.indicadorReferrals || []).filter(r => r.indicadorId === u.id);
+    const statusLabel = { pendente: 'Pendente', em_andamento: 'Em andamento', fechado: 'Fechado', perdido: 'Perdido' };
+    const statusBadge = { pendente: 'badge-warn', em_andamento: 'badge-info', fechado: 'badge-active', perdido: 'badge-danger' };
+    const fechados = refs.filter(r => r.status === 'fechado').length;
+    const commTotal = refs.filter(r => r.status === 'fechado').reduce((s, r) => s + (r.commissionValue || 0), 0);
+
+    const el = document.getElementById('dynamicContent');
+    el.innerHTML = `
+        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+            <h2 style="margin:0;">🤝 Minhas Indicações</h2>
+            <button class="primary-btn" onclick="openNovaIndicacaoModal()">+ Nova Indicação</button>
+        </div>
+        <div class="stats-grid" style="margin-bottom:20px;">
+            <div class="card"><h3>Total de indicações</h3><div class="metric">${refs.length}</div></div>
+            <div class="card"><h3>Fechamentos</h3><div class="metric">${fechados}</div></div>
+            <div class="card"><h3>Comissão acumulada</h3><div class="metric" style="font-size:1.5rem;">R$ ${formatCurrency(commTotal)}</div></div>
+            <div class="card"><h3>Taxa de conversão</h3><div class="metric">${refs.length ? Math.round(fechados / refs.length * 100) : 0}%</div></div>
+        </div>
+        ${!refs.length ? `<div class="card" style="text-align:center;padding:40px;color:var(--text-soft);">
+            <div style="font-size:2rem;margin-bottom:12px;">🤝</div>
+            <p>Você ainda não enviou indicações.</p>
+            <button class="primary-btn" onclick="openNovaIndicacaoModal()">Enviar primeira indicação</button>
+        </div>` : `
+        <div class="card" style="padding:0;overflow:hidden;">
+            <table class="data-table">
+                <thead><tr><th>Data</th><th>Cliente</th><th>Telefone</th><th>Interesse</th><th>Status</th><th>Comissão</th></tr></thead>
+                <tbody>
+                    ${[...refs].sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||'')).map(r => `
+                    <tr>
+                        <td>${formatDate(r.createdAt)}</td>
+                        <td><strong>${esc(r.clientName)}</strong></td>
+                        <td>${esc(r.phone || '—')}</td>
+                        <td>${esc(r.interest || '—')}</td>
+                        <td><span class="badge ${statusBadge[r.status] || 'badge-warn'}">${statusLabel[r.status] || r.status}</span></td>
+                        <td>${r.commissionValue ? 'R$ ' + formatCurrency(r.commissionValue) : '—'}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`}
+    `;
+}
+
+function openNovaIndicacaoModal() {
+    showModal('Nova Indicação de Lead', `
+        <form id="novaIndicacaoForm" class="form-grid">
+            <div class="form-section-title">Dados do potencial cliente</div>
+            <div class="field"><label>Nome do cliente / empresa *</label><input id="niName" type="text" placeholder="Ex: Auto Peças Silva" required /></div>
+            <div class="field"><label>WhatsApp / Telefone *</label><input id="niPhone" type="tel" placeholder="(11) 99999-9999" required /></div>
+            <div class="field"><label>E-mail</label><input id="niEmail" type="email" placeholder="contato@empresa.com" /></div>
+            <div class="field"><label>Interesse principal</label>
+                <select id="niInterest">
+                    <option value="Rastreamento básico">Rastreamento básico</option>
+                    <option value="Bloqueio remoto">Bloqueio remoto</option>
+                    <option value="Frota (múltiplos veículos)">Frota (múltiplos veículos)</option>
+                    <option value="Recuperação de veículo">Recuperação de veículo</option>
+                    <option value="Sem definir">Sem definir</option>
+                </select>
+            </div>
+            <div class="field full-width"><label>Observações</label><textarea id="niNotes" rows="3" placeholder="Contexto, urgência, forma de contato preferida..."></textarea></div>
+            <div class="actions full-width">
+                <button type="submit" class="primary-btn">Enviar indicação</button>
+                <button type="button" onclick="closeModal()" class="secondary-btn">Cancelar</button>
+            </div>
+            <div id="niError" class="error-text full-width"></div>
+        </form>
+    `);
+    document.getElementById('novaIndicacaoForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const name    = document.getElementById('niName').value.trim();
+        const phone   = document.getElementById('niPhone').value.trim();
+        const errEl   = document.getElementById('niError');
+        errEl.textContent = '';
+        if (!name || !phone) { errEl.textContent = 'Nome e telefone são obrigatórios.'; return; }
+        const ref = {
+            id:           `ref_${Date.now()}`,
+            indicadorId:  app.currentUser.id,
+            clientName:   name,
+            phone,
+            email:        document.getElementById('niEmail').value.trim(),
+            interest:     document.getElementById('niInterest').value,
+            notes:        document.getElementById('niNotes').value.trim(),
+            status:       'pendente',
+            createdAt:    todayISO(),
+            closedAt:     null,
+            commissionValue: 0
+        };
+        if (!app.state.indicadorReferrals) app.state.indicadorReferrals = [];
+        app.state.indicadorReferrals.push(ref);
+        addNotification('gestor', 'info', `Nova indicação de ${esc(app.currentUser.name)}: ${esc(name)} (${esc(ref.interest)})`, null);
+        saveState();
+        closeModal();
+        renderIndicadorReferrals();
+    });
+}
+
+function renderIndicadorExtrato() {
+    const u = app.currentUser;
+    const refs = (app.state.indicadorReferrals || []).filter(r => r.indicadorId === u.id && r.status === 'fechado');
+    const thisMonth = new Date().toISOString().slice(0, 7);
+    const commMes = refs.filter(r => (r.closedAt || '').startsWith(thisMonth)).reduce((s, r) => s + (r.commissionValue || 0), 0);
+    const commTotal = refs.reduce((s, r) => s + (r.commissionValue || 0), 0);
+
+    const content = document.getElementById('extratoContent');
+    if (!content) return;
+    content.innerHTML = `
+        <div class="extrato-block">
+            <div class="extrato-block-header">Comissões por indicação — histórico</div>
+            ${!refs.length ? `<div class="extrato-item"><div style="color:var(--text-soft);">Nenhuma comissão registrada ainda.</div><div>—</div></div>` :
+            [...refs].sort((a,b) => (b.closedAt||'').localeCompare(a.closedAt||'')).map(r =>
+                `<div class="extrato-item"><div>${formatDate(r.closedAt)} · <strong>${esc(r.clientName)}</strong></div><div>R$ ${formatCurrency(r.commissionValue)}</div></div>`
+            ).join('')}
+            <div class="extrato-subtotal"><div>Subtotal comissões</div><div>R$ ${formatCurrency(commTotal)}</div></div>
+        </div>
+        <div class="extrato-total">
+            <div>Comissão acumulada total</div>
+            <div>R$ ${formatCurrency(commTotal)}</div>
+        </div>
+        <p class="text-muted" style="margin-top:14px;font-size:0.88rem;">Taxa de comissão: <strong>${u.commissionPct || 0}%</strong> sobre mensalidade do plano fechado. Pagamentos processados mensalmente via Pix.</p>
+    `;
+}
+
+function updateIndicadorReferralStatus(referralId, newStatus, commissionValue) {
+    const ref = (app.state.indicadorReferrals || []).find(r => r.id === referralId);
+    if (!ref) return;
+    ref.status = newStatus;
+    if (newStatus === 'fechado') {
+        ref.closedAt = todayISO();
+        ref.commissionValue = commissionValue || 0;
+        const ind = (app.state.users || []).find(u => u.id === ref.indicadorId);
+        if (ind) addNotification(ind.id, 'success', `🎉 Sua indicação "${esc(ref.clientName)}" foi fechada! Comissão: R$ ${formatCurrency(ref.commissionValue)}`, null);
+    }
+    saveState();
+}
+
+function openGestorIndicacoesParceiro(indicadorId) {
+    const ind = (app.state.users || []).find(u => u.id === indicadorId);
+    if (!ind) return;
+    const refs = (app.state.indicadorReferrals || []).filter(r => r.indicadorId === indicadorId);
+    const statusOpts = ['pendente','em_andamento','fechado','perdido'].map(s => `<option value="${s}">${{pendente:'Pendente',em_andamento:'Em andamento',fechado:'Fechado',perdido:'Perdido'}[s]}</option>`).join('');
+
+    showModal(`Indicações — ${esc(ind.name)}`, `
+        <div style="margin-bottom:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+            <span class="badge badge-info">Indicador — ${ind.commissionPct || 0}% comissão</span>
+            <span style="color:var(--text-soft);font-size:0.9rem;">${refs.length} indicação(ões)</span>
+            <button class="primary-btn" style="margin-left:auto;" onclick="openNovaIndicacaoGestor('${indicadorId}')">+ Adicionar indicação</button>
+        </div>
+        ${!refs.length ? `<p style="text-align:center;color:var(--text-soft);padding:20px;">Nenhuma indicação ainda.</p>` : `
+        <table class="data-table" style="font-size:0.88rem;">
+            <thead><tr><th>Cliente</th><th>Data</th><th>Interesse</th><th>Status</th><th>Comissão</th><th>Ação</th></tr></thead>
+            <tbody id="gestorRefsBody">
+                ${refs.map(r => `
+                <tr>
+                    <td><strong>${esc(r.clientName)}</strong><br><small>${esc(r.phone||'')}</small></td>
+                    <td>${formatDate(r.createdAt)}</td>
+                    <td>${esc(r.interest||'—')}</td>
+                    <td>
+                        <select class="ref-status-sel" data-id="${r.id}" style="font-size:0.85rem;padding:4px 8px;border-radius:6px;border:1px solid var(--border);">
+                            ${['pendente','em_andamento','fechado','perdido'].map(s => `<option value="${s}" ${r.status===s?'selected':''}>${{pendente:'Pendente',em_andamento:'Em andamento',fechado:'Fechado',perdido:'Perdido'}[s]}</option>`).join('')}
+                        </select>
+                    </td>
+                    <td><input type="number" class="ref-comm-input" data-id="${r.id}" value="${r.commissionValue||0}" min="0" step="0.01" style="width:90px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);font-size:0.85rem;" /></td>
+                    <td><button class="small-btn ref-save-btn" data-id="${r.id}">Salvar</button></td>
+                </tr>`).join('')}
+            </tbody>
+        </table>`}
+    `);
+
+    document.querySelectorAll('.ref-save-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const rid = btn.dataset.id;
+            const status = document.querySelector(`.ref-status-sel[data-id="${rid}"]`).value;
+            const comm   = parseFloat(document.querySelector(`.ref-comm-input[data-id="${rid}"]`).value) || 0;
+            updateIndicadorReferralStatus(rid, status, comm);
+            btn.textContent = '✓ Salvo';
+            btn.disabled = true;
+        });
+    });
+}
+
+function openNovaIndicacaoGestor(indicadorId) {
+    closeModal();
+    const ind = (app.state.users || []).find(u => u.id === indicadorId);
+    showModal(`Nova indicação para ${esc(ind?.name || '')}`, `
+        <form id="novaIndGestorForm" class="form-grid">
+            <div class="field"><label>Nome do cliente *</label><input id="nigName" type="text" required /></div>
+            <div class="field"><label>Telefone *</label><input id="nigPhone" type="tel" required /></div>
+            <div class="field full-width"><label>Interesse</label>
+                <select id="nigInterest">
+                    <option>Rastreamento básico</option><option>Bloqueio remoto</option>
+                    <option>Frota (múltiplos veículos)</option><option>Recuperação de veículo</option><option>Sem definir</option>
+                </select>
+            </div>
+            <div class="actions full-width">
+                <button type="submit" class="primary-btn">Criar</button>
+                <button type="button" onclick="closeModal()" class="secondary-btn">Cancelar</button>
+            </div>
+            <div id="nigError" class="error-text full-width"></div>
+        </form>
+    `);
+    document.getElementById('novaIndGestorForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const name = document.getElementById('nigName').value.trim();
+        const phone = document.getElementById('nigPhone').value.trim();
+        if (!name || !phone) { document.getElementById('nigError').textContent = 'Nome e telefone obrigatórios.'; return; }
+        if (!app.state.indicadorReferrals) app.state.indicadorReferrals = [];
+        app.state.indicadorReferrals.push({
+            id: `ref_${Date.now()}`, indicadorId, clientName: name, phone,
+            interest: document.getElementById('nigInterest').value,
+            status: 'pendente', createdAt: todayISO(), closedAt: null, commissionValue: 0
+        });
+        saveState(); closeModal();
+    });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MURAL DE PERFORMANCE E DESAFIOS
+═══════════════════════════════════════════════════════════════════ */
+
+function addToSalesFeed(client, consultor) {
+    if (!client || !consultor) return;
+    if (!app.state.salesFeed) app.state.salesFeed = [];
+    app.state.salesFeed.unshift({
+        id: `feed_${Date.now()}`,
+        consultorName: consultor.name || '',
+        consultorId: consultor.id || '',
+        clientName: client.name || '',
+        plan: client.plan || '',
+        date: todayISO(),
+        timestamp: Date.now()
+    });
+    // Keep only last 50
+    if (app.state.salesFeed.length > 50) app.state.salesFeed = app.state.salesFeed.slice(0, 50);
+}
+
+function getMuralRanking() {
+    const consultores = (app.state.users || []).filter(u => u.role === 'consultor');
+    const month = getCurrentMonthKey();
+    return consultores.map(u => {
+        const sales = (app.state.clients || []).filter(c => c.consultantId === u.id && c.stage === 'Fechado' && (c.closedDate || '').startsWith(month));
+        const revenue = sales.reduce((s, c) => s + (c.monthlyFee || 0), 0);
+        const points = sales.length * 100 + Math.round(revenue);
+        return { id: u.id, name: u.name, sales: sales.length, revenue, points };
+    }).sort((a, b) => b.points - a.points);
+}
+
+function getChallengeProgress(challenge, userId) {
+    const month = getCurrentMonthKey();
+    const start = challenge.startDate;
+    const end = challenge.endDate;
+    const inRange = (d) => d && d >= start && d <= end;
+    if (challenge.type === 'vendas') {
+        const count = (app.state.clients || []).filter(c =>
+            c.consultantId === userId && c.stage === 'Fechado' && inRange(c.closedDate)
+        ).length;
+        return { current: count, goal: challenge.goal, pct: Math.min(100, Math.round(count / challenge.goal * 100)) };
+    }
+    if (challenge.type === 'clientes') {
+        const count = (app.state.clients || []).filter(c =>
+            c.consultantId === userId && inRange(c.createdAt)
+        ).length;
+        return { current: count, goal: challenge.goal, pct: Math.min(100, Math.round(count / challenge.goal * 100)) };
+    }
+    if (challenge.type === 'treinamentos') {
+        const done = Object.values((app.state.trainingProgress || {})[userId] || {}).filter(Boolean).length;
+        return { current: done, goal: challenge.goal, pct: Math.min(100, Math.round(done / challenge.goal * 100)) };
+    }
+    return { current: 0, goal: challenge.goal, pct: 0 };
+}
+
+function getDaysLeft(endDate) {
+    if (!endDate) return 0;
+    const diff = new Date(endDate + 'T23:59:59') - new Date();
+    return Math.max(0, Math.ceil(diff / 86400000));
+}
+
+function getMonthDaysLeft() {
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return Math.max(0, lastDay.getDate() - now.getDate());
+}
+
+function renderMural() {
+    const cfg = app.state.muralConfig || {};
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+
+    if (!cfg.enabled) {
+        el.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-soft);">
+            <div style="font-size:3rem;margin-bottom:16px;">🏆</div>
+            <h2 style="color:var(--text);">Mural temporariamente desativado</h2>
+            <p>O gestor desativou o mural de performance. Volte em breve!</p>
+        </div>`;
+        showSection('dynamicContent');
+        return;
+    }
+
+    const role = app.currentUser?.role;
+    const userId = app.currentUser?.id;
+    const ranking = getMuralRanking();
+    const month = getCurrentMonthKey();
+    const totalSales = (app.state.clients || []).filter(c => c.stage === 'Fechado' && (c.closedDate || '').startsWith(month)).length;
+    const metaValue = cfg.metaValue || 0;
+    const metaPct = metaValue > 0 ? Math.min(100, Math.round(totalSales / metaValue * 100)) : 0;
+    const daysLeft = getMonthDaysLeft();
+    const daysPassed = new Date().getDate() - 1 || 1;
+    const projection = daysPassed > 0 ? Math.round(totalSales / daysPassed * (daysPassed + daysLeft)) : 0;
+    const medals = ['🥇', '🥈', '🥉'];
+    const feed = (app.state.salesFeed || []).slice(0, 10);
+    const challenges = (app.state.challenges || []).filter(c => c.status === 'ativo' && c.visibility !== 'privado');
+
+    let html = `<div class="mural-wrapper">
+        <div class="mural-header">
+            <div class="mural-header-left">
+                <span class="mural-badge-live">● AO VIVO</span>
+                <h1>Mural de Performance</h1>
+                <span class="mural-subtitle">${getCurrentMonthLabel()}</span>
+            </div>
+            <div class="mural-header-right">
+                <div class="mural-stat-chip"><span>${daysLeft}</span><small>dias restantes</small></div>
+            </div>
+        </div>`;
+
+    // META DO MÊS
+    if (cfg.showMeta && metaValue > 0) {
+        const metaColor = metaPct >= 100 ? '#10b981' : metaPct >= 60 ? '#f5820d' : '#ef4444';
+        html += `
+        <div class="mural-section">
+            <div class="mural-section-title">🎯 Meta da Equipe — ${getCurrentMonthLabel()}</div>
+            <div class="mural-meta-card">
+                <div class="mural-meta-numbers">
+                    <div class="mural-meta-big">${totalSales}<span class="mural-meta-sep">/</span><span class="mural-meta-goal">${metaValue}</span></div>
+                    <div class="mural-meta-labels"><span>vendas fechadas</span><span>meta do mês</span></div>
+                </div>
+                <div class="mural-meta-bar-wrap">
+                    <div class="mural-meta-bar-track">
+                        <div class="mural-meta-bar-fill" style="width:${metaPct}%;background:${metaColor};"></div>
+                        <span class="mural-meta-pct">${metaPct}%</span>
+                    </div>
+                </div>
+                <div class="mural-meta-info">
+                    <span>📅 ${daysLeft} dias restantes</span>
+                    <span>📈 Projeção: <strong>${projection} vendas</strong></span>
+                    ${metaPct >= 100 ? '<span class="mural-achieved">🎉 META BATIDA!</span>' : ''}
+                </div>
+            </div>
+        </div>`;
+    }
+
+    // RANKING
+    if (cfg.showRanking && ranking.length) {
+        const myRankIdx = ranking.findIndex(r => r.id === userId);
+        html += `
+        <div class="mural-section">
+            <div class="mural-section-title">🏆 Ranking do Mês</div>
+            <div class="mural-ranking-list">`;
+        ranking.forEach((r, i) => {
+            const isMe = r.id === userId;
+            html += `
+                <div class="mural-rank-row${isMe ? ' mural-rank-me' : ''}">
+                    <div class="mural-rank-pos">${medals[i] || `#${i+1}`}</div>
+                    <div class="mural-rank-name">${esc(r.name)}${isMe ? ' <span class="mural-you-badge">você</span>' : ''}</div>
+                    <div class="mural-rank-stats">
+                        <span class="mural-rank-sales">${r.sales} <small>venda${r.sales !== 1 ? 's' : ''}</small></span>
+                        <span class="mural-rank-pts">${r.points.toLocaleString('pt-BR')} pts</span>
+                    </div>
+                </div>`;
+        });
+        html += `</div></div>`;
+    }
+
+    // DESAFIOS
+    if (cfg.showChallenges && challenges.length) {
+        html += `<div class="mural-section"><div class="mural-section-title">⚡ Desafios Ativos</div><div class="mural-challenges-grid">`;
+        challenges.forEach(ch => {
+            const prog = (role === 'consultor' || (role === 'instalador' && app.currentUser?.partnerType !== 'indicador'))
+                ? getChallengeProgress(ch, userId) : { current: 0, goal: ch.goal, pct: 0 };
+            const days = getDaysLeft(ch.endDate);
+            const typeLabel = { vendas: 'vendas', clientes: 'cadastros', treinamentos: 'treinamentos' }[ch.type] || ch.type;
+            const isWinner = prog.pct >= 100;
+            html += `
+            <div class="mural-challenge-card${isWinner ? ' mural-challenge-won' : ''}">
+                ${isWinner ? '<div class="mural-challenge-ribbon">🏅 CONCLUÍDO!</div>' : ''}
+                <div class="mural-challenge-title">${esc(ch.title)}</div>
+                <div class="mural-challenge-desc">${esc(ch.description)}</div>
+                <div class="mural-challenge-progress">
+                    <div class="mural-prog-track"><div class="mural-prog-fill" style="width:${prog.pct}%"></div></div>
+                    <div class="mural-prog-label">${prog.current}/${prog.goal} ${typeLabel} — ${prog.pct}%</div>
+                </div>
+                <div class="mural-challenge-footer">
+                    ${ch.prizeVisible ? `<div class="mural-prize">🎁 ${esc(ch.prize)}</div>` : '<div class="mural-prize">🎁 Prêmio surpresa!</div>'}
+                    <div class="mural-deadline">${days > 0 ? `⏰ ${days} dias restantes` : '🔔 Encerrado'}</div>
+                </div>
+                ${prog.pct >= 100 ? '' : prog.pct >= 50 ? `<div class="mural-trak-tip">💪 Faltam <strong>${prog.goal - prog.current}</strong> ${typeLabel} para você ganhar o prêmio!</div>`
+                    : `<div class="mural-trak-tip">🚀 Você está em <strong>${prog.current}/${prog.goal}</strong> — bora acelerar!</div>`}
+            </div>`;
+        });
+        html += `</div></div>`;
+    }
+
+    // FEED DE VENDAS
+    if (cfg.showFeed && feed.length) {
+        html += `
+        <div class="mural-section">
+            <div class="mural-section-title">🔥 Últimas Vendas</div>
+            <div class="mural-feed">`;
+        feed.forEach((f, idx) => {
+            const name = cfg.hideFeedNames ? '🕵️ Consultor' : esc(f.consultorName);
+            const client = cfg.hideFeedNames ? 'um novo cliente' : esc(f.clientName);
+            html += `
+            <div class="mural-feed-item" style="animation-delay:${idx * 0.06}s">
+                <span class="mural-feed-fire">🔥</span>
+                <span class="mural-feed-text"><strong>${name}</strong> fechou ${client} — <span class="mural-feed-plan">${esc(f.plan)}</span></span>
+                <span class="mural-feed-time">${formatDate(f.date)}</span>
+            </div>`;
+        });
+        html += `</div></div>`;
+    }
+
+    html += `</div>`;
+    el.innerHTML = html;
+    showSection('dynamicContent');
+}
+
+function renderGestorMuralConfig() {
+    const cfg = app.state.muralConfig || {};
+    const challenges = app.state.challenges || [];
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+
+    const toggle = (key, label) => `
+        <label class="mural-toggle-row">
+            <span>${label}</span>
+            <label class="toggle-switch">
+                <input type="checkbox" data-cfg="${key}" ${cfg[key] ? 'checked' : ''}>
+                <span class="toggle-slider"></span>
+            </label>
+        </label>`;
+
+    const challengeRows = challenges.length
+        ? challenges.map(ch => {
+            const allParticipants = (app.state.users || []).filter(u => u.role === 'consultor');
+            const leaders = allParticipants.map(u => {
+                const p = getChallengeProgress(ch, u.id);
+                return { name: u.name, ...p };
+            }).sort((a, b) => b.current - a.current).slice(0, 3);
+            const statusBadge = { ativo: 'badge-active', pausado: 'badge-warn', encerrado: 'badge-danger' }[ch.status] || 'badge-warn';
+            return `
+            <div class="mural-admin-challenge-card">
+                <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-weight:700;font-size:1rem;margin-bottom:4px;">${esc(ch.title)}</div>
+                        <div style="color:var(--text-soft);font-size:0.88rem;margin-bottom:8px;">${esc(ch.description)}</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:0.82rem;color:var(--text-muted);">
+                            <span>🎯 Meta: ${ch.goal} ${ch.type}</span>
+                            <span>📅 ${formatDate(ch.startDate)} → ${formatDate(ch.endDate)}</span>
+                            <span>🎁 ${ch.prize}</span>
+                            <span>⏰ ${getDaysLeft(ch.endDate)} dias restantes</span>
+                        </div>
+                        ${leaders.length ? `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+                            ${['🥇','🥈','🥉'].slice(0,leaders.length).map((m,i) => `<span style="font-size:0.8rem;background:var(--surface-3);padding:2px 8px;border-radius:99px;">${m} ${esc(leaders[i].name)}: ${leaders[i].current}/${ch.goal}</span>`).join('')}
+                        </div>` : ''}
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;">
+                        <span class="badge ${statusBadge}">${ch.status}</span>
+                        <div style="display:flex;gap:6px;">
+                            <button class="small-btn" data-action="edit-ch" data-id="${ch.id}">Editar</button>
+                            <button class="small-btn" data-action="toggle-ch" data-id="${ch.id}" data-status="${ch.status}">${ch.status === 'ativo' ? 'Pausar' : 'Ativar'}</button>
+                            <button class="small-btn danger-btn" data-action="end-ch" data-id="${ch.id}">Encerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }).join('')
+        : `<div style="text-align:center;padding:28px;color:var(--text-soft);">Nenhum desafio criado ainda. Crie o primeiro!</div>`;
+
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <h2>🏆 Mural e Desafios</h2>
+            <p>Configure o painel de performance da equipe e crie desafios motivacionais.</p>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+            <div class="card">
+                <h3 style="margin-bottom:16px;">Controles do Mural</h3>
+                ${toggle('enabled', '🟢 Mural ativado para a equipe')}
+                <div style="height:1px;background:var(--border);margin:12px 0;"></div>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">Seções visíveis:</p>
+                ${toggle('showRanking', '🏆 Ranking dos consultores')}
+                ${toggle('showMeta', '🎯 Meta do mês')}
+                ${toggle('showFeed', '🔥 Feed de últimas vendas')}
+                ${toggle('showChallenges', '⚡ Desafios ativos')}
+                ${toggle('showComissions', '💰 Comissões acumuladas')}
+                <div style="height:1px;background:var(--border);margin:12px 0;"></div>
+                ${toggle('hideFeedNames', '🕵️ Ocultar nomes no feed de vendas')}
+            </div>
+            <div class="card">
+                <h3 style="margin-bottom:16px;">Meta Global do Mês</h3>
+                <p style="color:var(--text-soft);font-size:0.9rem;margin-bottom:12px;">Defina quantas vendas a equipe precisa fechar no mês para bater a meta.</p>
+                <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
+                    <input type="number" id="muralMetaInput" min="1" max="9999" value="${cfg.metaValue || 0}" style="width:100px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:1.1rem;font-weight:700;">
+                    <span style="color:var(--text-soft);">vendas no mês</span>
+                    <button class="primary-btn" id="saveMuralMetaBtn">Salvar</button>
+                </div>
+                <div style="margin-top:12px;">
+                    <button class="secondary-btn" onclick="renderMural()">👁️ Visualizar Mural</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+                <h3>⚡ Desafios</h3>
+                <button class="primary-btn" id="newChallengeBtn">+ Criar Desafio</button>
+            </div>
+            <div id="challengeList">${challengeRows}</div>
+        </div>
+    `;
+    showSection('dynamicContent');
+
+    // Toggle switches
+    el.querySelectorAll('input[data-cfg]').forEach(inp => {
+        inp.addEventListener('change', () => {
+            const key = inp.dataset.cfg;
+            app.state.muralConfig[key] = inp.checked;
+            saveState();
+        });
+    });
+
+    // Meta save
+    document.getElementById('saveMuralMetaBtn').addEventListener('click', () => {
+        const v = parseInt(document.getElementById('muralMetaInput').value) || 0;
+        app.state.muralConfig.metaValue = v;
+        saveState();
+        document.getElementById('saveMuralMetaBtn').textContent = '✓ Salvo';
+        setTimeout(() => { if (document.getElementById('saveMuralMetaBtn')) document.getElementById('saveMuralMetaBtn').textContent = 'Salvar'; }, 1500);
+    });
+
+    // New challenge
+    document.getElementById('newChallengeBtn').addEventListener('click', () => openDesafioModal(null));
+
+    // Challenge actions
+    el.querySelectorAll('[data-action="edit-ch"]').forEach(b => b.addEventListener('click', () => openDesafioModal(b.dataset.id)));
+    el.querySelectorAll('[data-action="toggle-ch"]').forEach(b => b.addEventListener('click', () => {
+        const ch = (app.state.challenges || []).find(c => c.id === b.dataset.id);
+        if (ch) { ch.status = ch.status === 'ativo' ? 'pausado' : 'ativo'; saveState(); renderGestorMuralConfig(); }
+    }));
+    el.querySelectorAll('[data-action="end-ch"]').forEach(b => b.addEventListener('click', () => {
+        if (!confirm('Encerrar este desafio?')) return;
+        const ch = (app.state.challenges || []).find(c => c.id === b.dataset.id);
+        if (ch) { ch.status = 'encerrado'; saveState(); renderGestorMuralConfig(); }
+    }));
+}
+
+function openDesafioModal(id) {
+    const ch = id ? (app.state.challenges || []).find(c => c.id === id) : null;
+    showModal(ch ? 'Editar desafio' : 'Criar novo desafio', `
+        <form id="desafioForm" class="form-grid">
+            <div class="field full-width"><label>Título *</label><input id="chTitle" type="text" value="${esc(ch?.title || '')}" required placeholder="Ex: Sprint de Vendas — Junho 🚀" /></div>
+            <div class="field full-width"><label>Descrição</label><textarea id="chDesc" rows="2" placeholder="Descreva o desafio e o que os consultores precisam fazer...">${esc(ch?.description || '')}</textarea></div>
+            <div class="field"><label>Tipo de meta *</label>
+                <select id="chType">
+                    <option value="vendas" ${ch?.type==='vendas'?'selected':''}>Vendas fechadas</option>
+                    <option value="clientes" ${ch?.type==='clientes'?'selected':''}>Clientes cadastrados</option>
+                    <option value="treinamentos" ${ch?.type==='treinamentos'?'selected':''}>Treinamentos concluídos</option>
+                </select>
+            </div>
+            <div class="field"><label>Valor da meta *</label><input id="chGoal" type="number" min="1" value="${ch?.goal || 5}" required /></div>
+            <div class="field"><label>Data de início *</label><input id="chStart" type="date" value="${ch?.startDate || todayISO()}" required /></div>
+            <div class="field"><label>Data de término *</label><input id="chEnd" type="date" value="${ch?.endDate || ''}" required /></div>
+            <div class="field full-width"><label>Prêmio</label><input id="chPrize" type="text" value="${esc(ch?.prize || '')}" placeholder="Ex: Jantar para 2 + R$ 300 em crédito" /></div>
+            <div class="field"><label>Visibilidade</label>
+                <select id="chVisibility">
+                    <option value="publico" ${ch?.visibility!=='privado'?'selected':''}>Público — visível para toda equipe</option>
+                    <option value="privado" ${ch?.visibility==='privado'?'selected':''}>Privado — apenas gestor</option>
+                </select>
+            </div>
+            <div class="field"><label>Prêmio visível para equipe?</label>
+                <select id="chPrizeVisible">
+                    <option value="1" ${ch?.prizeVisible!==false?'selected':''}>Sim — mostrar prêmio</option>
+                    <option value="0" ${ch?.prizeVisible===false?'selected':''}>Não — prêmio surpresa</option>
+                </select>
+            </div>
+            <div class="actions full-width">
+                <button type="submit" class="primary-btn">${ch ? 'Salvar alterações' : 'Criar desafio'}</button>
+                <button type="button" onclick="closeModal()" class="secondary-btn">Cancelar</button>
+            </div>
+            <div id="chError" class="error-text full-width"></div>
+        </form>
+    `);
+    document.getElementById('desafioForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const title = document.getElementById('chTitle').value.trim();
+        const goal  = parseInt(document.getElementById('chGoal').value) || 0;
+        const start = document.getElementById('chStart').value;
+        const end   = document.getElementById('chEnd').value;
+        const err   = document.getElementById('chError');
+        err.textContent = '';
+        if (!title || !goal || !start || !end) { err.textContent = 'Preencha os campos obrigatórios.'; return; }
+        if (end < start) { err.textContent = 'A data de término deve ser após a data de início.'; return; }
+        const data = {
+            title,
+            description: document.getElementById('chDesc').value.trim(),
+            type:         document.getElementById('chType').value,
+            goal,
+            startDate:    start,
+            endDate:      end,
+            prize:        document.getElementById('chPrize').value.trim(),
+            prizeVisible: document.getElementById('chPrizeVisible').value === '1',
+            visibility:   document.getElementById('chVisibility').value,
+            status:       'ativo',
+            createdAt:    todayISO()
+        };
+        if (!app.state.challenges) app.state.challenges = [];
+        if (ch) {
+            Object.assign(app.state.challenges.find(c => c.id === ch.id), data);
+        } else {
+            app.state.challenges.push({ id: `ch_${Date.now()}`, ...data });
+        }
+        saveState(); closeModal(); renderGestorMuralConfig();
+    });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LINK DE CADASTRO DO CONSULTOR
+═══════════════════════════════════════════════════════════════════ */
+
+function getConsultorLinkCode(userId) {
+    return btoa(userId).replace(/=/g, '');
+}
+
+function resolveConsultorFromCode(code) {
+    try {
+        const padded = code + '=='.slice((code.length % 4) || 4);
+        const userId = atob(padded);
+        return (app.state.users || []).find(u => u.id === userId && u.role === 'consultor');
+    } catch (e) {
+        return null;
+    }
+}
+
+function getConsultorPublicLink(userId) {
+    const code = getConsultorLinkCode(userId);
+    return `${window.location.origin}${window.location.pathname}?cadastro=${code}`;
+}
+
+function checkPublicCadastroParam() {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('cadastro');
+    if (!code) return false;
+    const consultor = resolveConsultorFromCode(code);
+    showPublicCadastroForm(consultor, code);
+    return true;
+}
+
+function showPublicCadastroForm(consultor, code) {
+    // Create full-screen overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'publicCadastroScreen';
+    overlay.className = 'public-cadastro-screen';
+    document.body.appendChild(overlay);
+
+    // Hide login screen if visible
+    const loginEl = document.getElementById('loginScreen');
+    if (loginEl) loginEl.style.display = 'none';
+
+    let step = 1;
+    const totalSteps = 3;
+
+    function renderStep() {
+        const pct = Math.round((step - 1) / totalSteps * 100);
+        overlay.innerHTML = `
+        <div class="public-form-container">
+            <div class="public-form-header">
+                <div class="public-logo">
+                    <span style="font-size:1.8rem;">📡</span>
+                    <span class="public-brand">Tracktiv</span>
+                </div>
+                ${consultor
+                    ? `<div class="public-consultor-tag">Consultor responsável: <strong>${esc(consultor.name)}</strong></div>`
+                    : `<div class="public-consultor-tag" style="color:#ef4444;">⚠️ Link inválido — mas você ainda pode se cadastrar</div>`}
+            </div>
+
+            <div class="public-progress-bar">
+                <div class="public-progress-fill" style="width:${pct}%"></div>
+            </div>
+            <div class="public-step-label">Etapa ${step} de ${totalSteps}</div>
+
+            <h2 class="public-form-title">${['Seus dados pessoais', 'Endereço e contato', 'Serviço de interesse'][step - 1]}</h2>
+
+            <form id="publicForm" class="public-form-body">
+                ${renderPublicFormStep(step)}
+                <div class="public-form-actions">
+                    ${step > 1 ? `<button type="button" id="pubPrevBtn" class="secondary-btn">← Voltar</button>` : ''}
+                    ${step < totalSteps
+                        ? `<button type="submit" class="primary-btn">Continuar →</button>`
+                        : `<button type="submit" class="primary-btn" style="background:linear-gradient(135deg,var(--accent),#e06b00);">✅ Enviar cadastro</button>`}
+                </div>
+                <div id="pubFormError" class="error-text" style="margin-top:8px;"></div>
+            </form>
+        </div>`;
+
+        if (step > 1) {
+            document.getElementById('pubPrevBtn').addEventListener('click', () => { step--; renderStep(); });
+        }
+
+        document.getElementById('publicForm').addEventListener('submit', e => {
+            e.preventDefault();
+            const err = document.getElementById('pubFormError');
+            err.textContent = '';
+
+            if (step < totalSteps) {
+                // Validate current step
+                const required = document.querySelectorAll('#publicForm [required]');
+                for (const inp of required) {
+                    if (!inp.value.trim()) { err.textContent = 'Preencha todos os campos obrigatórios (*).'; inp.focus(); return; }
+                }
+                // Save current step data
+                savePublicFormStepData(step);
+                step++;
+                renderStep();
+            } else {
+                // Final submit
+                savePublicFormStepData(step);
+                submitPublicCadastro(consultor);
+            }
+        });
+    }
+
+    // Temporary storage for multi-step data
+    window._pubFormData = {};
+
+    function savePublicFormStepData(s) {
+        if (s === 1) {
+            window._pubFormData.name       = document.getElementById('pubName')?.value.trim() || '';
+            window._pubFormData.cpf        = document.getElementById('pubCpf')?.value.trim() || '';
+            window._pubFormData.rg         = document.getElementById('pubRg')?.value.trim() || '';
+            window._pubFormData.email      = document.getElementById('pubEmail')?.value.trim() || '';
+            window._pubFormData.phone      = document.getElementById('pubPhone')?.value.trim() || '';
+            window._pubFormData.isWhatsapp = document.getElementById('pubIsWa')?.checked ?? true;
+        } else if (s === 2) {
+            window._pubFormData.address     = document.getElementById('pubAddr')?.value.trim() || '';
+            window._pubFormData.paymentDate = parseInt(document.getElementById('pubPayDate')?.value) || 10;
+        } else if (s === 3) {
+            const services = [...document.querySelectorAll('.pub-service-cb:checked')].map(cb => cb.value);
+            window._pubFormData.services  = services;
+            window._pubFormData.product   = services.includes('rastreamento') ? 'Rastreador Veicular' : (services[0] || 'Rastreador Veicular');
+            window._pubFormData.plates    = document.getElementById('pubPlates')?.value.trim() || '';
+            window._pubFormData.origins   = [document.getElementById('pubOrigin')?.value || 'Link do consultor'];
+            window._pubFormData.notes     = document.getElementById('pubNotes')?.value.trim() || '';
+            window._pubFormData.need      = document.getElementById('pubNeed')?.value.trim() || '';
+        }
+    }
+
+    renderStep();
+
+    function submitPublicCadastro(cons) {
+        const d = window._pubFormData;
+        if (!d.name || !d.phone) {
+            document.getElementById('pubFormError').textContent = 'Nome e telefone são obrigatórios.';
+            return;
+        }
+        const newClient = {
+            id:           `pub_${Date.now()}`,
+            consultantId: cons?.id || null,
+            instaladorId: null,
+            name:         d.name,
+            phone:        d.phone,
+            isWhatsapp:   d.isWhatsapp,
+            email:        d.email || '',
+            cpf:          d.cpf || '',
+            rg:           d.rg || '',
+            address:      d.address || '',
+            product:      d.product || 'Rastreador Veicular',
+            plan:         'Essencial',
+            monthlyFee:   44.90,
+            plates:       d.plates || '',
+            paymentDate:  d.paymentDate || 10,
+            need:         d.need || d.services?.join(', ') || '',
+            origins:      d.origins || ['Link do consultor'],
+            notes:        d.notes || '',
+            stage:        'Novo Lead',
+            fromPublicForm: true,
+            createdAt:    todayISO()
+        };
+        app.state.clients.push(newClient);
+        if (cons) {
+            addNotification(cons.id, 'info', `📥 Novo cadastro recebido de ${esc(d.name)}! Verifique seus leads.`, { section: 'consultorCRM' });
+        }
+        saveState();
+        delete window._pubFormData;
+
+        // Show success screen
+        overlay.innerHTML = `
+        <div class="public-form-container" style="text-align:center;padding:48px 32px;">
+            <div style="font-size:4rem;margin-bottom:20px;">🎉</div>
+            <h2 style="color:var(--primary);margin-bottom:12px;">Cadastro recebido!</h2>
+            <p style="color:var(--text-soft);font-size:1.05rem;margin-bottom:8px;">Obrigado, <strong>${esc(d.name)}</strong>!</p>
+            <p style="color:var(--text-soft);margin-bottom:28px;">Em breve um de nossos consultores entrará em contato para apresentar as melhores soluções para você.</p>
+            <div style="background:var(--success-bg);border:1px solid var(--success-border);border-radius:12px;padding:16px 20px;margin-bottom:28px;text-align:left;font-size:0.9rem;color:#065f46;">
+                <strong>✅ O que acontece agora?</strong><br>
+                • Seu consultor recebeu uma notificação<br>
+                • Em até 24h entraremos em contato<br>
+                • Seus dados estão seguros conosco
+            </div>
+            <p style="color:var(--text-muted);font-size:0.85rem;">© Tracktiv — Rastreamento e Segurança Veicular</p>
+        </div>`;
+    }
+}
+
+function renderPublicFormStep(step) {
+    const d = window._pubFormData || {};
+    if (step === 1) return `
+        <div class="pub-form-grid">
+            <div class="field full-width"><label>Nome completo *</label><input id="pubName" type="text" value="${esc(d.name||'')}" required placeholder="Seu nome completo" /></div>
+            <div class="field"><label>CPF</label><input id="pubCpf" type="text" value="${esc(d.cpf||'')}" placeholder="000.000.000-00" /></div>
+            <div class="field"><label>RG</label><input id="pubRg" type="text" value="${esc(d.rg||'')}" placeholder="00.000.000-0" /></div>
+            <div class="field"><label>E-mail</label><input id="pubEmail" type="email" value="${esc(d.email||'')}" placeholder="seu@email.com" /></div>
+            <div class="field"><label>Telefone / WhatsApp *</label><input id="pubPhone" type="tel" value="${esc(d.phone||'')}" required placeholder="(11) 99999-9999" /></div>
+            <div class="field full-width">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" id="pubIsWa" ${d.isWhatsapp!==false?'checked':''} style="width:16px;height:16px;" />
+                    Este número é WhatsApp
+                </label>
+            </div>
+        </div>`;
+    if (step === 2) return `
+        <div class="pub-form-grid">
+            <div class="field full-width"><label>Endereço completo</label><input id="pubAddr" type="text" value="${esc(d.address||'')}" placeholder="Rua, número, bairro, cidade/UF" /></div>
+            <div class="field"><label>Melhor data de pagamento do boleto</label>
+                <select id="pubPayDate">
+                    ${[1,5,10,15,20,25,30].map(d2 => `<option value="${d2}" ${d.paymentDate===d2?'selected':''}>Dia ${d2}</option>`).join('')}
+                </select>
+            </div>
+        </div>`;
+    if (step === 3) return `
+        <div class="pub-form-grid">
+            <div class="field full-width">
+                <label>Serviços de interesse</label>
+                <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px;">
+                    ${[['rastreamento','📡 Rastreamento Veicular'],['sst','🦺 Segurança do Trabalho (SST)'],['contabilidade','📊 Consultoria Contábil'],['chatbot','💬 Chatbot e Atendimento'],['marketing','🌐 Marketing Digital']].map(([v,l]) =>
+                        `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;border:1px solid var(--border);border-radius:8px;">
+                            <input type="checkbox" class="pub-service-cb" value="${v}" ${(d.services||[]).includes(v)?'checked':''} style="width:16px;height:16px;" />
+                            ${l}
+                        </label>`).join('')}
+                </div>
+            </div>
+            <div class="field full-width" id="pubPlatesField">
+                <label>Placa(s) do(s) veículo(s)</label>
+                <input id="pubPlates" type="text" value="${esc(d.plates||'')}" placeholder="Ex: ABC-1234, DEF-5678" />
+            </div>
+            <div class="field"><label>Como conheceu a Tracktiv?</label>
+                <select id="pubOrigin">
+                    ${['Link do consultor','Indicação de amigo','Google','Instagram','Facebook','Outro'].map(o => `<option ${(d.origins||[])[0]===o?'selected':''}>${o}</option>`).join('')}
+                </select>
+            </div>
+            <div class="field"><label>Necessidade principal</label>
+                <input id="pubNeed" type="text" value="${esc(d.need||'')}" placeholder="Ex: Proteger minha frota de entregas" />
+            </div>
+            <div class="field full-width"><label>Observações adicionais</label>
+                <textarea id="pubNotes" rows="3" placeholder="Quantidade de veículos, urgência, horário preferido para contato...">${esc(d.notes||'')}</textarea>
+            </div>
+        </div>`;
+    return '';
+}
+
+function renderMeuLink() {
+    const u = app.currentUser;
+    if (!u || u.role !== 'consultor') return;
+    const link = getConsultorPublicLink(u.id);
+    const waMsg = encodeURIComponent(`Olá! Para iniciarmos seu cadastro na Tracktiv, preencha seus dados pelo link:\n${link}\n\nEm caso de dúvidas, estou à disposição! 😊`);
+    const leadsFromForm = (app.state.clients || []).filter(c => c.consultantId === u.id && c.fromPublicForm);
+    const month = getCurrentMonthKey();
+    const leadsThisMonth = leadsFromForm.filter(c => (c.createdAt || '').startsWith(month));
+
+    const el = document.getElementById('dynamicContent');
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <h2>🔗 Meu Link de Cadastro</h2>
+            <p>Compartilhe seu link personalizado. Novos leads chegam direto no seu CRM.</p>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+            <div class="card" style="text-align:center;grid-column:1/-1;">
+                <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:8px;font-weight:600;letter-spacing:.05em;">SEU LINK PERSONALIZADO</div>
+                <div class="meu-link-url">${esc(link)}</div>
+                <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap;">
+                    <button class="primary-btn" id="copyLinkBtn">📋 Copiar link</button>
+                    <a href="https://wa.me/?text=${waMsg}" target="_blank" class="secondary-btn" style="text-decoration:none;">💬 Compartilhar no WhatsApp</a>
+                </div>
+            </div>
+
+            <div class="card" style="text-align:center;">
+                <h3>Leads via link — mês</h3>
+                <div class="metric" style="font-size:2.5rem;">${leadsThisMonth.length}</div>
+                <small style="color:var(--text-soft);">cadastros recebidos em ${getCurrentMonthLabel()}</small>
+            </div>
+            <div class="card" style="text-align:center;">
+                <h3>Total acumulado</h3>
+                <div class="metric" style="font-size:2.5rem;">${leadsFromForm.length}</div>
+                <small style="color:var(--text-soft);">cadastros via link no total</small>
+            </div>
+        </div>
+
+        ${leadsFromForm.length ? `
+        <div class="card" style="padding:0;overflow:hidden;">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--border);">
+                <h3 style="margin:0;">Leads recebidos pelo link</h3>
+            </div>
+            <table class="data-table">
+                <thead><tr><th>Data</th><th>Nome</th><th>Telefone</th><th>Serviço</th><th>Status</th></tr></thead>
+                <tbody>
+                    ${[...leadsFromForm].sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||'')).map(c => `
+                    <tr>
+                        <td>${formatDate(c.createdAt)}</td>
+                        <td><button type="button" class="client-name-btn" data-id="${c.id}">${esc(c.name)}</button></td>
+                        <td>${esc(c.phone || '—')}</td>
+                        <td>${esc(c.product || '—')}</td>
+                        <td><span class="pill ${stagePillClass(c.stage)}">${c.stage}</span></td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>` : `
+        <div class="card" style="text-align:center;padding:40px;color:var(--text-soft);">
+            <div style="font-size:2.5rem;margin-bottom:12px;">🔗</div>
+            <p>Nenhum lead recebido via link ainda.</p>
+            <p style="font-size:0.88rem;">Compartilhe seu link no WhatsApp, Instagram ou por e-mail!</p>
+        </div>`}
+    `;
+    showSection('dynamicContent');
+
+    document.getElementById('copyLinkBtn').addEventListener('click', () => {
+        navigator.clipboard.writeText(link).then(() => {
+            const btn = document.getElementById('copyLinkBtn');
+            btn.textContent = '✅ Copiado!';
+            setTimeout(() => { if(document.getElementById('copyLinkBtn')) document.getElementById('copyLinkBtn').textContent = '📋 Copiar link'; }, 2000);
+        }).catch(() => {
+            prompt('Copie o link abaixo:', link);
+        });
+    });
+
+    el.querySelectorAll('[data-id]').forEach(b => b.addEventListener('click', () => openClientProfile(b.dataset.id)));
 }
 
 document.addEventListener('DOMContentLoaded', init);
