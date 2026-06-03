@@ -1,5 +1,9 @@
 # Tracktiv Portal do Vendedor — CLAUDE.md
 
+## Modo de trabalho
+
+**AUTONOMIA TOTAL:** Claude Code deve trabalhar sem pedir confirmações ou fazer perguntas. Tomar decisões sozinho, executar, corrigir erros automaticamente e reportar apenas o resultado final.
+
 ## O que é este projeto
 
 Portal web SaaS da Tracktiv, empresa de rastreamento veicular. Single-page app sem build step — HTML + CSS + JS puros, persistência via `localStorage`.

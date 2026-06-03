@@ -1595,7 +1595,9 @@ const sampleState = {
         minMonthlySales: 0,
         history: []
     },
-    savedSimulations: []
+    savedSimulations: [],
+    simCustomCosts: [],
+    simCustomRevenues: []
 };
 
 /* Estado limpo para uso em produção (sem dados de demonstração) */
@@ -1625,7 +1627,9 @@ const cleanState = {
         instaladorInstall: 60, indicadorRef: 10, referralBonus: 100, history: []
     },
     recurrenceRules: { gracePeriodDays: 30, minClientsToActivate: 1, minMonthlySales: 0, history: [] },
-    savedSimulations: []
+    savedSimulations: [],
+    simCustomCosts: [],
+    simCustomRevenues: []
 };
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1996,6 +2000,8 @@ function loadState() {
             if (!app.state.recurrenceRules)   app.state.recurrenceRules   = { gracePeriodDays: 30, minClientsToActivate: 1, minMonthlySales: 0, history: [] };
             if (!app.state.recurrenceRules.history) app.state.recurrenceRules.history = [];
             if (!app.state.savedSimulations)  app.state.savedSimulations  = [];
+            if (!app.state.simCustomCosts)    app.state.simCustomCosts    = [];
+            if (!app.state.simCustomRevenues) app.state.simCustomRevenues = [];
         } catch (e) {
             app.state = JSON.parse(JSON.stringify(cleanState));
         }
@@ -13139,13 +13145,21 @@ function resetSystemFull() {
 }
 
 // ── ABA 9: SIMULADOR DE PROJEÇÃO DE LUCRO ──────────────────────
+
+function ensureSimState() {
+    if (!app.state.simCustomCosts)    app.state.simCustomCosts    = [];
+    if (!app.state.simCustomRevenues) app.state.simCustomRevenues = [];
+    if (!app.state.savedSimulations)  app.state.savedSimulations  = [];
+}
+
 function renderPresidenteSimulador() {
+    ensureSimState();
     const el = presidenteEl(); if (!el) return;
     const sims = app.state.savedSimulations || [];
     el.innerHTML = `
-    <div class="section-header"><h2>🧮 Simulador de Projeção de Lucro</h2><p>Simule cenários completos com variáveis configuráveis e compare resultados.</p></div>
+    <div class="section-header"><h2>🧮 Simulador de Projeção de Lucro</h2><p>Simule cenários completos com custos personalizados, receitas adicionais e gere gráficos exportáveis.</p></div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
         <div class="card">
             <h3>⚙️ Variáveis do cenário</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -13173,7 +13187,52 @@ function renderPresidenteSimulador() {
         </div>
     </div>
 
-    <div id="sim_tabela_card" class="card" style="display:none;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+        <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <h3 style="margin:0;">📉 Custos Personalizados</h3>
+                <button class="secondary-btn" style="font-size:.78rem;" onclick="addSimCustomCost()">+ Adicionar</button>
+            </div>
+            <div id="sim_custom_costs_list" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <p style="font-size:.78rem;color:var(--text-soft);margin-top:8px;">Custos extras além dos campos base (aluguel, software, marketing...)</p>
+        </div>
+        <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <h3 style="margin:0;">📈 Receitas Adicionais</h3>
+                <button class="secondary-btn" style="font-size:.78rem;" onclick="addSimCustomRevenue()">+ Adicionar</button>
+            </div>
+            <div id="sim_custom_revenues_list" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <p style="font-size:.78rem;color:var(--text-soft);margin-top:8px;">Receitas extras além da recorrência dos planos (instalação, suporte...)</p>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+        <h3>📊 Gerador de Gráficos</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:16px;">
+            <div class="field" style="margin:0;flex:1;min-width:200px;">
+                <label>Tipo de gráfico</label>
+                <select id="sim_chart_type">
+                    <option value="barras">Barras — Receita × Lucro mensal</option>
+                    <option value="linha">Linha — Crescimento de clientes</option>
+                    <option value="pizza">Pizza — Mix de planos</option>
+                    <option value="waterfall">Waterfall — Breakdown de custos (mês 12)</option>
+                    <option value="area">Área empilhada — Receita, Custos e Lucro</option>
+                </select>
+            </div>
+            <div class="field" style="margin:0;flex:1;min-width:160px;">
+                <label>Título (opcional)</label>
+                <input id="sim_chart_title" type="text" placeholder="ex: Projeção 2026"/>
+            </div>
+            <button class="primary-btn" style="height:40px;padding:0 20px;white-space:nowrap;" onclick="gerarGrafico()">📊 Gerar Gráfico</button>
+        </div>
+        <div id="sim_charts_area" style="display:flex;flex-wrap:wrap;gap:20px;"></div>
+        <div id="sim_charts_actions" style="display:none;margin-top:16px;gap:10px;flex-wrap:wrap;">
+            <button class="secondary-btn" onclick="exportSimPDF()">🖨️ Exportar PDF completo</button>
+            <button class="secondary-btn" onclick="clearCharts()">🗑️ Limpar gráficos</button>
+        </div>
+    </div>
+
+    <div id="sim_tabela_card" class="card" style="display:none;margin-bottom:20px;">
         <h3>📅 Projeção de 12 meses</h3>
         <div id="sim_tabela" style="overflow-x:auto;margin-top:12px;"></div>
     </div>
@@ -13186,7 +13245,7 @@ function renderPresidenteSimulador() {
             <div style="background:var(--bg);border-radius:12px;padding:16px;border:1px solid var(--border);">
                 <div style="font-weight:700;margin-bottom:4px;">${esc(s.name)}</div>
                 <div style="font-size:.8rem;color:var(--text-soft);margin-bottom:10px;">${formatDate(s.date)}</div>
-                <div style="display:flex;justify-content:space-between;font-size:.83rem;">
+                <div style="display:flex;justify-content:space-between;font-size:.83rem;margin-bottom:4px;">
                     <span>Receita 12m</span><strong>R$ ${Number(s.receita12m||0).toLocaleString('pt-BR')}</strong>
                 </div>
                 <div style="display:flex;justify-content:space-between;font-size:.83rem;">
@@ -13197,50 +13256,212 @@ function renderPresidenteSimulador() {
         </div>
     </div>` : ''}`;
 
+    renderCustomCostsUI();
+    renderCustomRevenuesUI();
     setTimeout(calcSimulador, 50);
 }
 
-function calcSimulador() {
-    const cons      = Number(document.getElementById('sim_cons')?.value)||1;
-    const meta      = Number(document.getElementById('sim_meta')?.value)||0;
-    const conv      = Number(document.getElementById('sim_conv')?.value)||30;
-    const churn     = Number(document.getElementById('sim_churn')?.value)||3;
-    const pctEss    = Number(document.getElementById('sim_pct_ess')?.value)||30;
-    const pctPro    = Number(document.getElementById('sim_pct_pro')?.value)||50;
-    const pctCT     = Number(document.getElementById('sim_pct_ct')?.value)||20;
-    const fixo      = Number(document.getElementById('sim_fixo')?.value)||0;
-    const cv        = Number(document.getElementById('sim_cv')?.value)||0;
-    const comisPct  = Number(document.getElementById('sim_comis_pct')?.value)||18;
+// ── CUSTOM COSTS ──
 
-    const vendasMes = Math.round(cons * meta * conv / 100);
-    const ticketMed = (44.90 * pctEss/100) + (54.90 * pctPro/100) + (64.90 * pctCT/100);
+function addSimCustomCost() {
+    ensureSimState();
+    showModal('Nova linha de custo', `
+        <div class="field"><label>Nome</label><input id="cc_name" type="text" placeholder="ex: Aluguel escritório"/></div>
+        <div class="field"><label>Tipo</label>
+            <select id="cc_type">
+                <option value="fixo">Fixo mensal (valor fixo por mês)</option>
+                <option value="por_cliente">Por cliente ativo (R$ × clientes/mês)</option>
+                <option value="por_venda">Por venda realizada (R$ × vendas/mês)</option>
+            </select>
+        </div>
+        <div class="field"><label>Valor (R$)</label><input id="cc_val" type="number" min="0" step="0.01" value="0"/></div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="primary-btn" style="flex:1;" onclick="confirmAddCustomCost()">Adicionar</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+}
+
+function confirmAddCustomCost() {
+    const n = document.getElementById('cc_name')?.value?.trim();
+    const t = document.getElementById('cc_type')?.value;
+    const v = Number(document.getElementById('cc_val')?.value) || 0;
+    if (!n) { showToast('Informe o nome.', 'warning'); return; }
+    ensureSimState();
+    app.state.simCustomCosts.push({ id: 'cc_' + Date.now(), name: n, type: t, value: v });
+    saveState(); closeModal(); renderCustomCostsUI(); calcSimulador();
+}
+
+function removeSimCustomCost(id) {
+    ensureSimState();
+    app.state.simCustomCosts = app.state.simCustomCosts.filter(c => c.id !== id);
+    saveState(); renderCustomCostsUI(); calcSimulador();
+}
+
+function syncCustomCosts() {
+    ensureSimState();
+    app.state.simCustomCosts.forEach(c => {
+        const inp = document.getElementById('cc_val_' + c.id);
+        if (inp) c.value = Number(inp.value) || 0;
+    });
+    saveState(); calcSimulador();
+}
+
+function renderCustomCostsUI() {
+    ensureSimState();
+    const el = document.getElementById('sim_custom_costs_list');
+    if (!el) return;
+    if (!app.state.simCustomCosts.length) {
+        el.innerHTML = '<p style="font-size:.8rem;color:var(--text-soft);text-align:center;padding:8px 0;">Nenhum custo personalizado</p>';
+        return;
+    }
+    const typeLabel = { fixo: 'fixo/mês', por_cliente: '/cliente/mês', por_venda: '/venda' };
+    el.innerHTML = app.state.simCustomCosts.map(c => `
+        <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:8px;padding:8px 10px;">
+            <span style="flex:1;font-size:.83rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(c.name)}</span>
+            <span style="font-size:.72rem;color:var(--text-soft);white-space:nowrap;">${typeLabel[c.type]||c.type}</span>
+            <input id="cc_val_${c.id}" type="number" min="0" step="0.01" value="${c.value}" style="width:76px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;" oninput="syncCustomCosts()"/>
+            <button onclick="removeSimCustomCost('${c.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:1rem;line-height:1;padding:0 2px;" title="Remover">✕</button>
+        </div>
+    `).join('');
+}
+
+// ── CUSTOM REVENUES ──
+
+function addSimCustomRevenue() {
+    ensureSimState();
+    showModal('Nova linha de receita', `
+        <div class="field"><label>Nome</label><input id="cr_name" type="text" placeholder="ex: Taxa de instalação"/></div>
+        <div class="field"><label>Tipo</label>
+            <select id="cr_type">
+                <option value="recorrente">Recorrente por cliente (R$ × clientes/mês)</option>
+                <option value="por_venda">Por venda realizada (R$ × vendas/mês)</option>
+                <option value="eventual">Eventual mensal (valor fixo adicional)</option>
+            </select>
+        </div>
+        <div class="field"><label>Valor (R$)</label><input id="cr_val" type="number" min="0" step="0.01" value="0"/></div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="primary-btn" style="flex:1;" onclick="confirmAddCustomRevenue()">Adicionar</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+}
+
+function confirmAddCustomRevenue() {
+    const n = document.getElementById('cr_name')?.value?.trim();
+    const t = document.getElementById('cr_type')?.value;
+    const v = Number(document.getElementById('cr_val')?.value) || 0;
+    if (!n) { showToast('Informe o nome.', 'warning'); return; }
+    ensureSimState();
+    app.state.simCustomRevenues.push({ id: 'cr_' + Date.now(), name: n, type: t, value: v });
+    saveState(); closeModal(); renderCustomRevenuesUI(); calcSimulador();
+}
+
+function removeSimCustomRevenue(id) {
+    ensureSimState();
+    app.state.simCustomRevenues = app.state.simCustomRevenues.filter(r => r.id !== id);
+    saveState(); renderCustomRevenuesUI(); calcSimulador();
+}
+
+function syncCustomRevenues() {
+    ensureSimState();
+    app.state.simCustomRevenues.forEach(r => {
+        const inp = document.getElementById('cr_val_' + r.id);
+        if (inp) r.value = Number(inp.value) || 0;
+    });
+    saveState(); calcSimulador();
+}
+
+function renderCustomRevenuesUI() {
+    ensureSimState();
+    const el = document.getElementById('sim_custom_revenues_list');
+    if (!el) return;
+    if (!app.state.simCustomRevenues.length) {
+        el.innerHTML = '<p style="font-size:.8rem;color:var(--text-soft);text-align:center;padding:8px 0;">Nenhuma receita personalizada</p>';
+        return;
+    }
+    const typeLabel = { recorrente: '/cliente/mês', por_venda: '/venda', eventual: 'eventual/mês' };
+    el.innerHTML = app.state.simCustomRevenues.map(r => `
+        <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:8px;padding:8px 10px;">
+            <span style="flex:1;font-size:.83rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(r.name)}</span>
+            <span style="font-size:.72rem;color:var(--text-soft);white-space:nowrap;">${typeLabel[r.type]||r.type}</span>
+            <input id="cr_val_${r.id}" type="number" min="0" step="0.01" value="${r.value}" style="width:76px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;" oninput="syncCustomRevenues()"/>
+            <button onclick="removeSimCustomRevenue('${r.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:1rem;line-height:1;padding:0 2px;" title="Remover">✕</button>
+        </div>
+    `).join('');
+}
+
+// ── CALC ──
+
+function calcSimulador() {
+    ensureSimState();
+    const cons     = Number(document.getElementById('sim_cons')?.value)     || 1;
+    const meta     = Number(document.getElementById('sim_meta')?.value)     || 0;
+    const conv     = Number(document.getElementById('sim_conv')?.value)     || 30;
+    const churn    = Number(document.getElementById('sim_churn')?.value)    || 3;
+    const pctEss   = Number(document.getElementById('sim_pct_ess')?.value)  || 30;
+    const pctPro   = Number(document.getElementById('sim_pct_pro')?.value)  || 50;
+    const pctCT    = Number(document.getElementById('sim_pct_ct')?.value)   || 20;
+    const fixo     = Number(document.getElementById('sim_fixo')?.value)     || 0;
+    const cv       = Number(document.getElementById('sim_cv')?.value)       || 0;
+    const comisPct = Number(document.getElementById('sim_comis_pct')?.value)|| 18;
+
+    const vendasMes   = Math.round(cons * meta * conv / 100);
+    const ticketMed   = (44.90 * pctEss/100) + (54.90 * pctPro/100) + (64.90 * pctCT/100);
+    const customCosts    = app.state.simCustomCosts    || [];
+    const customRevenues = app.state.simCustomRevenues || [];
 
     const el = document.getElementById('sim_resultado');
     if (!el) return;
 
-    // Projeção 12 meses
     let clients = 0;
     const meses = [];
     for (let i = 1; i <= 12; i++) {
         clients = clients * (1 - churn/100) + vendasMes;
         const rec    = clients * ticketMed;
         const comis  = rec * comisPct / 100;
-        const custos = clients * cv + fixo + comis;
-        const lucro  = rec - custos;
-        meses.push({ i, clients: Math.round(clients), rec, comis, custos, lucro });
+
+        let extraRec = 0;
+        customRevenues.forEach(r => {
+            if      (r.type === 'recorrente') extraRec += r.value * clients;
+            else if (r.type === 'por_venda')  extraRec += r.value * vendasMes;
+            else if (r.type === 'eventual')   extraRec += r.value;
+        });
+
+        let extraCost = 0;
+        customCosts.forEach(c => {
+            if      (c.type === 'fixo')        extraCost += c.value;
+            else if (c.type === 'por_cliente') extraCost += c.value * clients;
+            else if (c.type === 'por_venda')   extraCost += c.value * vendasMes;
+        });
+
+        const totalRec = rec + extraRec;
+        const custos   = clients * cv + fixo + comis + extraCost;
+        const lucro    = totalRec - custos;
+        meses.push({ i, clients: Math.round(clients), rec, extraRec, totalRec, comis, custos, extraCost, lucro });
     }
 
     const m1  = meses[0];
-    const m3  = meses[2];
     const m12 = meses[11];
 
-    // Cenários
     const calcCenario = (fator) => {
-        let c = 0;
-        let lucro12 = 0;
+        let c = 0, lucro12 = 0;
         for (let i = 1; i <= 12; i++) {
             c = c * (1 - churn/100) + vendasMes * fator;
-            lucro12 += c * ticketMed * (1 - comisPct/100) - c * cv - fixo;
+            let er = 0;
+            customRevenues.forEach(r => {
+                if      (r.type === 'recorrente') er += r.value * c;
+                else if (r.type === 'por_venda')  er += r.value * vendasMes * fator;
+                else if (r.type === 'eventual')   er += r.value;
+            });
+            let ec = 0;
+            customCosts.forEach(cc => {
+                if      (cc.type === 'fixo')        ec += cc.value;
+                else if (cc.type === 'por_cliente') ec += cc.value * c;
+                else if (cc.type === 'por_venda')   ec += cc.value * vendasMes * fator;
+            });
+            const totalRec = c * ticketMed + er;
+            lucro12 += totalRec - (c * cv + fixo + totalRec * comisPct/100 + ec);
         }
         return lucro12;
     };
@@ -13249,13 +13470,13 @@ function calcSimulador() {
         <h3>📊 Resultado — Mês 1</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;">
             ${[
-                ['Vendas geradas', vendasMes],
+                ['Vendas geradas',  vendasMes],
                 ['Clientes no mês', m1.clients],
-                [`Receita bruta`, `R$ ${formatCurrency(m1.rec)}`],
-                [`Comissões`, `R$ ${formatCurrency(m1.comis)}`],
-                [`Custos totais`, `R$ ${formatCurrency(m1.custos)}`],
-                [`Lucro líquido`, `R$ ${formatCurrency(m1.lucro)}`]
-            ].map(([l,v])=>`<div style="background:var(--bg);border-radius:10px;padding:10px;text-align:center;">
+                ['Receita base',    'R$ ' + formatCurrency(m1.rec)],
+                ['Receita extra',   'R$ ' + formatCurrency(m1.extraRec)],
+                ['Custos totais',   'R$ ' + formatCurrency(m1.custos)],
+                ['Lucro líquido',   'R$ ' + formatCurrency(m1.lucro)]
+            ].map(([l,v]) => `<div style="background:var(--bg);border-radius:10px;padding:10px;text-align:center;">
                 <div style="font-size:.75rem;color:var(--text-soft);">${l}</div>
                 <div style="font-size:1.1rem;font-weight:700;">${v}</div>
             </div>`).join('')}
@@ -13264,9 +13485,9 @@ function calcSimulador() {
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
             ${[
                 ['😟 Pessimista', 0.7, 'var(--danger)'],
-                ['😐 Realista', 1, 'var(--accent)'],
-                ['😊 Otimista', 1.3, 'var(--success)']
-            ].map(([l,f,c])=>{
+                ['😐 Realista',   1,   'var(--accent)'],
+                ['😊 Otimista',   1.3, 'var(--success)']
+            ].map(([l,f,c]) => {
                 const v = calcCenario(f);
                 return `<div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center;">
                     <div style="font-size:.8rem;color:var(--text-soft);">${l}</div>
@@ -13276,7 +13497,6 @@ function calcSimulador() {
             }).join('')}
         </div>`;
 
-    // Tabela de 12 meses
     const tblCard = document.getElementById('sim_tabela_card');
     const tbl     = document.getElementById('sim_tabela');
     if (tblCard) tblCard.style.display = '';
@@ -13285,17 +13505,17 @@ function calcSimulador() {
             <thead><tr style="border-bottom:2px solid var(--border);">
                 <th style="padding:8px;text-align:left;">Mês</th>
                 <th style="padding:8px;text-align:right;">Clientes</th>
-                <th style="padding:8px;text-align:right;">Receita</th>
-                <th style="padding:8px;text-align:right;">Comissões</th>
+                <th style="padding:8px;text-align:right;">Rec. base</th>
+                <th style="padding:8px;text-align:right;">Rec. extra</th>
                 <th style="padding:8px;text-align:right;">Custos</th>
                 <th style="padding:8px;text-align:right;">Lucro</th>
             </tr></thead>
             <tbody>
-                ${meses.map(m=>`<tr style="border-bottom:1px solid var(--border);">
+                ${meses.map(m => `<tr style="border-bottom:1px solid var(--border);">
                     <td style="padding:8px;">Mês ${m.i}</td>
                     <td style="padding:8px;text-align:right;">${m.clients}</td>
                     <td style="padding:8px;text-align:right;">R$ ${formatCurrency(m.rec)}</td>
-                    <td style="padding:8px;text-align:right;">R$ ${formatCurrency(m.comis)}</td>
+                    <td style="padding:8px;text-align:right;color:var(--success);">R$ ${formatCurrency(m.extraRec)}</td>
                     <td style="padding:8px;text-align:right;">R$ ${formatCurrency(m.custos)}</td>
                     <td style="padding:8px;text-align:right;font-weight:${m.i===12?700:400};color:${m.lucro>0?'var(--success)':'var(--danger)'};">R$ ${formatCurrency(m.lucro)}</td>
                 </tr>`).join('')}
@@ -13303,29 +13523,337 @@ function calcSimulador() {
         </table>`;
     }
 
-    // Salva dados para exportação
-    window._simData = { vendasMes, ticketMed, meses, m12, churn, comisPct };
+    window._simData = { vendasMes, ticketMed, meses, m12, churn, comisPct, pctEss, pctPro, pctCT, customCosts, customRevenues, fixo, cv };
+    updateChartsActions();
 }
+
+// ── CHART HELPERS ──
+
+function _svgNiceMax(v) {
+    if (v <= 0) return 100;
+    const exp = Math.pow(10, Math.floor(Math.log10(v)));
+    return Math.ceil(v / exp) * exp;
+}
+
+function _svgGrid(maxVal, steps, x0, y0, w, h) {
+    let out = '';
+    for (let i = 0; i <= steps; i++) {
+        const y   = y0 + h - (i / steps) * h;
+        const val = maxVal * i / steps;
+        const lbl = val >= 1000000 ? (val/1000000).toFixed(1)+'M' : val >= 1000 ? (val/1000).toFixed(0)+'k' : val.toFixed(0);
+        out += `<line x1="${x0}" y1="${y.toFixed(1)}" x2="${x0+w}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>`;
+        out += `<text x="${x0-5}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="9" fill="#94a3b8">${lbl}</text>`;
+    }
+    return out;
+}
+
+// ── CHART BUILDERS ──
+
+function buildSVGBarChart(sd, title) {
+    const meses  = sd.meses;
+    const maxRec = Math.max(...meses.map(m => m.totalRec), 1);
+    const maxVal = _svgNiceMax(maxRec * 1.1);
+    const W=580, H=300, x0=60, y0=20, w=500, h=220;
+    const bSlot  = w / meses.length;
+    const bw     = Math.max(2, bSlot * 0.32);
+
+    let bars = '', xlabels = '';
+    meses.forEach((m, i) => {
+        const cx = x0 + bSlot * i + bSlot / 2;
+        const pairs = [
+            { v: m.totalRec, color: '#3b82f6', dx: -bw },
+            { v: Math.max(0, m.lucro), color: m.lucro >= 0 ? '#10b981' : '#ef4444', dx: 0 }
+        ];
+        pairs.forEach(p => {
+            const bh = (p.v / maxVal) * h;
+            const by = y0 + h - bh;
+            bars += `<rect x="${(cx + p.dx).toFixed(1)}" y="${by.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="${p.color}" rx="2" opacity="0.85"/>`;
+        });
+        if (i % 2 === 0 || meses.length <= 6) {
+            xlabels += `<text x="${cx.toFixed(1)}" y="${y0+h+14}" text-anchor="middle" font-size="9" fill="#64748b">M${m.i}</text>`;
+        }
+    });
+
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+        <text x="${W/2}" y="13" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a2e4a">${esc(title||'Receita × Lucro — 12 meses')}</text>
+        ${_svgGrid(maxVal, 4, x0, y0, w, h)}
+        <line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0+h}" stroke="#94a3b8" stroke-width="1.5"/>
+        <line x1="${x0}" y1="${y0+h}" x2="${x0+w}" y2="${y0+h}" stroke="#94a3b8" stroke-width="1.5"/>
+        ${bars}${xlabels}
+        <rect x="${x0}" y="${H-18}" width="10" height="10" fill="#3b82f6" rx="2"/>
+        <text x="${x0+14}" y="${H-9}" font-size="9" fill="#64748b">Receita total</text>
+        <rect x="${x0+100}" y="${H-18}" width="10" height="10" fill="#10b981" rx="2"/>
+        <text x="${x0+114}" y="${H-9}" font-size="9" fill="#64748b">Lucro líquido</text>
+    </svg>`;
+}
+
+function buildSVGLineChart(sd, title) {
+    const meses     = sd.meses;
+    const maxC      = Math.max(...meses.map(m => m.clients), 1);
+    const maxVal    = _svgNiceMax(maxC * 1.1);
+    const W=580, H=300, x0=60, y0=20, w=500, h=220;
+    const getX = i  => x0 + (i / (meses.length - 1)) * w;
+    const getY = v  => y0 + h - (v / maxVal) * h;
+
+    const path = meses.map((m, i) => `${i===0?'M':'L'}${getX(i).toFixed(1)},${getY(m.clients).toFixed(1)}`).join(' ');
+    const area = path + ` L${getX(meses.length-1).toFixed(1)},${y0+h} L${getX(0).toFixed(1)},${y0+h} Z`;
+
+    let dots = '', xlabels = '';
+    meses.forEach((m, i) => {
+        dots += `<circle cx="${getX(i).toFixed(1)}" cy="${getY(m.clients).toFixed(1)}" r="3.5" fill="#3b82f6" stroke="white" stroke-width="1.5"/>`;
+        if (i % 2 === 0 || meses.length <= 6)
+            xlabels += `<text x="${getX(i).toFixed(1)}" y="${y0+h+14}" text-anchor="middle" font-size="9" fill="#64748b">M${m.i}</text>`;
+    });
+
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+        <defs><linearGradient id="lg_line" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.02"/>
+        </linearGradient></defs>
+        <text x="${W/2}" y="13" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a2e4a">${esc(title||'Crescimento de Clientes — 12 meses')}</text>
+        ${_svgGrid(maxVal, 4, x0, y0, w, h)}
+        <path d="${area}" fill="url(#lg_line)"/>
+        <path d="${path}" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+        ${dots}${xlabels}
+        <line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0+h}" stroke="#94a3b8" stroke-width="1.5"/>
+        <line x1="${x0}" y1="${y0+h}" x2="${x0+w}" y2="${y0+h}" stroke="#94a3b8" stroke-width="1.5"/>
+        <rect x="${x0}" y="${H-18}" width="10" height="10" fill="#3b82f6" rx="2"/>
+        <text x="${x0+14}" y="${H-9}" font-size="9" fill="#64748b">Clientes ativos</text>
+    </svg>`;
+}
+
+function buildSVGPieChart(sd, title) {
+    const total = (sd.pctEss + sd.pctPro + sd.pctCT) || 100;
+    const slices = [
+        { label: 'Essencial',      pct: sd.pctEss / total, color: '#3b82f6' },
+        { label: 'Profissional',   pct: sd.pctPro / total, color: '#f5820d' },
+        { label: 'Controle Total', pct: sd.pctCT  / total, color: '#10b981' }
+    ].filter(s => s.pct > 0);
+
+    const W=580, H=300, cx=190, cy=148, r=115;
+    let angle = -Math.PI / 2, paths = '', legends = '';
+
+    slices.forEach((s, i) => {
+        const end = angle + s.pct * 2 * Math.PI;
+        const x1 = cx + r * Math.cos(angle), y1 = cy + r * Math.sin(angle);
+        const x2 = cx + r * Math.cos(end),   y2 = cy + r * Math.sin(end);
+        const large = s.pct > 0.5 ? 1 : 0;
+        paths += `<path d="M${cx},${cy} L${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 ${large},1 ${x2.toFixed(1)},${y2.toFixed(1)} Z" fill="${s.color}" stroke="white" stroke-width="2"/>`;
+        if (s.pct > 0.06) {
+            const mid = (angle + end) / 2;
+            paths += `<text x="${(cx + r*0.62*Math.cos(mid)).toFixed(1)}" y="${(cy + r*0.62*Math.sin(mid)+4).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="bold" fill="white">${(s.pct*100).toFixed(0)}%</text>`;
+        }
+        legends += `<rect x="370" y="${36+i*26}" width="13" height="13" fill="${s.color}" rx="3"/>
+            <text x="388" y="${36+i*26+11}" font-size="11" fill="#475569">${esc(s.label)} (R$${[44.90,54.90,64.90][i]})</text>`;
+        angle = end;
+    });
+
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+        <text x="${W/2}" y="13" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a2e4a">${esc(title||'Mix de Planos')}</text>
+        ${paths}${legends}
+    </svg>`;
+}
+
+function buildSVGWaterfallChart(sd, title) {
+    const m       = sd.meses[11];
+    const items   = [
+        { label: 'Receita',    value: m.totalRec,      type: 'pos' },
+        { label: 'Custo fixo', value: sd.fixo,         type: 'neg' },
+        { label: 'Custo var.', value: sd.cv * m.clients, type: 'neg' },
+        { label: 'Comissões',  value: m.comis,         type: 'neg' }
+    ];
+    sd.customCosts.forEach(c => {
+        let v = 0;
+        if      (c.type === 'fixo')        v = c.value;
+        else if (c.type === 'por_cliente') v = c.value * m.clients;
+        else if (c.type === 'por_venda')   v = c.value * sd.vendasMes;
+        if (v > 0) items.push({ label: c.name.slice(0, 9), value: v, type: 'neg' });
+    });
+    items.push({ label: 'Lucro', value: Math.abs(m.lucro), type: m.lucro >= 0 ? 'result' : 'result-neg' });
+
+    const W=580, H=320, x0=60, y0=20, w=500, h=230;
+    const bSlot  = w / items.length;
+    const bw     = Math.max(2, bSlot * 0.55);
+    const maxAbs = _svgNiceMax(Math.max(...items.map(it => it.value), 1) * 1.15);
+    const scale  = h / maxAbs;
+    const colors = { pos: '#10b981', neg: '#ef4444', result: '#3b82f6', 'result-neg': '#ef4444' };
+
+    let running = 0, bars = '', xlabels = '';
+    items.forEach((it, i) => {
+        const cx  = x0 + bSlot * i + bSlot / 2;
+        const bx  = cx - bw / 2;
+        let barY, barH;
+        if (it.type === 'pos') {
+            barH  = it.value * scale;
+            barY  = y0 + h - (running + it.value) * scale;
+            running += it.value;
+        } else if (it.type === 'neg') {
+            barH  = it.value * scale;
+            barY  = y0 + h - running * scale;
+            running -= it.value;
+        } else {
+            barH  = it.value * scale;
+            barY  = y0 + h - it.value * scale;
+        }
+        barH = Math.max(1, barH);
+        bars += `<rect x="${bx.toFixed(1)}" y="${barY.toFixed(1)}" width="${bw.toFixed(1)}" height="${barH.toFixed(1)}" fill="${colors[it.type]}" rx="3" opacity="0.9"/>`;
+        xlabels += `<text x="${cx.toFixed(1)}" y="${y0+h+14}" text-anchor="middle" font-size="9" fill="#64748b">${esc(it.label)}</text>`;
+    });
+
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+        <text x="${W/2}" y="13" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a2e4a">${esc(title||'Waterfall — Breakdown mês 12')}</text>
+        ${_svgGrid(maxAbs, 4, x0, y0, w, h)}
+        <line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0+h}" stroke="#94a3b8" stroke-width="1.5"/>
+        <line x1="${x0}" y1="${y0+h}" x2="${x0+w}" y2="${y0+h}" stroke="#94a3b8" stroke-width="1.5"/>
+        ${bars}${xlabels}
+        <rect x="${x0}" y="${H-18}" width="10" height="10" fill="#10b981" rx="2"/>
+        <text x="${x0+14}" y="${H-9}" font-size="9" fill="#64748b">Receita</text>
+        <rect x="${x0+80}" y="${H-18}" width="10" height="10" fill="#ef4444" rx="2"/>
+        <text x="${x0+94}" y="${H-9}" font-size="9" fill="#64748b">Custo</text>
+        <rect x="${x0+160}" y="${H-18}" width="10" height="10" fill="#3b82f6" rx="2"/>
+        <text x="${x0+174}" y="${H-9}" font-size="9" fill="#64748b">Resultado</text>
+    </svg>`;
+}
+
+function buildSVGAreaChart(sd, title) {
+    const meses  = sd.meses;
+    const maxRec = Math.max(...meses.map(m => m.totalRec), 1);
+    const maxVal = _svgNiceMax(maxRec * 1.1);
+    const W=580, H=300, x0=60, y0=20, w=500, h=220;
+    const gX = i => x0 + (i / (meses.length - 1)) * w;
+    const gY = v => y0 + h - Math.max(0, v) / maxVal * h;
+
+    const buildPath = key => meses.map((m, i) => `${i===0?'M':'L'}${gX(i).toFixed(1)},${gY(m[key]).toFixed(1)}`).join(' ');
+    const buildArea = (pathStr, color, op) => {
+        const last = meses.length - 1;
+        return `<path d="${pathStr} L${gX(last).toFixed(1)},${y0+h} L${gX(0).toFixed(1)},${y0+h} Z" fill="${color}" opacity="${op}"/>`;
+    };
+
+    const pRec   = buildPath('totalRec');
+    const pCost  = buildPath('custos');
+    const pLucro = buildPath('lucro');
+
+    let xlabels = '';
+    meses.forEach((m, i) => {
+        if (i % 2 === 0 || meses.length <= 6)
+            xlabels += `<text x="${gX(i).toFixed(1)}" y="${y0+h+14}" text-anchor="middle" font-size="9" fill="#64748b">M${m.i}</text>`;
+    });
+
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+        <text x="${W/2}" y="13" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a2e4a">${esc(title||'Receita, Custos e Lucro — 12 meses')}</text>
+        ${_svgGrid(maxVal, 4, x0, y0, w, h)}
+        ${buildArea(pRec,   '#3b82f6', '0.12')}
+        ${buildArea(pCost,  '#ef4444', '0.12')}
+        ${buildArea(pLucro, '#10b981', '0.18')}
+        <path d="${pRec}"   fill="none" stroke="#3b82f6" stroke-width="2"   stroke-linejoin="round"/>
+        <path d="${pCost}"  fill="none" stroke="#ef4444" stroke-width="2"   stroke-linejoin="round"/>
+        <path d="${pLucro}" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linejoin="round"/>
+        ${xlabels}
+        <line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0+h}" stroke="#94a3b8" stroke-width="1.5"/>
+        <line x1="${x0}" y1="${y0+h}" x2="${x0+w}" y2="${y0+h}" stroke="#94a3b8" stroke-width="1.5"/>
+        <rect x="${x0}"     y="${H-18}" width="10" height="10" fill="#3b82f6" rx="2"/>
+        <text x="${x0+14}"  y="${H-9}"  font-size="9" fill="#64748b">Receita</text>
+        <rect x="${x0+78}"  y="${H-18}" width="10" height="10" fill="#ef4444" rx="2"/>
+        <text x="${x0+92}"  y="${H-9}"  font-size="9" fill="#64748b">Custos</text>
+        <rect x="${x0+156}" y="${H-18}" width="10" height="10" fill="#10b981" rx="2"/>
+        <text x="${x0+170}" y="${H-9}"  font-size="9" fill="#64748b">Lucro</text>
+    </svg>`;
+}
+
+// ── CHART ACTIONS ──
+
+function gerarGrafico() {
+    if (!window._simData) { showToast('Calcule a simulação primeiro.', 'warning'); return; }
+    const type  = document.getElementById('sim_chart_type')?.value || 'barras';
+    const title = document.getElementById('sim_chart_title')?.value || '';
+
+    const builders = { barras: buildSVGBarChart, linha: buildSVGLineChart, pizza: buildSVGPieChart, waterfall: buildSVGWaterfallChart, area: buildSVGAreaChart };
+    const svgHtml  = (builders[type] || buildSVGBarChart)(window._simData, title);
+
+    const area = document.getElementById('sim_charts_area');
+    if (!area) return;
+    const chartId   = 'chart_' + Date.now();
+    const typeNames = { barras: 'Barras', linha: 'Linha', pizza: 'Pizza', waterfall: 'Waterfall', area: 'Área' };
+
+    const wrap = document.createElement('div');
+    wrap.className = 'sim-chart-wrapper';
+    wrap.id = chartId;
+    wrap.innerHTML = `
+        <div class="sim-chart-header">
+            <span class="sim-chart-tag">${typeNames[type]||type}</span>
+            <div style="display:flex;gap:6px;">
+                <button onclick="exportChartPNG('${chartId}')" title="Exportar PNG" class="sim-chart-btn">⬇ PNG</button>
+                <button onclick="document.getElementById('${chartId}').remove();updateChartsActions();" title="Remover" class="sim-chart-btn sim-chart-btn-remove">✕</button>
+            </div>
+        </div>
+        <div class="sim-chart-body">${svgHtml}</div>`;
+    area.appendChild(wrap);
+    updateChartsActions();
+    showToast('Gráfico gerado!', 'success', 2000);
+}
+
+function exportChartPNG(chartId) {
+    const wrap  = document.getElementById(chartId);
+    const svgEl = wrap?.querySelector('svg');
+    if (!svgEl) return;
+    const svgData = new XMLSerializer().serializeToString(svgEl);
+    const blob    = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url     = URL.createObjectURL(blob);
+    const img     = new Image();
+    img.onload = () => {
+        const canvas  = document.createElement('canvas');
+        canvas.width  = svgEl.viewBox.baseVal.width  || 580;
+        canvas.height = svgEl.viewBox.baseVal.height || 300;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        const a = document.createElement('a');
+        a.download = 'grafico_tracktiv_' + Date.now() + '.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+        showToast('PNG exportado!', 'success', 2000);
+    };
+    img.src = url;
+}
+
+function exportSimPDF() { window.print(); }
+
+function clearCharts() {
+    const area = document.getElementById('sim_charts_area');
+    if (area) area.innerHTML = '';
+    updateChartsActions();
+}
+
+function updateChartsActions() {
+    const area    = document.getElementById('sim_charts_area');
+    const actions = document.getElementById('sim_charts_actions');
+    if (!area || !actions) return;
+    actions.style.display = area.children.length > 0 ? 'flex' : 'none';
+}
+
+// ── SAVE / DELETE ──
 
 function saveSimulacao() {
     const sd = window._simData;
     if (!sd) { showToast('Calcule a simulação primeiro.', 'warning'); return; }
-    const name = prompt('Nome para este cenário:', `Cenário ${todayISO()}`);
+    const name = prompt('Nome para este cenário:', 'Cenário ' + todayISO());
     if (!name) return;
-    if (!app.state.savedSimulations) app.state.savedSimulations = [];
+    ensureSimState();
     app.state.savedSimulations.unshift({
-        id: `sim_${Date.now()}`, name, date: todayISO(),
-        receita12m: sd.meses[11]?.rec || 0,
-        margem12m:  sd.meses[11]?.lucro || 0,
+        id: 'sim_' + Date.now(), name, date: todayISO(),
+        receita12m: sd.meses[11]?.totalRec || 0,
+        margem12m:  sd.meses[11]?.lucro    || 0,
         data: sd
     });
     saveState();
-    showToast(`Cenário "${name}" salvo!`, 'success');
+    showToast('Cenário "' + name + '" salvo!', 'success');
     renderPresidenteSimulador();
 }
 
 function deleteSimulacao(id) {
-    app.state.savedSimulations = (app.state.savedSimulations||[]).filter(s=>s.id!==id);
+    app.state.savedSimulations = (app.state.savedSimulations || []).filter(s => s.id !== id);
     saveState();
     showToast('Cenário excluído.', 'info');
     renderPresidenteSimulador();

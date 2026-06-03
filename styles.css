@@ -2545,3 +2545,47 @@ td strong { color: var(--text); font-weight: 600; }
     text-transform: uppercase;
     letter-spacing: .04em;
 }
+
+/* Simulador — gráficos */
+.sim-chart-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    flex: 1 1 320px;
+    min-width: 280px;
+    max-width: 100%;
+}
+.sim-chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+}
+.sim-chart-tag {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--text-soft);
+}
+.sim-chart-body { padding: 14px; }
+.sim-chart-btn {
+    font-size: .72rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-soft);
+    cursor: pointer;
+    transition: background .15s;
+}
+.sim-chart-btn:hover { background: var(--bg); }
+.sim-chart-btn-remove { color: var(--danger); border-color: var(--danger); }
+.sim-chart-btn-remove:hover { background: #fff0f0; }
+
+@media print {
+    .sim-chart-header { display: none; }
+}
