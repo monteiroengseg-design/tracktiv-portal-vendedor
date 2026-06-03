@@ -1385,43 +1385,43 @@ const SECTIONS_BY_MODULE = { 1: [
 
 const sampleState = {
     users: [
-        { id: 'gestor', name: 'Gestor Tracktiv', email: 'gestor@tracktiv.com', password: 'Gestor123', role: 'gestor' },
+        { id: 'gestor', name: 'Ricardo Almeida', email: 'gestor@tracktiv.com', password: 'Gestor123', role: 'gestor' },
         { id: 'consultor_1', name: 'Laura Mendes', email: 'consultor@tracktiv.com', password: 'Consultor123', role: 'consultor',
-          cpf: '123.456.789-00', address: 'Rua das Orquídeas, 450 - São Paulo/SP', whatsapp: '(11) 91111-2222', pixKey: 'laura@tracktiv.com' },
-        { id: 'consultor_2', name: 'Bruno Silva', email: 'bruno@tracktiv.com', password: 'Bruno123', role: 'consultor',
-          cpf: '987.654.321-00', address: 'Av. Paulista, 1200 - São Paulo/SP', whatsapp: '(21) 93333-4444', pixKey: 'bruno@tracktiv.com' },
+          cpf: '312.456.789-04', address: 'Rua das Orquídeas, 450 - São Paulo/SP', whatsapp: '(11) 91234-5678', pixKey: 'laura.mendes@tracktiv.com' },
+        { id: 'consultor_2', name: 'Bruno Carvalho', email: 'bruno@tracktiv.com', password: 'Bruno123', role: 'consultor',
+          cpf: '987.654.321-09', address: 'Av. Paulista, 1578 - São Paulo/SP', whatsapp: '(11) 97654-3210', pixKey: 'bruno.carvalho@tracktiv.com' },
         { id: 'instalador_1', name: 'Carlos Pereira', email: 'instalador@tracktiv.com', password: 'Instalador123', role: 'instalador', partnerType: 'instalador',
-          cpf: '111.222.333-44', address: 'Av. Industrial, 500 - Guarulhos/SP', whatsapp: '(11) 98888-7777', pixKey: 'carlos@tracktiv.com', storeName: 'Moto Peças Carlos', region: 'Guarulhos/SP' },
+          cpf: '111.222.333-44', address: 'Av. Industrial, 500 - Guarulhos/SP', whatsapp: '(11) 98888-7777', pixKey: 'carlos.pereira@gmail.com', storeName: 'AutoTech Guarulhos', region: 'Guarulhos/SP' },
         { id: 'indicador_1', name: 'Fernanda Lima', email: 'parceiro@tracktiv.com', password: 'Parceiro123', role: 'instalador', partnerType: 'indicador',
-          cpf: '222.333.444-55', address: 'Rua das Acácias, 200 - Campinas/SP', whatsapp: '(19) 97777-8888', pixKey: 'fernanda@indicacao.com', region: 'Campinas/SP', commissionPct: 10 },
-        { id: 'cliente_demo', name: 'Auto Prime', email: 'cliente@tracktiv.com', password: 'Cliente123', role: 'cliente',
+          cpf: '222.333.444-55', address: 'Rua das Acácias, 200 - Campinas/SP', whatsapp: '(19) 97777-8888', pixKey: 'fernanda.lima@gmail.com', region: 'Campinas/SP', commissionPct: 10 },
+        { id: 'cliente_demo', name: 'Auto Prime Transportes', email: 'cliente@tracktiv.com', password: 'Cliente123', role: 'cliente',
           clientId: 'c1', referralCode: 'AUTOPRIME23', points: 150, contractedServices: ['rastreamento'] },
         { id: 'tecnico_1', name: 'Rafael Santos', email: 'tecnico@tracktiv.com', password: 'Tecnico123', role: 'tecnico',
           cpf: '555.666.777-88', phone: '(11) 94455-6677', whatsapp: '(11) 94455-6677', specialty: 'Rastreamento Veicular' }
     ],
     clients: [
-        // Laura
-        { id: 'c1', consultantId: 'consultor_1', instaladorId: null, name: 'Auto Prime', phone: '(11) 98877-6655', isWhatsapp: true, email: 'contato@autoprime.com.br', cpf: '11.222.333/0001-44', rg: '', address: 'Rua das Flores, 100 - SP', product: 'Rastreador Veicular', plan: 'Profissional', monthlyFee: 54.90, plates: 'ABC-1234, DEF-5678', paymentDate: 10, need: 'Segurança da frota de entregas', origins: ['Indicação de amigo'], coupon: '', notes: 'Frota com 6 veículos. Interesse em bloqueio remoto.', stage: 'Fechado', closedDate: todayISO(), createdAt: thirtyDaysAgoISO(9) },
-        { id: 'c2', consultantId: 'consultor_1', instaladorId: null, name: 'Loja Torres', phone: '(21) 99222-3344', isWhatsapp: true, email: '', cpf: '', rg: '', address: 'Rua das Torres, 88 - RJ', product: 'Rastreador Veicular', plan: 'Controle Total', monthlyFee: 64.90, plates: 'GHI-9012', paymentDate: 15, need: 'Controle de entregas e motoristas', origins: ['Google'], coupon: 'BEMVINDO10', notes: 'Foco em transporte de carga.', stage: 'Fechado', closedDate: todayISO(), createdAt: thirtyDaysAgoISO(15) },
-        { id: 'c3', consultantId: 'consultor_1', instaladorId: null, name: 'Transline', phone: '(31) 99911-2233', isWhatsapp: false, email: '', cpf: '', rg: '', address: '', product: 'Rastreador Veicular', plan: 'Profissional', monthlyFee: 54.90, plates: '', paymentDate: 20, need: 'Demonstração agendada', origins: ['Instagram'], coupon: '', notes: 'Demonstração agendada para a próxima semana.', stage: 'Proposta', createdAt: thirtyDaysAgoISO(22) },
-        { id: 'c4', consultantId: 'consultor_1', instaladorId: null, name: 'Frota Sul', phone: '(41) 98833-4455', isWhatsapp: true, email: '', cpf: '', rg: '', address: '', product: 'Rastreador Veicular', plan: 'Controle Total', monthlyFee: 64.90, plates: '', paymentDate: 5, need: 'Apresentação presencial', origins: ['Facebook'], coupon: '', notes: 'Cliente quer apresentação presencial.', stage: 'Apresentação', createdAt: thirtyDaysAgoISO(27) },
-        { id: 'c5', consultantId: 'consultor_1', instaladorId: null, name: 'LogiPlace', phone: '(51) 99888-7766', isWhatsapp: true, email: '', cpf: '', rg: '', address: '', product: 'Serviços de Segurança do Trabalho', plan: 'Essencial', monthlyFee: 44.90, plates: '', paymentDate: 1, need: 'Pacote mensal completo', origins: ['Outro'], coupon: '', notes: 'Interessado em pacote mensal.', stage: 'Contato Feito', createdAt: thirtyDaysAgoISO(30) },
-        { id: 'c6', consultantId: 'consultor_1', instaladorId: null, name: 'Grupo Norte', phone: '(61) 99777-4455', isWhatsapp: false, email: '', cpf: '', rg: '', address: '', product: 'Chatbot', plan: 'Essencial', monthlyFee: 44.90, plates: '', paymentDate: 10, need: 'Orçamento especializado', origins: ['Google'], coupon: '', notes: 'Precisa de orçamento.', stage: 'Novo Lead', createdAt: thirtyDaysAgoISO(4) },
-        // Bruno
-        { id: 'c7', consultantId: 'consultor_2', instaladorId: null, name: 'Rápido Entregas', phone: '(71) 98765-4321', isWhatsapp: true, email: '', cpf: '', rg: '', address: '', product: 'Sites e Campanhas de Marketing', plan: 'Profissional', monthlyFee: 54.90, plates: '', paymentDate: 10, need: 'Presença digital', origins: ['Instagram'], coupon: '', notes: 'Busca captação de leads.', stage: 'Proposta', createdAt: thirtyDaysAgoISO(5) },
-        { id: 'c8', consultantId: 'consultor_2', instaladorId: null, name: 'Contabilidade Fácil', phone: '(81) 99123-4567', isWhatsapp: false, email: '', cpf: '', rg: '', address: '', product: 'Consultoria de Contabilidade', plan: 'Profissional', monthlyFee: 54.90, plates: '', paymentDate: 20, need: 'Sistema de notas fiscais', origins: ['Google'], coupon: '', notes: 'Precisa de NF-e.', stage: 'Contato Feito', createdAt: thirtyDaysAgoISO(10) },
-        { id: 'c9', consultantId: 'consultor_2', instaladorId: null, name: 'SmartFleet', phone: '(11) 97766-5544', isWhatsapp: true, email: '', cpf: '', rg: '', address: '', product: 'Rastreador Veicular', plan: 'Controle Total', monthlyFee: 64.90, plates: 'JKL-3456', paymentDate: 25, need: 'Gestão de frota completa', origins: ['Indicação de amigo'], coupon: '', notes: 'Fechado recentemente.', stage: 'Fechado', closedDate: todayISO(), createdAt: thirtyDaysAgoISO(12) },
-        // Instalador Carlos
-        { id: 'ci1', consultantId: null, instaladorId: 'instalador_1', name: 'Moto Express', phone: '(11) 97654-3210', isWhatsapp: true, email: '', cpf: '', rg: '', address: '', product: 'Rastreador Veicular', plan: 'Essencial', monthlyFee: 44.90, plates: 'GHI-9012', paymentDate: 5, need: 'Segurança da moto', origins: ['Parceiro/Loja'], coupon: '', notes: 'Cliente indicado pela loja.', stage: 'Fechado', closedDate: todayISO(), createdAt: thirtyDaysAgoISO(3) },
-        { id: 'ci2', consultantId: null, instaladorId: 'instalador_1', name: 'Auto Delivery', phone: '(11) 96543-2109', isWhatsapp: true, email: '', cpf: '', rg: '', address: '', product: 'Rastreador Veicular', plan: 'Essencial', monthlyFee: 44.90, plates: 'XYZ-7890', paymentDate: 10, need: 'Rastrear veículo de entrega', origins: ['Parceiro/Loja'], coupon: '', notes: '', stage: 'Fechado', closedDate: todayISO(), createdAt: thirtyDaysAgoISO(5) },
-        { id: 'ci3', consultantId: null, instaladorId: 'instalador_1', name: 'Frota Unitária', phone: '(11) 95432-1098', isWhatsapp: false, email: '', cpf: '', rg: '', address: '', product: 'Rastreador Veicular', plan: 'Profissional', monthlyFee: 54.90, plates: '', paymentDate: 15, need: 'Upgrade de plano', origins: ['Parceiro/Loja'], coupon: '', notes: '', stage: 'Proposta', createdAt: thirtyDaysAgoISO(8) },
-        { id: 'ci4', consultantId: null, instaladorId: 'instalador_1', name: 'Transportes WL', phone: '(11) 94321-0987', isWhatsapp: true, email: '', cpf: '', rg: '', address: '', product: 'Rastreador Veicular', plan: 'Essencial', monthlyFee: 44.90, plates: '', paymentDate: 1, need: 'Primeiro rastreador', origins: ['Parceiro/Loja'], coupon: '', notes: '', stage: 'Novo Lead', createdAt: thirtyDaysAgoISO(2) },
-        { id: 'ci5', consultantId: null, instaladorId: 'instalador_1', name: 'Distribuidora JL', phone: '(11) 93210-9876', isWhatsapp: true, email: '', cpf: '', rg: '', address: '', product: 'Rastreador Veicular', plan: 'Essencial', monthlyFee: 44.90, plates: '', paymentDate: 20, need: 'Controle de frota leve', origins: ['Parceiro/Loja'], coupon: '', notes: '', stage: 'Contato Feito', createdAt: thirtyDaysAgoISO(6) }
+        // Laura Mendes
+        { id: 'c1', consultantId: 'consultor_1', instaladorId: null, name: 'Auto Prime Transportes', phone: '(11) 98877-6655', isWhatsapp: true, email: 'contato@autoprime.com.br', cpf: '11.222.333/0001-44', rg: '', address: 'Rua das Flores, 100 - Vila Mariana, São Paulo/SP', product: 'Rastreador Veicular', plan: 'Profissional', monthlyFee: 54.90, plates: 'ABC-1D34, DEF-5E78', paymentDate: 10, need: 'Segurança e controle da frota de entregas', origins: ['Indicação de amigo'], coupon: '', notes: 'Frota com 6 veículos. Decisor é o Diretor de Operações, Sr. Marcos. Interesse em bloqueio remoto e relatórios de rota.', stage: 'Fechado', closedDate: todayISO(), createdAt: thirtyDaysAgoISO(9) },
+        { id: 'c2', consultantId: 'consultor_1', instaladorId: null, name: 'Distribuidora Torres & Filhos', phone: '(11) 99222-3344', isWhatsapp: true, email: 'compras@torresfilhos.com.br', cpf: '22.333.444/0001-55', rg: '', address: 'Av. Industrial, 850 - Osasco/SP', product: 'Rastreador Veicular', plan: 'Controle Total', monthlyFee: 64.90, plates: 'GHI-9J12', paymentDate: 15, need: 'Controle de entregas e redução de desvios de rota', origins: ['Google'], coupon: 'BEMVINDO10', notes: 'Empresa com 8 veículos de carga. Quer rastrear motoristas e gerar relatório de jornada.', stage: 'Fechado', closedDate: todayISO(), createdAt: thirtyDaysAgoISO(15) },
+        { id: 'c3', consultantId: 'consultor_1', instaladorId: null, name: 'Transline Logística', phone: '(11) 99911-2233', isWhatsapp: false, email: 'transline@transline.com.br', cpf: '33.444.555/0001-66', rg: '', address: 'Rod. Anhangüera, km 28 - Barueri/SP', product: 'Rastreador Veicular', plan: 'Profissional', monthlyFee: 54.90, plates: '', paymentDate: 20, need: 'Rastreamento de frota refrigerada', origins: ['Instagram'], coupon: '', notes: 'Transportadora de alimentos. Aguarda autorização do sócio para fechar. Proposta enviada por e-mail.', stage: 'Proposta', createdAt: thirtyDaysAgoISO(22) },
+        { id: 'c4', consultantId: 'consultor_1', instaladorId: null, name: 'Frota Sul Serviços', phone: '(11) 98833-4455', isWhatsapp: true, email: '', cpf: '', rg: '', address: 'Av. do Contorno, 1200 - Santo André/SP', product: 'Rastreador Veicular', plan: 'Controle Total', monthlyFee: 64.90, plates: '', paymentDate: 5, need: 'Gestão de técnicos de campo em tempo real', origins: ['Facebook'], coupon: '', notes: 'Empresa de manutenção com 12 técnicos em campo. Quer integrar GPS com sistema próprio de chamados.', stage: 'Apresentação', createdAt: thirtyDaysAgoISO(27) },
+        { id: 'c5', consultantId: 'consultor_1', instaladorId: null, name: 'Construtora Oliveira & Irmãos', phone: '(11) 99888-7766', isWhatsapp: true, email: 'rh@construtoraoi.com.br', cpf: '44.555.666/0001-77', rg: '', address: 'Rua do Progresso, 340 - Guarulhos/SP', product: 'Segurança do Trabalho', plan: 'Básico', monthlyFee: 149.90, plates: '', paymentDate: 1, need: 'Regularização de PGR e PCMSO para licitação municipal', origins: ['Indicação de amigo'], coupon: '', notes: 'Construtora com 18 funcionários CLT. Prazo para regularizar documentação é em 30 dias (licitação). Urgente.', stage: 'Contato Feito', createdAt: thirtyDaysAgoISO(8) },
+        { id: 'c6', consultantId: 'consultor_1', instaladorId: null, name: 'Clínica Saúde Ativa', phone: '(11) 99777-4455', isWhatsapp: false, email: 'clinicasaudeativa@email.com', cpf: '55.666.777/0001-88', rg: '', address: 'Rua das Palmeiras, 78 - Pinheiros, São Paulo/SP', product: 'Chatbot de Atendimento', plan: 'Starter', monthlyFee: 89.90, plates: '', paymentDate: 10, need: 'Automatizar agendamentos e reduzir faltas de pacientes', origins: ['Google'], coupon: '', notes: 'Clínica com 3 médicos. Recebe +80 contatos por dia no WhatsApp. Quer bot para triagem e agendamento.', stage: 'Novo Lead', createdAt: thirtyDaysAgoISO(4) },
+        // Bruno Carvalho
+        { id: 'c7', consultantId: 'consultor_2', instaladorId: null, name: 'Rápido Entregas Express', phone: '(11) 98765-4321', isWhatsapp: true, email: 'ti@rapidoexpress.com.br', cpf: '66.777.888/0001-99', rg: '', address: 'Av. das Nações, 500 - Campinas/SP', product: 'Sites e Marketing Digital', plan: 'Crescimento', monthlyFee: 499.90, plates: '', paymentDate: 10, need: 'Captação de novos clientes corporativos online', origins: ['Instagram'], coupon: '', notes: 'Empresa de entrega expresso. Quer site + Google Ads para atrair contratos B2B. Orçamento aprovado.', stage: 'Proposta', createdAt: thirtyDaysAgoISO(5) },
+        { id: 'c8', consultantId: 'consultor_2', instaladorId: null, name: 'Escritório Vieira Contabilidade', phone: '(11) 99123-4567', isWhatsapp: false, email: 'contato@vieiracontabil.com.br', cpf: '77.888.999/0001-11', rg: '', address: 'Rua Vergueiro, 2340 - Saúde, São Paulo/SP', product: 'Consultoria Contábil', plan: 'MEI/ME', monthlyFee: 199.90, plates: '', paymentDate: 20, need: 'Migração do regime MEI para ME com planejamento tributário', origins: ['Google'], coupon: '', notes: 'Contador autônomo que quer abrir escritório. Faturou R$120k no ano passado e precisa migrar do MEI urgente.', stage: 'Contato Feito', createdAt: thirtyDaysAgoISO(10) },
+        { id: 'c9', consultantId: 'consultor_2', instaladorId: null, name: 'SmartFleet Rastreamento', phone: '(11) 97766-5544', isWhatsapp: true, email: 'frota@smartfleet.com.br', cpf: '88.999.000/0001-22', rg: '', address: 'Rod. Régis Bittencourt, km 290 - São Paulo/SP', product: 'Rastreador Veicular', plan: 'Empresas', monthlyFee: 64.90, plates: 'JKL-3F56, MNO-7G89', paymentDate: 25, need: 'Monitoramento de frota de caminhões com integração ao ERP', origins: ['Indicação de amigo'], coupon: '', notes: 'Transportadora com 22 caminhões. Contrato anual fechado. Aguarda instalação.', stage: 'Fechado', closedDate: todayISO(), createdAt: thirtyDaysAgoISO(12) },
+        // Instalador Carlos (AutoTech Guarulhos)
+        { id: 'ci1', consultantId: null, instaladorId: 'instalador_1', name: 'Moto Express Delivery', phone: '(11) 97654-3210', isWhatsapp: true, email: 'contato@motoexpress.com.br', cpf: '99.000.111/0001-33', rg: '', address: 'Av. Tiradentes, 450 - Guarulhos/SP', product: 'Rastreador Veicular', plan: 'Essencial', monthlyFee: 44.90, plates: 'GHI-9H12', paymentDate: 5, need: 'Rastreamento de motos para entrega de medicamentos', origins: ['Parceiro/Loja'], coupon: '', notes: 'Empresa de delivery farmacêutico. 4 motos. Instaladas na AutoTech.', stage: 'Fechado', closedDate: todayISO(), createdAt: thirtyDaysAgoISO(3) },
+        { id: 'ci2', consultantId: null, instaladorId: 'instalador_1', name: 'Auto Delivery Solutions', phone: '(11) 96543-2109', isWhatsapp: true, email: '', cpf: '', rg: '', address: 'Av. São João, 890 - Guarulhos/SP', product: 'Rastreador Veicular', plan: 'Essencial', monthlyFee: 44.90, plates: 'XYZ-7I90', paymentDate: 10, need: 'Segurança de veículo de entregas para e-commerce', origins: ['Parceiro/Loja'], coupon: '', notes: 'Autônomo que faz entregas para marketplace. Veículo financiado.', stage: 'Fechado', closedDate: todayISO(), createdAt: thirtyDaysAgoISO(5) },
+        { id: 'ci3', consultantId: null, instaladorId: 'instalador_1', name: 'Frota Unitária Serviços', phone: '(11) 95432-1098', isWhatsapp: false, email: 'frota@frotaunitaria.com.br', cpf: '', rg: '', address: 'Rua Industrial, 220 - Guarulhos/SP', product: 'Rastreador Veicular', plan: 'Profissional', monthlyFee: 54.90, plates: '', paymentDate: 15, need: 'Upgrade do plano Essencial para Profissional — quer bloqueio remoto', origins: ['Parceiro/Loja'], coupon: '', notes: 'Cliente antigo da loja. Quer adicionar bloqueio remoto após tentativa de roubo.', stage: 'Proposta', createdAt: thirtyDaysAgoISO(8) },
+        { id: 'ci4', consultantId: null, instaladorId: 'instalador_1', name: 'Transportes Wassily', phone: '(11) 94321-0987', isWhatsapp: true, email: '', cpf: '', rg: '', address: 'Av. Salgado Filho, 1100 - Guarulhos/SP', product: 'Rastreador Veicular', plan: 'Essencial', monthlyFee: 44.90, plates: '', paymentDate: 1, need: 'Primeiro rastreador — frota de vans escolares', origins: ['Parceiro/Loja'], coupon: '', notes: 'Dono de 3 vans escolares. Pais dos alunos pediram rastreamento. Visita agendada.', stage: 'Novo Lead', createdAt: thirtyDaysAgoISO(2) },
+        { id: 'ci5', consultantId: null, instaladorId: 'instalador_1', name: 'Distribuidora Jardim Largo', phone: '(11) 93210-9876', isWhatsapp: true, email: 'compras@jardimlargodistr.com.br', cpf: '00.111.222/0001-44', rg: '', address: 'Rua das Acácias, 330 - Guarulhos/SP', product: 'Rastreador Veicular', plan: 'Profissional', monthlyFee: 54.90, plates: '', paymentDate: 20, need: 'Controle de 5 veículos de distribuição no Grande ABC', origins: ['Parceiro/Loja'], coupon: '', notes: 'Distribuidora de bebidas. Quer relatório de quilometragem por veículo para reembolso de motoristas.', stage: 'Contato Feito', createdAt: thirtyDaysAgoISO(6) }
     ],
     installations: [
-        { id: 'install_1', instaladorId: 'instalador_1', clientName: 'Moto Express',    plate: 'GHI-9012', date: todayISO(),               notes: '' },
-        { id: 'install_2', instaladorId: 'instalador_1', clientName: 'Auto Delivery',   plate: 'XYZ-7890', date: todayISO(),               notes: '' },
-        { id: 'install_3', instaladorId: 'instalador_1', clientName: 'Transportes WL',  plate: 'DEF-5678', date: thirtyDaysAgoISO(5),      notes: 'Instalação na sede do cliente' }
+        { id: 'install_1', instaladorId: 'instalador_1', clientName: 'Moto Express Delivery',    plate: 'GHI-9H12', date: todayISO(),               notes: 'Instalação realizada na sede do cliente. Rastreador instalado na moto 1.' },
+        { id: 'install_2', instaladorId: 'instalador_1', clientName: 'Auto Delivery Solutions',  plate: 'XYZ-7I90', date: todayISO(),               notes: 'Rastreador instalado no veículo principal de entregas.' },
+        { id: 'install_3', instaladorId: 'instalador_1', clientName: 'Auto Prime Transportes',   plate: 'ABC-1D34', date: thirtyDaysAgoISO(5),      notes: 'Instalação no depósito central. Técnico Carlos realizou o serviço.' }
     ],
     coupons: [
         { id: 'coupon_1', code: 'BEMVINDO10', discountType: 'percentage', discountValue: 10, description: '10% de desconto na adesão para novos clientes', active: true },
@@ -1476,8 +1476,9 @@ const sampleState = {
         ]
     },
     comunicados: [
-        { id: 'com_1', autorId: 'gestor', titulo: 'Boas-vindas ao Portal!', mensagem: 'Bem-vindo ao Portal do Vendedor Tracktiv. Aqui você encontra treinamentos, clientes, comissões e muito mais. Qualquer dúvida, fale com o gestor.', prioridade: 'normal', criadoEm: '2026-05-01', lidos: [] },
-        { id: 'com_2', autorId: 'gestor', titulo: '🚀 Nova meta de maio: 10 vendas!', mensagem: 'A meta deste mês é 10 vendas por consultor. Quem atingir a meta ganha bônus de R$200. Use o simulador de ganhos para acompanhar seu progresso. Vamos nessa!', prioridade: 'importante', criadoEm: '2026-05-15', lidos: [] }
+        { id: 'com_1', autorId: 'gestor', titulo: 'Bem-vindo ao Portal Tracktiv!', mensagem: 'Olá, equipe! O portal do vendedor Tracktiv está disponível para toda a equipe. Aqui você gerencia clientes, acompanha comissões, acessa treinamentos e muito mais. Qualquer dúvida ou sugestão, fale diretamente com o gestor pelo chat interno. Bom trabalho!', prioridade: 'normal', criadoEm: '2026-05-01', lidos: [] },
+        { id: 'com_2', autorId: 'gestor', titulo: '🚀 Meta de junho: 12 contratos fechados!', mensagem: 'Equipe, a meta de junho é de 12 contratos fechados por consultor. Quem atingir a meta recebe bônus de R$ 300 + certificado de Top Vendedor. Foque nos clientes em etapa "Proposta" — eles estão a um passo do fechamento! Use o simulador de ganhos para acompanhar sua progressão. Vamos com tudo!', prioridade: 'importante', criadoEm: '2026-06-01', lidos: [] },
+        { id: 'com_3', autorId: 'gestor', titulo: '⚠️ Novo fluxo de aprovação de vendas', mensagem: 'A partir de agora, todas as vendas do plano "Empresas" precisam de aprovação do gestor antes da instalação. Isso garante que o contrato seja revisado antes do técnico ir ao cliente. O processo de aprovação leva no máximo 24h úteis. Qualquer dúvida, entre em contato.', prioridade: 'urgente', criadoEm: '2026-06-02', lidos: [] }
     ],
     produtos_config: [
         { id: 'prod_1', nome: 'Rastreador Veicular', descricao: 'Monitoramento 24/7, alertas em tempo real e proteção completa para veículos pessoais e frotas empresariais.',
@@ -1616,6 +1617,30 @@ function formatCurrency(v) {
 
 function esc(v) {
     return String(v ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showToast(message, type = 'success', duration = 3500) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || icons.info}</span>
+        <span class="toast-msg">${esc(message)}</span>
+        <button class="toast-close" aria-label="Fechar">×</button>
+    `;
+    toast.querySelector('.toast-close').addEventListener('click', () => dismissToast(toast));
+    container.appendChild(toast);
+    const timer = setTimeout(() => dismissToast(toast), duration);
+    toast._timer = timer;
+}
+
+function dismissToast(toast) {
+    clearTimeout(toast._timer);
+    toast.classList.add('hiding');
+    setTimeout(() => toast.remove(), 260);
 }
 
 function stagePillClass(stage) {
@@ -2218,7 +2243,11 @@ function renderManageConsultors() {
         const ps = document.getElementById('pendingReferralsSection');
         if (ps) ps.remove();
     }
-    (app.state.users || []).filter(u => u.role === 'consultor').forEach(u => {
+    const consultores = (app.state.users || []).filter(u => u.role === 'consultor');
+    if (!consultores.length) {
+        body.innerHTML = `<tr><td colspan="7" style="padding:28px;text-align:center;color:var(--text-soft);">Nenhum consultor cadastrado ainda. Clique em "+ Cadastrar consultor" para começar.</td></tr>`;
+    }
+    consultores.forEach(u => {
         const m = getConsultantMetrics(u);
         const b = getPerformanceBadge(m.salesCount);
         const tr = document.createElement('tr');
@@ -3256,6 +3285,7 @@ function renderGestorConfig() {
             app.state.productCommissions[inp.dataset.product] = Math.min(100, Math.max(0, parseFloat(inp.value) || 0));
         });
         saveState();
+        showToast('Configurações de comissão salvas.', 'success');
         const status = document.getElementById('pcSaveStatus');
         if (status) { status.textContent = '✓ Salvo!'; setTimeout(() => { if (status) status.textContent = ''; }, 2000); }
     });
@@ -3310,7 +3340,7 @@ function approveSale(approvalId) {
             const opts = instaladores.map((u, i) => `${i + 1}: ${u.name}${u.storeName ? ' — ' + u.storeName : ''}`).join('\n');
             const choice = prompt(`Selecionar instalador para ${client.name}:\n${opts}\n\nDigite o número:`);
             const idx = parseInt(choice) - 1;
-            if (isNaN(idx) || idx < 0 || idx >= instaladores.length) { alert('Seleção inválida. Aprovação cancelada.'); return; }
+            if (isNaN(idx) || idx < 0 || idx >= instaladores.length) { showToast('Seleção inválida. Aprovação cancelada.', 'error'); return; }
             if (!app.state.pendingInstallations) app.state.pendingInstallations = [];
             app.state.pendingInstallations.push({
                 id: `pinst_${Date.now()}`,
@@ -3339,6 +3369,7 @@ function approveSale(approvalId) {
     const consultorObj = (app.state.users || []).find(u => u.id === approval.consultantId);
     addToSalesFeed(client, consultorObj);
     saveState(); renderAppViews();
+    showToast(`Venda de "${client.name}" aprovada com sucesso!`, 'success');
 }
 
 function rejectSale(approvalId) {
@@ -3353,6 +3384,7 @@ function rejectSale(approvalId) {
     app.state.pendingApprovals = (app.state.pendingApprovals || []).filter(a => a.id !== approvalId);
     if (approval.consultantId) addNotification(approval.consultantId, 'sale_rejected', `❌ Venda para ${client?.name || 'cliente'} foi recusada.${reason ? ' Motivo: ' + reason : ''}`, { section: 'consultorDashboard' });
     saveState(); renderAppViews();
+    showToast(`Venda recusada.${reason ? ' Motivo registrado.' : ''}`, 'warning');
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -3545,7 +3577,7 @@ function handleReferralSave(e) {
     if (!app.state.pendingUsers) app.state.pendingUsers = [];
     app.state.pendingUsers.push({ id: `pending_${Date.now()}`, name, email, password: pass, whatsapp: wa, role: 'consultor', referrerId: app.currentUser.id, requestedAt: todayISO() });
     saveState(); closeModal();
-    alert('Indicação enviada! O gestor irá analisar e aprovar em breve.');
+    showToast('Indicação enviada! O gestor irá analisar e aprovar em breve.', 'success');
     const infArea = document.getElementById('consultorInformativosArea');
     if (infArea) { delete infArea.dataset.rendered; renderInformativos(); }
 }
@@ -4171,7 +4203,7 @@ function openEncaminharTecnicoModal(clientId) {
 function saveEncaminharTecnico(clientId) {
     const radios = document.querySelectorAll('input[name="encTecnico"]');
     const selected = Array.from(radios).find(r => r.checked);
-    if (!selected) { alert('Selecione um técnico.'); return; }
+    if (!selected) { showToast('Selecione um técnico para atribuir.', 'warning'); return; }
     const newTecId = selected.value;
     const obs = (document.getElementById('encObs')?.value || '').trim();
     const tecnico = (app.state.users || []).find(u => u.id === newTecId);
@@ -4299,8 +4331,10 @@ function handleConsultorSave(e) {
     if (app.editingConsultantId) {
         const u = app.state.users.find(u => u.id === app.editingConsultantId);
         Object.assign(u, { name, email, password: pass, ...extra });
+        showToast(`Dados de "${name}" atualizados.`, 'success');
     } else {
         app.state.users.push({ id: `consultor_${Date.now()}`, name, email, password: pass, role: 'consultor', ...extra });
+        showToast(`Consultor "${name}" cadastrado com sucesso!`, 'success');
     }
     saveState(); closeModal(); renderAppViews();
 }
@@ -4308,9 +4342,11 @@ function handleConsultorSave(e) {
 function deleteConsultor(id) {
     const u = (app.state.users || []).find(u => u.id === id);
     if (!u || !confirm(`Excluir o consultor ${u.name}? Os clientes vinculados também serão removidos.`)) return;
+    const nome = u.name;
     app.state.users   = app.state.users.filter(u => u.id !== id);
     app.state.clients = app.state.clients.filter(c => c.consultantId !== id);
     saveState(); renderAppViews();
+    showToast(`Consultor "${nome}" excluído.`, 'info');
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -4428,6 +4464,7 @@ function handleClientSave(e) {
     if (app.editingClientId) {
         const c = app.state.clients.find(c => c.id === app.editingClientId);
         Object.assign(c, fields);
+        showToast(`Dados de "${fields.name}" atualizados.`, 'success');
     } else {
         const newClient = {
             id: `client_${Date.now()}`,
@@ -4443,6 +4480,7 @@ function handleClientSave(e) {
             newClient.consultantId = app.currentUser.id;
         }
         app.state.clients.push(newClient);
+        showToast(`Cliente "${fields.name}" cadastrado com sucesso!`, 'success');
     }
     saveState(); closeModal(); renderAppViews();
 }
@@ -4459,7 +4497,7 @@ function updateClientStage(id, stage) {
     const c = (app.state.clients || []).find(c => c.id === id);
     if (!c) return;
     if (stage === 'Fechado' && app.currentUser.role !== 'gestor') {
-        if (c.awaitingApproval) { alert('Este cliente já está aguardando aprovação do gestor.'); return; }
+        if (c.awaitingApproval) { showToast('Este cliente já está aguardando aprovação do gestor.', 'warning'); return; }
         openProposalChecklist(id);
         return;
     }
@@ -4482,9 +4520,11 @@ function updateClientStage(id, stage) {
 
 function deleteClient(id) {
     const c = (app.state.clients || []).find(c => c.id === id);
-    if (!c || !confirm(`Excluir cliente ${c.name}?`)) return;
+    if (!c || !confirm(`Excluir o cliente "${c.name}"? Esta ação não pode ser desfeita.`)) return;
+    const nome = c.name;
     app.state.clients = app.state.clients.filter(c => c.id !== id);
     saveState(); renderAppViews();
+    showToast(`Cliente "${nome}" removido.`, 'info');
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -4571,11 +4611,14 @@ function handleParceiroSave(e) {
         commissionPct: partnerType === 'indicador' ? parseFloat(document.getElementById('iComm').value) || 0 : 0
     };
 
+    const typeLabel = partnerType === 'indicador' ? 'Parceiro Indicador' : 'Parceiro Instalador';
     if (app.editingInstaladorId) {
         Object.assign(app.state.users.find(u => u.id === app.editingInstaladorId), data);
+        showToast(`Dados de "${name}" atualizados.`, 'success');
     } else {
         const prefix = partnerType === 'indicador' ? 'indicador' : 'instalador';
         app.state.users.push({ id: `${prefix}_${Date.now()}`, role: 'instalador', ...data });
+        showToast(`${typeLabel} "${name}" cadastrado com sucesso!`, 'success');
     }
     saveState(); closeModal(); renderAppViews();
 }
@@ -4600,7 +4643,7 @@ function openInstallationModal(id = null) {
     app.editingInstallId = id;
     const ed = id ? (app.state.installations || []).find(i => i.id === id) : null;
     const instaladores = (app.state.users || []).filter(u => u.role === 'instalador' && u.partnerType !== 'indicador');
-    if (!instaladores.length) { alert('Cadastre ao menos um Parceiro Instalador primeiro.'); return; }
+    if (!instaladores.length) { showToast('Cadastre ao menos um Parceiro Instalador antes de registrar instalações.', 'warning'); return; }
     const instOpts = instaladores.map(u => `<option value="${u.id}" ${ed?.instaladorId === u.id ? 'selected' : ''}>${esc(u.name)} — ${esc(u.storeName || '')}</option>`).join('');
     showModal(ed ? 'Editar instalação' : 'Registrar instalação', `
         <form id="installForm" class="form-grid">
@@ -4632,9 +4675,11 @@ function handleInstallationSave(e) {
     const data = { instaladorId, clientName, plate, date, notes: document.getElementById('instNotes').value.trim() };
     if (app.editingInstallId) {
         Object.assign((app.state.installations || []).find(i => i.id === app.editingInstallId), data);
+        showToast('Instalação atualizada.', 'success');
     } else {
         app.state.installations = app.state.installations || [];
         app.state.installations.push({ id: `install_${Date.now()}`, ...data });
+        showToast(`Instalação de "${clientName}" registrada.`, 'success');
     }
     saveState(); closeModal(); renderAppViews();
 }
@@ -4701,8 +4746,10 @@ function handleCouponSave(e) {
     app.state.coupons = app.state.coupons || [];
     if (app.editingCouponId) {
         Object.assign(app.state.coupons.find(c => c.id === app.editingCouponId), data);
+        showToast(`Cupom "${code}" atualizado.`, 'success');
     } else {
         app.state.coupons.push({ id: `coupon_${Date.now()}`, ...data });
+        showToast(`Cupom "${code}" criado com sucesso!`, 'success');
     }
     saveState(); closeModal(); renderGestorCupons();
 }
@@ -4897,10 +4944,17 @@ function handleLogin(e) {
 function handleDemo() {
     app.state = JSON.parse(JSON.stringify(sampleState));
     saveState();
-    document.getElementById('emailInput').value    = 'cliente@tracktiv.com';
-    document.getElementById('passwordInput').value = 'Cliente123';
-    document.getElementById('loginMessage').textContent = 'Demo carregado. Gestor: gestor@tracktiv.com / Gestor123 · Consultor: consultor@tracktiv.com / Consultor123 · Cliente: cliente@tracktiv.com / Cliente123 · Técnico: tecnico@tracktiv.com / Tecnico123';
-    document.getElementById('loginError').textContent   = '';
+    // Auto-login como gestor para a melhor experiência de demonstração
+    const gestor = app.state.users.find(u => u.role === 'gestor');
+    if (gestor) {
+        app.currentUser = { ...gestor };
+        showApp();
+    } else {
+        document.getElementById('emailInput').value    = 'gestor@tracktiv.com';
+        document.getElementById('passwordInput').value = 'Gestor123';
+        document.getElementById('loginMessage').textContent = 'Demo carregado! Clique em Entrar para acessar como gestor.';
+        document.getElementById('loginError').textContent = '';
+    }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -5480,7 +5534,7 @@ function renderClienteIndicacao() {
         app.state.clientReferrals.push({ id: `ref_${Date.now()}`, clientUserId: u.id, nome, telefone: tel, servico, status: 'pending', createdAt: todayISO() });
         saveState();
         renderClienteIndicacao();
-        alert('✓ Indicação enviada! O gestor irá entrar em contato com seu indicado.');
+        showToast('Indicação enviada! O gestor irá entrar em contato com seu indicado.', 'success');
     });
 }
 
@@ -5498,7 +5552,7 @@ function clienteResgatar(tipo) {
     if (userInState) { userInState.points = (userInState.points || 0) - pointsToUse; app.currentUser.points = userInState.points; }
     saveState();
     renderClienteIndicacao();
-    alert('✓ Solicitação de resgate enviada! O gestor irá analisar e aprovar em breve.');
+    showToast('Solicitação de resgate enviada! O gestor irá analisar e aprovar em breve.', 'success');
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -5644,7 +5698,7 @@ function gestorSavePointsConfig() {
     const bpp = parseFloat(document.getElementById('cfgBrlPerPoint')?.value) || 0.10;
     app.state.pointsConfig = { pointsPerRef: Math.max(1, ppr), brlPerPoint: Math.max(0.01, bpp) };
     saveState();
-    alert('✓ Configuração de pontos salva.');
+    showToast('Configuração de pontos salva com sucesso.', 'success');
 }
 
 function gestorAprovarResgate(id, approve) {
@@ -5917,7 +5971,7 @@ function submitForApproval(clientId) {
     const gestor_ = (app.state.users || []).find(u => u.role === 'gestor');
     if (gestor_) addNotification(gestor_.id, 'new_sale_pending', `💼 Nova venda pendente de aprovação: ${c.name} — ${c.product} (${c.plan})`, { section: 'gestorDashboard' });
     saveState(); renderAppViews(); closeModal();
-    alert('✓ Venda enviada para aprovação do gestor!\nO gestor irá confirmar o fechamento e liberar a instalação.');
+    showToast('Venda enviada para aprovação do gestor! O gestor irá confirmar o fechamento em breve.', 'success', 5000);
 }
 
 function generateProposalHTML(c) {
@@ -6141,9 +6195,9 @@ function renderSegmentFieldHTML(field, data) {
 
 function openSegmentFormModal(clientId, readOnly) {
     const c = (app.state.clients||[]).find(c=>c.id===clientId);
-    if (!c || !c.product) { alert('Cliente sem produto definido.'); return; }
+    if (!c || !c.product) { showToast('Cliente sem produto definido. Edite o cliente e defina o produto.', 'error'); return; }
     const fields = SEGMENT_FIELDS[c.product];
-    if (!fields) { alert('Formulário não disponível para este produto.'); return; }
+    if (!fields) { showToast('Formulário não disponível para este produto.', 'warning'); return; }
     if (!app.state.segmentForms) app.state.segmentForms = {};
     const formState = app.state.segmentForms[clientId] || { data:{}, submitted:false };
     const data = formState.data || {};
@@ -6206,7 +6260,7 @@ function openSegmentFormModal(clientId, readOnly) {
 
     document.getElementById('segSaveBtn')?.addEventListener('click', () => {
         autoSave();
-        alert('✓ Rascunho salvo!');
+        showToast('Rascunho salvo com sucesso.', 'success');
     });
 
     document.getElementById('segSubmitBtn')?.addEventListener('click', () => {
@@ -6226,7 +6280,7 @@ function openSegmentFormModal(clientId, readOnly) {
             read: false, createdAt: todayISO()
         });
         saveState(); closeModal();
-        alert('✓ Formulário enviado para o consultor!');
+        showToast('Formulário enviado para o consultor com sucesso!', 'success');
     });
 }
 
@@ -6349,7 +6403,7 @@ function addChecklistItem(clienteUserId) {
     const category = document.getElementById('chkCategory')?.value || '';
     const instruction = document.getElementById('chkInstruction')?.value.trim() || '';
     const required = document.getElementById('chkRequired')?.checked !== false;
-    if (!label) { alert('Digite o nome do documento.'); return; }
+    if (!label) { showToast('Digite o nome do documento.', 'warning'); return; }
     if (!app.state.docChecklists) app.state.docChecklists = {};
     if (!app.state.docChecklists[clienteUserId]) app.state.docChecklists[clienteUserId] = [];
     const addedBy = app.currentUser?.name || '';
@@ -6387,7 +6441,7 @@ function editChecklistItem(clienteUserId, itemId) {
     if (!item) return;
     const newLabel = prompt('Nome do documento:', item.label);
     if (newLabel === null) { openDocChecklistModal(clienteUserId); return; }
-    if (!newLabel.trim()) { alert('Nome não pode ser vazio.'); openDocChecklistModal(clienteUserId); return; }
+    if (!newLabel.trim()) { showToast('O nome do documento não pode ser vazio.', 'warning'); openDocChecklistModal(clienteUserId); return; }
     item.label = newLabel.trim();
     const newDeadline = prompt('Prazo (AAAA-MM-DD) ou deixe vazio para remover:', item.deadline || '');
     if (newDeadline !== null) item.deadline = newDeadline.trim() || null;
@@ -6493,7 +6547,7 @@ function renderClienteServiceForm(serviceKey, el, svc) {
     };
     formEl?.addEventListener('change', save);
     formEl?.addEventListener('input', save);
-    document.getElementById(`sfSave_${serviceKey}`)?.addEventListener('click', () => { save(); alert('✓ Salvo!'); });
+    document.getElementById(`sfSave_${serviceKey}`)?.addEventListener('click', () => { save(); showToast('Informações salvas com sucesso.', 'success'); });
     document.getElementById(`sfSubmit_${serviceKey}`)?.addEventListener('click', () => {
         save();
         if (!app.state.segmentForms) app.state.segmentForms = {};
@@ -6503,7 +6557,7 @@ function renderClienteServiceForm(serviceKey, el, svc) {
         app.state.notifications.push({ id: `notif_${Date.now()}`, type: 'form_submitted', serviceKey, serviceName: svc.label, clientUserId: u.id, clientName: u.name, clientId: u.clientId, consultantId: crm?.consultantId || null, read: false, createdAt: todayISO() });
         saveState();
         renderClienteServiceForm(serviceKey, el, svc);
-        alert('✓ Formulário enviado para o consultor!');
+        showToast('Formulário enviado para o consultor com sucesso!', 'success');
     });
 }
 
@@ -6848,8 +6902,8 @@ function submitClienteChecklistDoc(itemId) {
     const u = app.currentUser;
     const fileInput = document.getElementById('chkUploadFile');
     const file = fileInput?.files?.[0];
-    if (!file) { alert('Selecione um arquivo.'); return; }
-    if (file.size > 2 * 1024 * 1024) { alert('Arquivo muito grande. Máximo 2MB.'); return; }
+    if (!file) { showToast('Selecione um arquivo para enviar.', 'warning'); return; }
+    if (file.size > 2 * 1024 * 1024) { showToast('Arquivo muito grande. Tamanho máximo permitido: 2MB.', 'error'); return; }
     const items = (app.state.docChecklists || {})[u.id] || [];
     const item = items.find(i => i.id === itemId);
     if (!item) return;
@@ -6926,7 +6980,7 @@ function renderClienteIndicacaoSub(subItem) {
                 <p style="color:var(--text-soft);margin:0 0 16px;">Compartilhe este código e ganhe pontos a cada indicação aprovada.</p>
                 <div style="font-size:2.5rem;font-weight:900;letter-spacing:0.12em;color:var(--primary);background:var(--bg);padding:20px 32px;border-radius:16px;display:inline-block;margin-bottom:16px;">${esc(u.referralCode || '—')}</div>
                 <br>
-                <button class="secondary-btn" onclick="navigator.clipboard?.writeText('${esc(u.referralCode||'')}').then(()=>alert('Código copiado!'))">📋 Copiar código</button>
+                <button class="secondary-btn" onclick="navigator.clipboard?.writeText('${esc(u.referralCode||'')}').then(()=>showToast('Código copiado!','success'))">📋 Copiar código</button>
             </div>`;
     } else if (subItem === 'minhas') {
         const refs = (app.state.clientReferrals || []).filter(r => r.clientUserId === u.id);
@@ -7067,7 +7121,7 @@ function renderClienteService(serviceKey) {
     };
     svcFormEl?.addEventListener('change', autoSave);
     svcFormEl?.addEventListener('input', autoSave);
-    document.getElementById(`svcSave_${serviceKey}`)?.addEventListener('click', () => { autoSave(); alert('✓ Salvo!'); });
+    document.getElementById(`svcSave_${serviceKey}`)?.addEventListener('click', () => { autoSave(); showToast('Informações salvas com sucesso.', 'success'); });
     document.getElementById(`svcSubmit_${serviceKey}`)?.addEventListener('click', () => {
         autoSave();
         if (!app.state.segmentForms) app.state.segmentForms = {};
@@ -7078,7 +7132,7 @@ function renderClienteService(serviceKey) {
         saveState();
         renderClienteService(serviceKey);
         renderClienteNav();
-        alert('✓ Formulário enviado para o consultor!');
+        showToast('Formulário enviado para o consultor com sucesso!', 'success');
     });
 }
 
@@ -7972,6 +8026,7 @@ function openFollowUpModal(clientId) {
         if (!app.state.followUps) app.state.followUps = [];
         app.state.followUps.push({ id: `fu_${Date.now()}`, clientId, consultantId: uid, date, time, type, notes, done: false, result: null, createdAt: new Date().toISOString() });
         saveState(); closeModal();
+        showToast(`Follow-up agendado para ${formatDate(date)}.`, 'success');
     });
 }
 
@@ -8706,6 +8761,7 @@ function saveChamado(e) {
     if (gestor) addNotification(gestor.id, 'chamado', `Novo chamado aberto por ${app.currentUser.name}: "${title}"`, { render: 'renderGestorChamados' });
     saveState();
     closeModal();
+    showToast(`Chamado "${title}" aberto com sucesso!`, 'success');
     if (app.currentUser.role === 'tecnico') {
         renderTecnicoChamados();
         renderTecnicoDashboard();
@@ -8770,6 +8826,7 @@ function updateChamadoStatus(chamadoId, newStatus) {
     if (!ch.messages) ch.messages = [];
     ch.messages.push({ id: 'cm_' + Date.now(), from: app.currentUser.id, text: `Status alterado para: ${newStatus}`, at: todayISO() });
     saveState();
+    showToast(`Status do chamado atualizado para "${newStatus}".`, 'success');
     if (app.currentUser.role === 'tecnico') {
         renderTecnicoDashboard();
         renderTecnicoChamados();
@@ -8873,12 +8930,14 @@ function saveTecnico(e, tecnicoId) {
         if (!u) return;
         u.name = nome; u.email = email; u.cpf = cpf; u.phone = tel; u.whatsapp = wa; u.specialty = esp;
         if (senha) u.password = senha;
+        showToast(`Dados de "${nome}" atualizados.`, 'success');
     } else {
-        if (users.find(x => x.email === email)) { alert('Este e-mail já está cadastrado.'); return; }
+        if (users.find(x => x.email === email)) { showToast('Este e-mail já está cadastrado no sistema.', 'error'); return; }
         const newT = { id: 'tecnico_' + Date.now(), name: nome, email, password: senha, role: 'tecnico', cpf, phone: tel, whatsapp: wa, specialty: esp };
         users.push(newT);
         if (!app.state.tecnicoClients) app.state.tecnicoClients = {};
         app.state.tecnicoClients[newT.id] = [];
+        showToast(`Técnico "${nome}" cadastrado com sucesso!`, 'success');
     }
     saveState();
     closeModal();
@@ -9819,6 +9878,7 @@ function saveComunicado() {
     app.state.comunicados = [novo, ...(app.state.comunicados || [])];
     saveState();
     closeModal();
+    showToast(`Comunicado "${titulo}" publicado com sucesso!`, 'success');
     renderGestorComunicados();
 }
 
@@ -9901,14 +9961,14 @@ function init() {
         app.currentUser = null;
         document.getElementById('appScreen').classList.add('hidden');
         document.getElementById('loginScreen').classList.remove('hidden');
-        document.getElementById('loginMessage').textContent = 'Use seu usuário para acessar o portal.';
+        document.getElementById('loginMessage').textContent = 'Use suas credenciais para acessar o portal. Clique em Demo para uma demonstração.';
     });
 
     document.getElementById('clienteLogoutBtn').addEventListener('click', () => {
         app.currentUser = null;
         document.getElementById('clientePortal').classList.add('hidden');
         document.getElementById('loginScreen').classList.remove('hidden');
-        document.getElementById('loginMessage').textContent = 'Use seu usuário para acessar o portal.';
+        document.getElementById('loginMessage').textContent = 'Use suas credenciais para acessar o portal. Clique em Demo para uma demonstração.';
     });
 
     document.getElementById('openGestorClienteModalBtn').addEventListener('click', () => openGestorClienteModal());
@@ -10370,7 +10430,7 @@ function openReengagementModal(clientId) {
         closeModal();
         if (days > 0) {
             const d = new Date(); d.setDate(d.getDate() + days);
-            alert(`Re-engajamento configurado! Você receberá um lembrete em ${days} dias (${d.toLocaleDateString('pt-BR')}).`);
+            showToast(`Reativação agendada! Você receberá um lembrete em ${days} dias (${d.toLocaleDateString('pt-BR')}).`, 'success');
         }
     });
 }
@@ -10553,7 +10613,7 @@ function renderUpsellCentral() {
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
                 ${waLink ? `<a href="${waLink}" target="_blank" class="small-btn" style="text-decoration:none;background:#e7faf0;color:#15803d;border-color:#a7f3d0;">💬 Enviar via WA</a>` : ''}
                 <button class="small-btn" style="background:#e0e7ff;color:#3730a3;border-color:#c7d2fe;" onclick="generateProposta('${c.id}')">📄 Gerar Proposta</button>
-                <button class="small-btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(${JSON.stringify(script)}).then(()=>alert('Script copiado!'))">📋 Copiar script</button>
+                <button class="small-btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(${JSON.stringify(script)}).then(()=>showToast('Script copiado!','success'))">📋 Copiar script</button>
             </div>
         </div>`;
     }).join('');
@@ -11413,8 +11473,10 @@ function openDesafioModal(id) {
         if (!app.state.challenges) app.state.challenges = [];
         if (ch) {
             Object.assign(app.state.challenges.find(c => c.id === ch.id), data);
+            showToast(`Desafio "${data.title}" atualizado.`, 'success');
         } else {
             app.state.challenges.push({ id: `ch_${Date.now()}`, ...data });
+            showToast(`Desafio "${data.title}" criado com sucesso!`, 'success');
         }
         saveState(); closeModal(); renderGestorMuralConfig();
     });
@@ -11730,11 +11792,12 @@ function renderMeuLink() {
 
     document.getElementById('copyLinkBtn').addEventListener('click', () => {
         navigator.clipboard.writeText(link).then(() => {
+            showToast('Link de cadastro copiado!', 'success');
             const btn = document.getElementById('copyLinkBtn');
             btn.textContent = '✅ Copiado!';
             setTimeout(() => { if(document.getElementById('copyLinkBtn')) document.getElementById('copyLinkBtn').textContent = '📋 Copiar link'; }, 2000);
         }).catch(() => {
-            prompt('Copie o link abaixo:', link);
+            showToast('Não foi possível copiar automaticamente. Selecione e copie manualmente.', 'warning');
         });
     });
 

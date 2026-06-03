@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tracktiv - Portal</title>
+    <title>Tracktiv — Portal do Vendedor</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -23,13 +23,15 @@
                 </div>
             </div>
             <div>
-                <h1>Gestão integrada de consultores e instaladores</h1>
-                <p>Funil de vendas, comissões, instalações e treinamentos. 100% offline em localStorage.</p>
+                <h1>Gestão integrada de consultores e parceiros Tracktiv</h1>
+                <p>Funil de vendas, comissões, instalações, treinamentos e muito mais — tudo em um só lugar.</p>
             </div>
             <div class="info-box">
+                <strong>Acessos de demonstração:</strong><br>
                 Gestor: gestor@tracktiv.com / Gestor123<br>
                 Consultor: consultor@tracktiv.com / Consultor123<br>
                 Instalador: instalador@tracktiv.com / Instalador123<br>
+                Parceiro Indicador: parceiro@tracktiv.com / Parceiro123<br>
                 Cliente: cliente@tracktiv.com / Cliente123<br>
                 Técnico: tecnico@tracktiv.com / Tecnico123
             </div>
@@ -38,7 +40,7 @@
             <!-- Seção de login normal -->
             <div id="loginSection">
                 <h2>Entrar</h2>
-                <div id="loginMessage" class="info-box">Use seu usuário para acessar o portal.</div>
+                <div id="loginMessage" class="info-box">Use suas credenciais para acessar o portal. Clique em <strong>Demo</strong> para uma demonstração completa.</div>
                 <div class="field">
                     <label for="emailInput">E-mail</label>
                     <input id="emailInput" type="email" placeholder="nome@empresa.com" required autocomplete="username" />
@@ -306,7 +308,7 @@
         <!-- ──────────────── CONSULTOR: TREINAMENTOS ──────────────── -->
         <section id="consultorTreinamento" class="section">
             <div class="section-header">
-                <div><h2>Treinamentos</h2><p>Módulo 1 completo. Demais em breve.</p></div>
+                <div><h2>Treinamentos</h2><p>5 módulos completos com quiz, certificado e dicas de venda do TRAK.</p></div>
             </div>
             <div class="product-grid" id="trainingModules"></div>
             <div id="trainingDetail" class="hidden"></div>
@@ -499,6 +501,7 @@
     </div>
 </div>
 
+<div id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 <script src="app.js"></script>
 
 <!-- ════════ TOUR GUIADO DO TRAK ════════ -->
