@@ -2,7 +2,7 @@
    CONSTANTS
 ═══════════════════════════════════════════════════════════════════ */
 
-const STORAGE_KEY = 'tracktiv_v2';
+const STORAGE_KEY = 'tracktiv_v3';
 const INSTALL_FEE = 60;
 const SALE_COMMISSION = 50;
 
@@ -179,8 +179,23 @@ const NAV_TREE_INDICADOR = [
     { id: 'pi_dashboard',  label: 'Dashboard',          icon: '📊', section: 'instaladorDashboard' },
     { id: 'pi_indicacoes', label: 'Minhas Indicações',  icon: '🤝', render: () => renderIndicadorReferrals() },
     { id: 'pi_financeiro', label: 'Financeiro',         icon: '💰', render: () => renderIndicadorExtrato() },
+    { id: 'pi_projecao',   label: 'Projeção de Ganhos', icon: '📈', render: () => renderIndicadorProjecao() },
+    { id: 'pi_treinamentos',label: 'Treinamentos',      icon: '🎓', render: () => renderIndicadorTreinamentos() },
+    { id: 'pi_regras',     label: 'Regras de Comissão', icon: '📋', render: () => renderIndicadorRegras() },
     { id: 'pi_comunicados',label: 'Comunicados',        icon: '📢', render: () => renderComunicadosMural() },
     { id: 'pi_mensagens',  label: 'Mensagens',          icon: '💬', action: () => openChatOverlay('gestor') }
+];
+
+const NAV_TREE_PRESIDENTE = [
+    { id: 'p_visao',    label: 'Visão Geral',        icon: '📊', render: () => renderPresidenteOverview() },
+    { id: 'p_fin',      label: 'Financeiro',          icon: '💰', render: () => renderPresidenteFinanceiro() },
+    { id: 'p_comis',    label: 'Comissionamento',     icon: '💵', render: () => renderPresidenteComissionamento() },
+    { id: 'p_planos',   label: 'Planos e Produtos',   icon: '📦', render: () => renderPresidentePlanos() },
+    { id: 'p_recorr',   label: 'Recorrência',         icon: '🔄', render: () => renderPresidenteRecorrencia() },
+    { id: 'p_gestores', label: 'Gestores',            icon: '👔', render: () => renderPresidenteGestores() },
+    { id: 'p_audit',    label: 'Auditoria',           icon: '🔍', render: () => renderPresidenteAuditoria() },
+    { id: 'p_config',   label: 'Configurações',       icon: '⚙️', render: () => renderPresidenteConfig() },
+    { id: 'p_sim',      label: 'Simulador de Lucro',  icon: '🧮', render: () => renderPresidenteSimulador() }
 ];
 
 const stageOrder = ['Novo Lead', 'Contato Feito', 'Apresentação', 'Proposta', 'Fechado', 'Perdido'];
@@ -1385,6 +1400,7 @@ const SECTIONS_BY_MODULE = { 1: [
 
 const sampleState = {
     users: [
+        { id: 'presidente', name: 'Presidente Demo', email: 'presidente@tracktiv.com.br', password: 'Admin@2024', role: 'presidente' },
         { id: 'gestor', name: 'Ricardo Almeida', email: 'gestor@tracktiv.com', password: 'Gestor123', role: 'gestor' },
         { id: 'consultor_1', name: 'Laura Mendes', email: 'consultor@tracktiv.com', password: 'Consultor123', role: 'consultor',
           cpf: '312.456.789-04', address: 'Rua das Orquídeas, 450 - São Paulo/SP', whatsapp: '(11) 91234-5678', pixKey: 'laura.mendes@tracktiv.com' },
@@ -1558,7 +1574,58 @@ const sampleState = {
     salesFeed: [
         { id: 'feed_demo1', consultorName: 'Laura Mendes', consultorId: 'consultor_1', clientName: 'Auto Prime', plan: 'Profissional', date: '2026-06-01', timestamp: 1748779200000 },
         { id: 'feed_demo2', consultorName: 'Bruno Silva', consultorId: 'consultor_2', clientName: 'SmartFleet', plan: 'Controle Total', date: '2026-06-01', timestamp: 1748775600000 }
-    ]
+    ],
+    auditLog: [],
+    presidenteConfig: { companyName: 'Tracktiv', cnpj: '', address: '', email: '', phone: '', logo: '' },
+    commissionRules: {
+        consultorFirstSale: 50,
+        consultorRecurrence: [
+            { minSales: 1, maxSales: 4, pct: 10 },
+            { minSales: 5, maxSales: 9, pct: 15 },
+            { minSales: 10, maxSales: null, pct: 20 }
+        ],
+        instaladorInstall: 60,
+        indicadorRef: 10,
+        referralBonus: 100,
+        history: []
+    },
+    recurrenceRules: {
+        gracePeriodDays: 30,
+        minClientsToActivate: 1,
+        minMonthlySales: 0,
+        history: []
+    },
+    savedSimulations: []
+};
+
+/* Estado limpo para uso em produção (sem dados de demonstração) */
+const cleanState = {
+    users: [
+        { id: 'presidente', name: 'Presidente', email: 'presidente@tracktiv.com.br', password: 'Admin@2024', role: 'presidente' },
+        { id: 'gestor_master', name: 'Gestor Tracktiv', email: 'gestor@tracktiv.com.br', password: 'Gestor@2024', role: 'gestor' }
+    ],
+    clients: [], installations: [], coupons: [], clientDocuments: [], clientReferrals: [],
+    clientRedemptions: [], pointsConfig: { pointsPerRef: 100, brlPerPoint: 0.10 }, segmentForms: {},
+    notifications: [], goals: { default: 10, byConsultant: {} }, followUps: [], chats: {},
+    metaAlertsSent: {}, chamados: [], tecnicoClients: {}, clientTecnicoHistory: {},
+    docChecklists: {}, docSlots: {}, comunicados: [], produtos_config: [], formConfigs: {},
+    pendingApprovals: [], productCommissions: {}, pendingUsers: [], pendingInstallations: [],
+    photoInstallations: [], trainingProgress: {}, reengagementQueue: [], recoveryHistory: [],
+    churnAlertsSent: {}, indicadorReferrals: [],
+    muralConfig: { enabled: true, showRanking: true, showMeta: true, showFeed: true, showChallenges: true, showComissions: false, hideFeedNames: false, metaValue: 10 },
+    challenges: [], salesFeed: [], auditLog: [],
+    presidenteConfig: { companyName: 'Tracktiv', cnpj: '', address: '', email: '', phone: '', logo: '' },
+    commissionRules: {
+        consultorFirstSale: 50,
+        consultorRecurrence: [
+            { minSales: 1, maxSales: 4, pct: 10 },
+            { minSales: 5, maxSales: 9, pct: 15 },
+            { minSales: 10, maxSales: null, pct: 20 }
+        ],
+        instaladorInstall: 60, indicadorRef: 10, referralBonus: 100, history: []
+    },
+    recurrenceRules: { gracePeriodDays: 30, minClientsToActivate: 1, minMonthlySales: 0, history: [] },
+    savedSimulations: []
 };
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1641,6 +1708,22 @@ function dismissToast(toast) {
     clearTimeout(toast._timer);
     toast.classList.add('hiding');
     setTimeout(() => toast.remove(), 260);
+}
+
+function addAuditLog(action, details) {
+    if (!app.state) return;
+    if (!app.state.auditLog) app.state.auditLog = [];
+    const actor = app.currentUser ? { id: app.currentUser.id, name: app.currentUser.name, role: app.currentUser.role } : { id: 'system', name: 'Sistema', role: 'system' };
+    app.state.auditLog.unshift({
+        id: `audit_${Date.now()}`,
+        action,
+        details,
+        actor,
+        at: new Date().toISOString(),
+        demo: !!app.demoMode
+    });
+    // Limita a 1000 entradas para não inflar localStorage
+    if (app.state.auditLog.length > 1000) app.state.auditLog = app.state.auditLog.slice(0, 1000);
 }
 
 function stagePillClass(stage) {
@@ -1850,35 +1933,37 @@ function loadState() {
         try {
             const parsed = JSON.parse(saved);
             app.state = { installations: [], coupons: [], pendingApprovals: [], productCommissions: {}, pendingUsers: [], pendingInstallations: [], photoInstallations: [], trainingProgress: {}, clientDocuments: [], clientReferrals: [], clientRedemptions: [], pointsConfig: { pointsPerRef: 100, brlPerPoint: 0.10 }, segmentForms: {}, notifications: [], goals: { default: 10, byConsultant: {} }, followUps: [], chats: {}, metaAlertsSent: {}, chamados: [], tecnicoClients: {}, clientTecnicoHistory: {}, docChecklists: {}, docSlots: {}, comunicados: [], produtos_config: [], formConfigs: {}, ...parsed };
-            if (!app.state.comunicados || app.state.comunicados.length === 0) {
+            // Só injeta comunicados/produtos demo se o sistema tem dados de demo
+            const _hasDemoSignal = (parsed.users||[]).some(u => u.email === 'gestor@tracktiv.com' || u.email === 'consultor@tracktiv.com');
+            if (_hasDemoSignal && (!app.state.comunicados || app.state.comunicados.length === 0)) {
                 app.state.comunicados = JSON.parse(JSON.stringify(sampleState.comunicados || []));
             }
-            if (!app.state.produtos_config || app.state.produtos_config.length === 0) {
+            if (_hasDemoSignal && (!app.state.produtos_config || app.state.produtos_config.length === 0)) {
                 app.state.produtos_config = JSON.parse(JSON.stringify(sampleState.produtos_config || []));
             }
             if (!app.state.formConfigs) app.state.formConfigs = {};
-            // Migração: garante que o usuário demo cliente existe quando não há nenhum cliente cadastrado
+            // Migração: garante cliente demo apenas se o sistema já tem dados de demonstração
             const users = app.state.users || [];
-            if (!users.some(u => u.role === 'cliente')) {
+            const hasDemoData = users.some(u => u.email === 'gestor@tracktiv.com' || u.email === 'consultor@tracktiv.com');
+            if (hasDemoData && !users.some(u => u.role === 'cliente')) {
                 const demoCliente = sampleState.users.find(u => u.role === 'cliente');
                 if (demoCliente && !users.some(u => u.email === demoCliente.email)) {
                     app.state.users = [...users, JSON.parse(JSON.stringify(demoCliente))];
                 }
             }
-            // Migração: garante documentos demo quando não há nenhum
-            if (!app.state.clientDocuments || app.state.clientDocuments.length === 0) {
+            // Migração: garante documentos demo quando sistema tem dados demo
+            if (hasDemoData && (!app.state.clientDocuments || app.state.clientDocuments.length === 0)) {
                 app.state.clientDocuments = JSON.parse(JSON.stringify(sampleState.clientDocuments || []));
             }
             // Migração: garante contractedServices em todos os clientes existentes
             (app.state.users || []).forEach(u => {
                 if (u.role === 'cliente' && !u.contractedServices) u.contractedServices = [];
             });
-            // Migração: força-sincroniza usuários demo (garante role e senha corretos)
-            const demoUsers = sampleState.users.filter(u => ['gestor','consultor','instalador','tecnico','cliente'].includes(u.role));
-            demoUsers.forEach(demo => {
-                app.state.users = (app.state.users || []).filter(u => u.id !== demo.id && u.email !== demo.email);
-                app.state.users.push(JSON.parse(JSON.stringify(demo)));
-            });
+            // Migração: garante que presidente existe no estado salvo
+            if (!(app.state.users || []).some(u => u.role === 'presidente')) {
+                const pres = cleanState.users.find(u => u.role === 'presidente');
+                if (pres) app.state.users = [JSON.parse(JSON.stringify(pres)), ...(app.state.users || [])];
+            }
             // Migração: garante campos chamados e tecnicoClients
             if (!app.state.chamados) app.state.chamados = JSON.parse(JSON.stringify(sampleState.chamados || []));
             if (!app.state.tecnicoClients) app.state.tecnicoClients = JSON.parse(JSON.stringify(sampleState.tecnicoClients || {}));
@@ -1903,11 +1988,19 @@ function loadState() {
             if (!app.state.muralConfig) app.state.muralConfig = { enabled: true, showRanking: true, showMeta: true, showFeed: true, showChallenges: true, showComissions: false, hideFeedNames: false, metaValue: 10 };
             if (!app.state.challenges)  app.state.challenges  = [];
             if (!app.state.salesFeed)   app.state.salesFeed   = [];
+            // Migração: campos do Presidente
+            if (!app.state.auditLog)          app.state.auditLog          = [];
+            if (!app.state.presidenteConfig)  app.state.presidenteConfig  = { companyName: 'Tracktiv', cnpj: '', address: '', email: '', phone: '', logo: '' };
+            if (!app.state.commissionRules)   app.state.commissionRules   = { consultorFirstSale: 50, consultorRecurrence: [{minSales:1,maxSales:4,pct:10},{minSales:5,maxSales:9,pct:15},{minSales:10,maxSales:null,pct:20}], instaladorInstall: 60, indicadorRef: 10, referralBonus: 100, history: [] };
+            if (!app.state.commissionRules.history) app.state.commissionRules.history = [];
+            if (!app.state.recurrenceRules)   app.state.recurrenceRules   = { gracePeriodDays: 30, minClientsToActivate: 1, minMonthlySales: 0, history: [] };
+            if (!app.state.recurrenceRules.history) app.state.recurrenceRules.history = [];
+            if (!app.state.savedSimulations)  app.state.savedSimulations  = [];
         } catch (e) {
-            app.state = JSON.parse(JSON.stringify(sampleState));
+            app.state = JSON.parse(JSON.stringify(cleanState));
         }
     } else {
-        app.state = JSON.parse(JSON.stringify(sampleState));
+        app.state = JSON.parse(JSON.stringify(cleanState));
     }
 }
 
@@ -1938,7 +2031,7 @@ function renderNavigation() {
     tabs.innerHTML = '';
     const role = app.currentUser.role;
     const isIndicador = role === 'instalador' && app.currentUser.partnerType === 'indicador';
-    const tree = isIndicador ? NAV_TREE_INDICADOR : (NAV_TREE[role] || []);
+    const tree = role === 'presidente' ? NAV_TREE_PRESIDENTE : (isIndicador ? NAV_TREE_INDICADOR : (NAV_TREE[role] || []));
     const expandedId = app.navState.expandedGroup;
 
     if (expandedId) {
@@ -2008,7 +2101,7 @@ function navItemClick(item, parent) {
 
     // Build breadcrumb path
     const role = app.currentUser.role;
-    const roleLabel = role === 'gestor' ? 'Gestor' : role === 'consultor' ? 'Consultor' : role === 'tecnico' ? 'Técnico'
+    const roleLabel = role === 'presidente' ? 'Presidente' : role === 'gestor' ? 'Gestor' : role === 'consultor' ? 'Consultor' : role === 'tecnico' ? 'Técnico'
         : (app.currentUser.partnerType === 'indicador' ? 'Parceiro Indicador' : 'Parceiro Instalador');
     const path = [{ label: roleLabel, groupId: null }];
     if (parent) {
@@ -3900,6 +3993,7 @@ function showApp() {
     document.getElementById('userNameLabel').textContent = app.currentUser.name;
     const _isIndicador = app.currentUser.role === 'instalador' && app.currentUser.partnerType === 'indicador';
     document.getElementById('pageRoleLabel').textContent =
+        app.currentUser.role === 'presidente' ? 'Painel do Presidente' :
         app.currentUser.role === 'gestor'     ? 'Área do Gestor' :
         app.currentUser.role === 'instalador' ? (_isIndicador ? 'Portal do Parceiro Indicador' : 'Portal do Parceiro Instalador') :
         app.currentUser.role === 'tecnico'    ? 'Portal do Técnico' : 'Portal do Consultor';
@@ -3909,13 +4003,13 @@ function showApp() {
 
     // Set initial view from first nav tree item
     const role = app.currentUser.role;
-    const tree = _isIndicador ? NAV_TREE_INDICADOR : (NAV_TREE[role] || []);
+    const tree = role === 'presidente' ? NAV_TREE_PRESIDENTE : (_isIndicador ? NAV_TREE_INDICADOR : (NAV_TREE[role] || []));
     const firstItem = tree[0];
     if (firstItem) {
         if (firstItem.section) {
             app.activeView = firstItem.section;
             app.navState.activeItemId = firstItem.id;
-            const roleLabel = role === 'gestor' ? 'Gestor' : role === 'consultor' ? 'Consultor' : role === 'tecnico' ? 'Técnico'
+            const roleLabel = role === 'presidente' ? 'Presidente' : role === 'gestor' ? 'Gestor' : role === 'consultor' ? 'Consultor' : role === 'tecnico' ? 'Técnico'
                 : (_isIndicador ? 'Parceiro Indicador' : 'Parceiro Instalador');
             app.navState.path = [{ label: roleLabel, groupId: null }, { label: firstItem.label, groupId: null, active: true }];
         }
@@ -3966,13 +4060,23 @@ function showApp() {
     renderAppViews();
 
     // Aplica a seção correta DEPOIS de todo o rendering — garantia final
-    if (firstItem && firstItem.section) {
+    if (role === 'presidente') {
+        // Presidente usa exclusivamente dynamicContent
+        app.navState.activeItemId = tree[0]?.id || null;
+        app.navState.path = [{ label: 'Presidente', groupId: null }, { label: tree[0]?.label || '', groupId: null, active: true }];
+        renderBreadcrumb();
+        renderNavigation();
+        renderPresidenteOverview();
+        showSection('dynamicContent');
+    } else if (firstItem && firstItem.section) {
         showSection(firstItem.section);
     } else {
         showActiveSection();
     }
 
-    if (['consultor', 'instalador'].includes(app.currentUser.role) && !isTourCompleted(app.currentUser.id)) {
+    if (role === 'presidente' && !isTourCompleted(app.currentUser.id)) {
+        setTimeout(startPresidenteTour, 600);
+    } else if (['consultor', 'instalador'].includes(role) && !isTourCompleted(app.currentUser.id)) {
         setTimeout(startTour, 600);
     }
 }
@@ -4029,6 +4133,10 @@ function renderAppViews() {
         renderTecnicoDashboard();
         renderTecnicoClientes();
         renderTecnicoChamados();
+    }
+
+    if (role === 'presidente') {
+        // Presidente usa apenas dynamicContent — render inicial feito em showApp
     }
 }
 
@@ -4331,9 +4439,12 @@ function handleConsultorSave(e) {
     if (app.editingConsultantId) {
         const u = app.state.users.find(u => u.id === app.editingConsultantId);
         Object.assign(u, { name, email, password: pass, ...extra });
+        addAuditLog('consultor_update', { id: app.editingConsultantId, name });
         showToast(`Dados de "${name}" atualizados.`, 'success');
     } else {
-        app.state.users.push({ id: `consultor_${Date.now()}`, name, email, password: pass, role: 'consultor', ...extra });
+        const newId = `consultor_${Date.now()}`;
+        app.state.users.push({ id: newId, name, email, password: pass, role: 'consultor', ...extra });
+        addAuditLog('consultor_create', { id: newId, name });
         showToast(`Consultor "${name}" cadastrado com sucesso!`, 'success');
     }
     saveState(); closeModal(); renderAppViews();
@@ -4345,6 +4456,7 @@ function deleteConsultor(id) {
     const nome = u.name;
     app.state.users   = app.state.users.filter(u => u.id !== id);
     app.state.clients = app.state.clients.filter(c => c.consultantId !== id);
+    addAuditLog('consultor_delete', { id, name: nome });
     saveState(); renderAppViews();
     showToast(`Consultor "${nome}" excluído.`, 'info');
 }
@@ -4464,6 +4576,7 @@ function handleClientSave(e) {
     if (app.editingClientId) {
         const c = app.state.clients.find(c => c.id === app.editingClientId);
         Object.assign(c, fields);
+        addAuditLog('client_update', { id: app.editingClientId, name: fields.name });
         showToast(`Dados de "${fields.name}" atualizados.`, 'success');
     } else {
         const newClient = {
@@ -4924,13 +5037,14 @@ function handleLogin(e) {
     const pass  = document.getElementById('passwordInput').value.trim();
     const errEl = document.getElementById('loginError');
     errEl.textContent = '';
-    const VALID_ROLES = ['gestor', 'consultor', 'instalador', 'tecnico', 'cliente'];
+    const VALID_ROLES = ['presidente', 'gestor', 'consultor', 'instalador', 'tecnico', 'cliente'];
     const user = (app.state.users || []).find(u =>
         u.email === email && u.password === pass && VALID_ROLES.includes(u.role)
     );
     if (!user) { errEl.textContent = 'E-mail ou senha incorretos.'; return; }
     // Cópia defensiva para evitar mutação acidental
     app.currentUser = { ...user };
+    addAuditLog('login', { userId: user.id, name: user.name, role: user.role });
     if (app.currentUser.role === 'cliente') {
         showClientePortal();
     } else {
@@ -4942,6 +5056,10 @@ function handleLogin(e) {
 }
 
 function handleDemo() {
+    // Preserva o estado real antes de carregar o demo
+    const preDemoState = localStorage.getItem(STORAGE_KEY);
+    localStorage.setItem(STORAGE_KEY + '_pre_demo', preDemoState || '');
+    app.demoMode = true;
     app.state = JSON.parse(JSON.stringify(sampleState));
     saveState();
     // Auto-login como gestor para a melhor experiência de demonstração
@@ -4949,12 +5067,20 @@ function handleDemo() {
     if (gestor) {
         app.currentUser = { ...gestor };
         showApp();
-    } else {
-        document.getElementById('emailInput').value    = 'gestor@tracktiv.com';
-        document.getElementById('passwordInput').value = 'Gestor123';
-        document.getElementById('loginMessage').textContent = 'Demo carregado! Clique em Entrar para acessar como gestor.';
-        document.getElementById('loginError').textContent = '';
+        showToast('🎭 Modo Demonstração ativo. Dados fictícios para apresentação.', 'info', 5000);
     }
+}
+
+function exitDemoMode() {
+    app.demoMode = false;
+    const preDemo = localStorage.getItem(STORAGE_KEY + '_pre_demo');
+    localStorage.removeItem(STORAGE_KEY + '_pre_demo');
+    if (preDemo) {
+        localStorage.setItem(STORAGE_KEY, preDemo);
+    } else {
+        localStorage.removeItem(STORAGE_KEY);
+    }
+    loadState();
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -9629,6 +9755,12 @@ function showTourStep(idx) {
 }
 
 function tourNext() {
+    if (window._activeTourSteps === PRESIDENTE_TOUR_STEPS) {
+        const next = (window._presidenteTourStep || 0) + 1;
+        if (next >= PRESIDENTE_TOUR_STEPS.length) { tourEnd(); return; }
+        _showPresidenteTourStep(next);
+        return;
+    }
     const steps = TOUR_STEPS;
     if (_tourStep >= steps.length - 1) { tourEnd(); return; }
     _tourStep++;
@@ -9636,6 +9768,11 @@ function tourNext() {
 }
 
 function tourPrev() {
+    if (window._activeTourSteps === PRESIDENTE_TOUR_STEPS) {
+        const prev = Math.max(0, (window._presidenteTourStep || 0) - 1);
+        _showPresidenteTourStep(prev);
+        return;
+    }
     if (_tourStep <= 0) return;
     _tourStep--;
     showTourStep(_tourStep);
@@ -9645,6 +9782,7 @@ function tourEnd() {
     document.getElementById('tourOverlay').classList.add('hidden');
     document.body.classList.remove('tour-active');
     document.querySelectorAll('#navigationTabs .tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+    window._activeTourSteps = null;
     if (app.currentUser) setTourCompleted(app.currentUser.id);
 }
 
@@ -9958,7 +10096,9 @@ function init() {
     document.getElementById('demoButton').addEventListener('click', handleDemo);
 
     document.getElementById('logoutBtn').addEventListener('click', () => {
+        if (app.demoMode) exitDemoMode();
         app.currentUser = null;
+        app.demoMode = false;
         document.getElementById('appScreen').classList.add('hidden');
         document.getElementById('loginScreen').classList.remove('hidden');
         document.getElementById('loginMessage').textContent = 'Use suas credenciais para acessar o portal. Clique em Demo para uma demonstração.';
@@ -11073,6 +11213,324 @@ function openNovaIndicacaoGestor(indicadorId) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   PARCEIRO INDICADOR — PROJEÇÃO, TREINAMENTOS, REGRAS
+═══════════════════════════════════════════════════════════════════ */
+
+function renderIndicadorProjecao() {
+    const u = app.currentUser;
+    if (!u) return;
+    const commPct = u.commissionPct || 10;
+    const refs = (app.state.indicadorReferrals || []).filter(r => r.indicadorId === u.id);
+    const fechados = refs.filter(r => r.status === 'fechado');
+    const convRate = refs.length ? Math.round(fechados.length / refs.length * 100) : 25;
+    const avgComm = fechados.length
+        ? fechados.reduce((s, r) => s + (r.commissionValue || 0), 0) / fechados.length
+        : (54.90 * commPct / 100);
+
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:20px;">
+            <div><h2 style="margin:0;">📈 Projeção de Ganhos</h2>
+            <p class="text-muted" style="margin:4px 0 0;">Simule quanto você pode ganhar por mês indicando clientes para a Tracktiv.</p></div>
+        </div>
+
+        <!-- Simulador -->
+        <div class="card" style="margin-bottom:20px;">
+            <h3 style="margin:0 0 18px;">Simulador de ganhos mensais</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+                <div class="field">
+                    <label>Indicações enviadas por mês</label>
+                    <input type="number" id="simIndicacoes" min="1" max="100" value="10" style="font-size:1.1rem;font-weight:600;" />
+                </div>
+                <div class="field">
+                    <label>Taxa de conversão esperada (%)</label>
+                    <input type="number" id="simConversao" min="1" max="100" value="${convRate}" style="font-size:1.1rem;font-weight:600;" />
+                </div>
+                <div class="field">
+                    <label>Plano médio dos clientes</label>
+                    <select id="simPlano" style="font-size:1rem;">
+                        <option value="44.90">Essencial — R$ 44,90/mês</option>
+                        <option value="54.90" selected>Profissional — R$ 54,90/mês</option>
+                        <option value="64.90">Controle Total — R$ 64,90/mês</option>
+                        <option value="120">Empresas (estimativa) — R$ 120,00/mês</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Sua comissão por fechamento</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input type="number" id="simComm" min="1" max="50" value="${commPct}" step="0.5" style="font-size:1.1rem;font-weight:600;" />
+                        <span style="font-weight:700;color:var(--accent);">%</span>
+                    </div>
+                </div>
+            </div>
+            <button class="primary-btn" onclick="calcularProjecao()" style="width:100%;padding:14px;font-size:1rem;">Calcular projeção</button>
+        </div>
+
+        <!-- Resultado -->
+        <div id="projecaoResultado"></div>
+
+        <!-- Histórico real -->
+        <div class="card" style="margin-top:20px;">
+            <h3 style="margin:0 0 14px;">Seu histórico real</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;">
+                <div style="background:var(--surface-2);border-radius:var(--radius-md);padding:16px;text-align:center;">
+                    <div style="font-size:1.8rem;font-weight:800;color:var(--primary);">${refs.length}</div>
+                    <div style="font-size:0.8rem;color:var(--text-soft);margin-top:4px;">Total indicações</div>
+                </div>
+                <div style="background:var(--surface-2);border-radius:var(--radius-md);padding:16px;text-align:center;">
+                    <div style="font-size:1.8rem;font-weight:800;color:var(--success);">${fechados.length}</div>
+                    <div style="font-size:0.8rem;color:var(--text-soft);margin-top:4px;">Fechamentos</div>
+                </div>
+                <div style="background:var(--surface-2);border-radius:var(--radius-md);padding:16px;text-align:center;">
+                    <div style="font-size:1.8rem;font-weight:800;color:var(--accent);">${refs.length ? convRate : '—'}${refs.length ? '%' : ''}</div>
+                    <div style="font-size:0.8rem;color:var(--text-soft);margin-top:4px;">Taxa de conversão</div>
+                </div>
+                <div style="background:var(--surface-2);border-radius:var(--radius-md);padding:16px;text-align:center;">
+                    <div style="font-size:1.8rem;font-weight:800;color:var(--primary);">R$&nbsp;${formatCurrency(fechados.reduce((s,r)=>s+(r.commissionValue||0),0))}</div>
+                    <div style="font-size:0.8rem;color:var(--text-soft);margin-top:4px;">Comissão acumulada</div>
+                </div>
+            </div>
+        </div>
+    `;
+    calcularProjecao();
+}
+
+function calcularProjecao() {
+    const indicacoes = parseFloat(document.getElementById('simIndicacoes')?.value) || 10;
+    const conversao  = parseFloat(document.getElementById('simConversao')?.value) / 100 || 0.25;
+    const plano      = parseFloat(document.getElementById('simPlano')?.value) || 54.90;
+    const comm       = parseFloat(document.getElementById('simComm')?.value) / 100 || 0.10;
+
+    const fechamentosMes   = indicacoes * conversao;
+    const ganhoMes         = fechamentosMes * plano * comm;
+    const ganhoRecorrente  = ganhoMes;
+    const ganho3Meses      = ganhoMes * 3;
+    const ganho12Meses     = ganhoMes * 12;
+
+    const el = document.getElementById('projecaoResultado');
+    if (!el) return;
+    el.innerHTML = `
+        <div class="card" style="border:2px solid var(--accent);background:linear-gradient(135deg,#fff9f2,#fff);">
+            <h3 style="margin:0 0 4px;color:var(--accent);">💰 Resultado estimado</h3>
+            <p class="text-muted" style="margin:0 0 20px;font-size:0.88rem;">${indicacoes} indicações × ${Math.round(conversao*100)}% conversão = <strong>${fechamentosMes.toFixed(1)} fechamentos/mês</strong></p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;">
+                <div style="text-align:center;">
+                    <div style="font-size:2.2rem;font-weight:800;color:var(--accent);">R$&nbsp;${formatCurrency(ganhoMes)}</div>
+                    <div style="font-size:0.82rem;color:var(--text-soft);margin-top:4px;">por mês</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:2.2rem;font-weight:800;color:var(--primary);">R$&nbsp;${formatCurrency(ganho3Meses)}</div>
+                    <div style="font-size:0.82rem;color:var(--text-soft);margin-top:4px;">em 3 meses</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:2.2rem;font-weight:800;color:var(--success);">R$&nbsp;${formatCurrency(ganho12Meses)}</div>
+                    <div style="font-size:0.82rem;color:var(--text-soft);margin-top:4px;">em 1 ano</div>
+                </div>
+            </div>
+            <div style="margin-top:18px;padding:12px 16px;background:var(--info-bg);border:1px solid var(--info-border);border-radius:var(--radius-sm);font-size:0.88rem;color:#1e40af;">
+                💡 <strong>Dica:</strong> Quanto mais detalhada a indicação (necessidade, urgência, nome do decisor), maior a taxa de conversão da equipe Tracktiv.
+            </div>
+        </div>
+    `;
+}
+
+function renderIndicadorTreinamentos() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+
+    const modules = [
+        {
+            id: 'ind_mod1',
+            icon: '📡',
+            title: 'Rastreamento Veicular — o produto que você indica',
+            desc: 'Entenda o que é o rastreador Tracktiv, como funciona, quais planos existem e quais os benefícios para o cliente final. Saber o produto aumenta a conversão das suas indicações.',
+            duration: '~25 min',
+            topics: ['Como funciona o GPS + GSM', 'Planos Essencial, Profissional e Controle Total', 'Quem são os clientes ideais', 'Perguntas frequentes que o cliente fará', 'Como abordar um potencial cliente'],
+            tip: 'Quanto mais você souber sobre o produto, mais seguro ficará ao indicar — e o cliente sentirá essa confiança.'
+        },
+        {
+            id: 'ind_mod2',
+            icon: '🎯',
+            title: 'Como identificar e abordar bons leads',
+            desc: 'Técnicas para reconhecer potenciais clientes no seu círculo de relacionamentos e iniciar uma conversa natural sobre rastreamento veicular.',
+            duration: '~20 min',
+            topics: ['Perfis de clientes que mais fecham', 'Como trazer o assunto no dia a dia', 'Frases de abertura que funcionam', 'O que falar e o que NÃO falar', 'Como coletar o contato para a indicação'],
+            tip: 'Mecânicos, vendedores de veículos, corretores de seguro e donos de frota são os perfis com maior taxa de conversão.'
+        },
+        {
+            id: 'ind_mod3',
+            icon: '📲',
+            title: 'Usando o portal de indicações',
+            desc: 'Aprenda a registrar indicações corretamente, acompanhar o status de cada lead e entender quando sua comissão é gerada.',
+            duration: '~15 min',
+            topics: ['Como registrar uma indicação no portal', 'Campos importantes: interesse, urgência, notas', 'Status das indicações: Pendente → Em andamento → Fechado', 'Quando e como a comissão é calculada', 'Como acompanhar o histórico de pagamentos'],
+            tip: 'Indicações com nome do decisor, telefone de WhatsApp e necessidade descrita têm 3× mais chances de ser convertidas.'
+        },
+        {
+            id: 'ind_mod4',
+            icon: '💬',
+            title: 'Objeções comuns e como respondê-las',
+            desc: 'As 5 objeções mais comuns que o potencial cliente levanta sobre rastreamento veicular — e como responder de forma natural.',
+            duration: '~20 min',
+            topics: ['"Já tenho seguro, não preciso de rastreador"', '"É muito caro"', '"Para que serve se meu carro não é tão caro?"', '"Não quero que me fiquem rastreando"', '"Vou pensar e te aviso"'],
+            tip: 'Você não precisa convencer — apenas transmita as informações certas. A equipe Tracktiv fecha a venda. Seu papel é abrir a porta.'
+        }
+    ];
+
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:20px;">
+            <div><h2 style="margin:0;">🎓 Treinamentos para Parceiros Indicadores</h2>
+            <p class="text-muted" style="margin:4px 0 0;">Aprenda o essencial para indicar com confiança e aumentar suas conversões.</p></div>
+        </div>
+        <div style="display:grid;gap:16px;">
+            ${modules.map(m => `
+            <div class="card" style="border-left:4px solid var(--accent);">
+                <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
+                    <div style="font-size:2rem;flex-shrink:0;">${m.icon}</div>
+                    <div style="flex:1;min-width:200px;">
+                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+                            <h3 style="margin:0;font-size:1rem;">${esc(m.title)}</h3>
+                            <span style="font-size:0.75rem;color:var(--text-muted);background:var(--surface-2);border:1px solid var(--border);padding:2px 8px;border-radius:20px;">${m.duration}</span>
+                        </div>
+                        <p style="margin:0 0 12px;color:var(--text-soft);font-size:0.88rem;line-height:1.5;">${esc(m.desc)}</p>
+                        <details>
+                            <summary style="cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--primary);user-select:none;margin-bottom:8px;">
+                                Ver conteúdo do módulo
+                            </summary>
+                            <ul style="margin:0 0 12px;padding-left:18px;color:var(--text-soft);font-size:0.85rem;line-height:1.8;">
+                                ${m.topics.map(t => `<li>${esc(t)}</li>`).join('')}
+                            </ul>
+                            <div style="background:var(--warning-bg);border:1px solid var(--warning-border);border-radius:var(--radius-sm);padding:10px 14px;font-size:0.83rem;color:#92400e;">
+                                💡 <strong>TRAK diz:</strong> ${esc(m.tip)}
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </div>`).join('')}
+        </div>
+        <div class="card" style="margin-top:20px;background:linear-gradient(135deg,#f0fdf4,#fff);border:1px solid var(--success-border);">
+            <h3 style="margin:0 0 10px;color:var(--success);">🏅 Certificado de Parceiro Qualificado</h3>
+            <p style="margin:0 0 14px;color:var(--text-soft);font-size:0.9rem;">Após concluir os 4 módulos acima, você recebe o <strong>Certificado Tracktiv de Parceiro Indicador Qualificado</strong>. Parceiros certificados têm prioridade no contato da equipe de vendas com seus leads.</p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+                <div style="font-size:0.85rem;color:var(--text-soft);">📚 4 módulos · ⏱ ~80 min no total · 🏅 Certificado incluso</div>
+                <button class="primary-btn" onclick="showToast('Em breve: quiz interativo com certificado digital!','info')">Iniciar treinamento</button>
+            </div>
+        </div>
+    `;
+}
+
+function renderIndicadorRegras() {
+    const u = app.currentUser;
+    if (!u) return;
+    const commPct = u.commissionPct || 10;
+    const planos = [
+        { nome: 'Essencial',      valor: 44.90 },
+        { nome: 'Profissional',   valor: 54.90 },
+        { nome: 'Controle Total', valor: 64.90 },
+        { nome: 'Empresas',       valor: null  }
+    ];
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:20px;">
+            <div><h2 style="margin:0;">📋 Regras de Comissionamento</h2>
+            <p class="text-muted" style="margin:4px 0 0;">Como funciona o programa de parceiros indicadores da Tracktiv.</p></div>
+        </div>
+
+        <!-- Sua taxa -->
+        <div class="card" style="border:2px solid var(--accent);margin-bottom:20px;background:linear-gradient(135deg,#fff9f2,#fff);">
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                <div style="font-size:3rem;font-weight:900;color:var(--accent);">${commPct}%</div>
+                <div>
+                    <div style="font-weight:700;font-size:1.1rem;color:var(--primary);">Sua taxa de comissão atual</div>
+                    <div style="color:var(--text-soft);font-size:0.9rem;margin-top:4px;">Você recebe <strong>${commPct}%</strong> da mensalidade do plano que o cliente fechou, no mês em que o contrato for confirmado pelo gestor.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela de valores -->
+        <div class="card" style="margin-bottom:20px;">
+            <h3 style="margin:0 0 14px;">Quanto você ganha por plano fechado</h3>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Plano</th><th>Mensalidade</th><th>Sua comissão (${commPct}%)</th></tr></thead>
+                    <tbody>
+                        ${planos.map(p => `
+                        <tr>
+                            <td><strong>${esc(p.nome)}</strong></td>
+                            <td>${p.valor ? 'R$ ' + formatCurrency(p.valor) + '/mês' : 'Sob consulta'}</td>
+                            <td style="font-weight:700;color:var(--success);">${p.valor ? 'R$ ' + formatCurrency(p.valor * commPct / 100) : '—'}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-muted" style="margin:12px 0 0;font-size:0.83rem;">* Comissão calculada sobre a mensalidade do mês em que o contrato for confirmado pelo gestor Tracktiv.</p>
+        </div>
+
+        <!-- Regras detalhadas -->
+        <div style="display:grid;gap:14px;">
+            <div class="card">
+                <h3 style="margin:0 0 12px;">✅ Como a comissão é gerada</h3>
+                <ol style="margin:0;padding-left:20px;color:var(--text-soft);font-size:0.9rem;line-height:1.9;">
+                    <li>Você cadastra uma indicação no portal (nome, telefone e interesse do potencial cliente).</li>
+                    <li>A equipe Tracktiv entra em contato com o lead para apresentar o produto.</li>
+                    <li>Quando o cliente fecha contrato, o gestor registra o fechamento no sistema.</li>
+                    <li>Sua comissão é calculada automaticamente sobre o plano contratado.</li>
+                    <li>O valor é pago via <strong>Pix</strong> até o 5º dia útil do mês seguinte ao fechamento.</li>
+                </ol>
+            </div>
+
+            <div class="card">
+                <h3 style="margin:0 0 12px;">⏳ Prazo para fechamento</h3>
+                <p style="margin:0;color:var(--text-soft);font-size:0.9rem;line-height:1.7;">
+                    Um lead indicado fica ativo por <strong>90 dias</strong>. Se neste período o cliente fechar contrato, a comissão é sua.<br>
+                    Indicações com data de expiração aparecerão como "Perdido" — mas você pode reenviar após 30 dias de intervalo.
+                </p>
+            </div>
+
+            <div class="card">
+                <h3 style="margin:0 0 12px;">🚫 O que NÃO gera comissão</h3>
+                <ul style="margin:0;padding-left:20px;color:var(--text-soft);font-size:0.9rem;line-height:1.9;">
+                    <li>Clientes que já eram leads ativos na Tracktiv antes da sua indicação.</li>
+                    <li>Indicações sem telefone ou contato válido.</li>
+                    <li>Clientes que fecharam por outro canal (site, anúncio) sem vínculo com sua indicação.</li>
+                    <li>Renovações de contratos já existentes (somente novos contratos geram comissão).</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3 style="margin:0 0 12px;">💳 Pagamento</h3>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:4px;">
+                    <div style="background:var(--surface-2);border-radius:var(--radius-md);padding:14px 16px;">
+                        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:4px;">Forma de pagamento</div>
+                        <div style="font-weight:600;color:var(--primary);">Pix</div>
+                        <div style="font-size:0.82rem;color:var(--text-soft);margin-top:2px;">Chave cadastrada: ${esc(u.pixKey || 'Não cadastrada — atualize seu perfil')}</div>
+                    </div>
+                    <div style="background:var(--surface-2);border-radius:var(--radius-md);padding:14px 16px;">
+                        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:4px;">Prazo de pagamento</div>
+                        <div style="font-weight:600;color:var(--primary);">Até 5º dia útil</div>
+                        <div style="font-size:0.82rem;color:var(--text-soft);margin-top:2px;">Do mês seguinte ao fechamento</div>
+                    </div>
+                    <div style="background:var(--surface-2);border-radius:var(--radius-md);padding:14px 16px;">
+                        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:4px;">Valor mínimo de saque</div>
+                        <div style="font-weight:600;color:var(--primary);">R$ 20,00</div>
+                        <div style="font-size:0.82rem;color:var(--text-soft);margin-top:2px;">Abaixo deste valor, acumula para o mês seguinte</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="background:var(--info-bg);border:1px solid var(--info-border);">
+                <h3 style="margin:0 0 10px;color:#1e40af;">📞 Dúvidas sobre sua comissão?</h3>
+                <p style="margin:0;color:#1e40af;font-size:0.9rem;line-height:1.6;">
+                    Entre em contato com o gestor pelo <strong>chat interno</strong> ou aguarde o retorno após registrar uma dúvida nas mensagens. O prazo de resposta é de até <strong>1 dia útil</strong>.
+                </p>
+            </div>
+        </div>
+    `;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    MURAL DE PERFORMANCE E DESAFIOS
 ═══════════════════════════════════════════════════════════════════ */
 
@@ -11802,6 +12260,1075 @@ function renderMeuLink() {
     });
 
     el.querySelectorAll('[data-id]').forEach(b => b.addEventListener('click', () => openClientProfile(b.dataset.id)));
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOUR DO PRESIDENTE
+═══════════════════════════════════════════════════════════════════ */
+
+const PRESIDENTE_TOUR_STEPS = [
+    { title: 'Bem-vindo, Presidente! 👋', message: 'Este é o seu painel exclusivo. Aqui você tem controle total sobre o negócio, equipe e finanças. Vou te mostrar os pontos principais em menos de 1 minuto.' },
+    { title: '1. Configure os produtos 📦', message: 'Vá em "Planos e Produtos" para configurar o portfólio. Defina preços, custos internos e ative/desative produtos para venda.' },
+    { title: '2. Cadastre seus gestores 👔', message: 'Em "Gestores", crie os acessos dos gestores da equipe. Eles têm acesso ao painel completo de vendas, consultores e clientes.' },
+    { title: '3. Configure comissões 💵', message: 'Em "Comissionamento", defina as regras de comissão para consultores, parceiros e indicadores. Todo histórico de alterações é registrado.' },
+    { title: '4. Use o simulador 🧮', message: 'O "Simulador de Lucro" permite projetar cenários de crescimento com variáveis como churn, preço médio e custo operacional.' },
+    { title: '5. Auditoria completa 🔍', message: 'Toda ação do sistema — criação, edição, exclusão de usuários e clientes — fica registrada na auditoria com data, hora e usuário responsável.' },
+    { title: 'Tudo pronto! 🚀', message: 'Comece por: configurar produtos → cadastrar gestores → definir comissões. O sistema está limpo e pronto para uso em produção. Sucesso!' }
+];
+
+function startPresidenteTour() {
+    window._presidenteTourStep = 0;
+    window._activeTourSteps = PRESIDENTE_TOUR_STEPS;
+    document.getElementById('tourOverlay').classList.remove('hidden');
+    document.body.classList.add('tour-active');
+    _showPresidenteTourStep(0);
+}
+
+function _showPresidenteTourStep(idx) {
+    const steps = window._activeTourSteps || PRESIDENTE_TOUR_STEPS;
+    const step = steps[idx];
+    if (!step) { _endPresidenteTour(); return; }
+    document.getElementById('tourStepTitle').textContent = step.title;
+    document.getElementById('tourMessage').innerHTML = step.message;
+    const dots = document.getElementById('tourDots');
+    if (dots) dots.innerHTML = steps.map((_,i)=>`<div class="tour-dot${i===idx?' active':''}"></div>`).join('');
+    const fill = document.getElementById('tourProgressFill');
+    if (fill) fill.style.width = `${((idx+1)/steps.length)*100}%`;
+    const prevBtn = document.getElementById('tourPrevBtn');
+    const nextBtn = document.getElementById('tourNextBtn');
+    if (prevBtn) prevBtn.style.display = idx === 0 ? 'none' : '';
+    if (nextBtn) nextBtn.textContent = idx === steps.length - 1 ? '✅ Concluir' : 'Próximo →';
+    window._presidenteTourStep = idx;
+}
+
+function _endPresidenteTour() {
+    tourEnd();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PAINEL DO PRESIDENTE
+═══════════════════════════════════════════════════════════════════ */
+
+function presidenteEl() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return null;
+    showSection('dynamicContent');
+    return el;
+}
+
+// ── ABA 1: VISÃO GERAL ──────────────────────────────────────────
+function renderPresidenteOverview() {
+    const el = presidenteEl(); if (!el) return;
+    const clients    = app.state.clients || [];
+    const users      = app.state.users   || [];
+    const month      = getCurrentMonthKey();
+    const consultors = users.filter(u => u.role === 'consultor');
+    const gestores   = users.filter(u => u.role === 'gestor');
+    const parceiros  = users.filter(u => u.role === 'instalador');
+    const tecnicos   = users.filter(u => u.role === 'tecnico');
+    const fechados   = clients.filter(c => c.stage === 'Fechado');
+    const fechadosMes = fechados.filter(c => (c.closedDate||'').startsWith(month));
+    const receitaMensal = fechados.reduce((s, c) => s + (Number(c.monthlyFee)||0), 0);
+    const receitaMes    = fechadosMes.reduce((s, c) => s + (Number(c.monthlyFee)||0), 0);
+    const custoComissao = receitaMes * 0.18; // ~18% comissão média
+    const margem        = receitaMes - custoComissao;
+    const margemPct     = receitaMes > 0 ? (margem / receitaMes * 100) : 0;
+
+    // Churn — clientes perdidos no mês / total anterior
+    const perdidos  = clients.filter(c => c.stage === 'Perdido' && (c.updatedAt||'').startsWith(month)).length;
+    const totalBase = Math.max(1, fechados.length + perdidos);
+    const churnRate = ((perdidos / totalBase) * 100).toFixed(1);
+
+    // Projeção próximos 3 meses (simplificada)
+    const avgMonthlySales = fechadosMes.length;
+    const proj3 = Array.from({length:3}, (_,i) => {
+        const acum = fechados.length + avgMonthlySales * (i+1);
+        return (acum * (receitaMensal / Math.max(1, fechados.length))).toFixed(0);
+    });
+
+    el.innerHTML = `
+    <div class="section-header"><h2>📊 Visão Geral do Negócio</h2><p>KPIs executivos consolidados em tempo real.</p>
+        ${app.demoMode ? '<span class="pill pill-new" style="font-size:.8rem;">🎭 Modo Demo</span>' : ''}
+    </div>
+
+    <div class="cards-grid" style="margin-bottom:24px;">
+        <div class="card pres-kpi"><div class="pres-kpi-icon">💰</div><div><div class="text-muted" style="font-size:.78rem;">RECEITA RECORRENTE</div><div class="metric">R$ ${formatCurrency(receitaMensal)}</div><small>base ativa</small></div></div>
+        <div class="card pres-kpi"><div class="pres-kpi-icon">📈</div><div><div class="text-muted" style="font-size:.78rem;">VENDAS NO MÊS</div><div class="metric">R$ ${formatCurrency(receitaMes)}</div><small>${fechadosMes.length} contratos</small></div></div>
+        <div class="card pres-kpi"><div class="pres-kpi-icon">💵</div><div><div class="text-muted" style="font-size:.78rem;">MARGEM ESTIMADA</div><div class="metric">${margemPct.toFixed(1)}%</div><small>R$ ${formatCurrency(margem)} / mês</small></div></div>
+        <div class="card pres-kpi"><div class="pres-kpi-icon">⚠️</div><div><div class="text-muted" style="font-size:.78rem;">CHURN RATE</div><div class="metric" style="color:${Number(churnRate)>5?'var(--danger)':'var(--success)'}">${churnRate}%</div><small>${perdidos} perdidos este mês</small></div></div>
+        <div class="card pres-kpi"><div class="pres-kpi-icon">👥</div><div><div class="text-muted" style="font-size:.78rem;">EQUIPE ATIVA</div><div class="metric">${consultors.length + parceiros.length + tecnicos.length}</div><small>${consultors.length} cons · ${parceiros.length} parc · ${tecnicos.length} téc</small></div></div>
+        <div class="card pres-kpi"><div class="pres-kpi-icon">🎯</div><div><div class="text-muted" style="font-size:.78rem;">CLIENTES NA BASE</div><div class="metric">${fechados.length}</div><small>${clients.length} total (todas etapas)</small></div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+        <div class="card">
+            <h3>📅 Comparativo mensal</h3>
+            <table style="width:100%;margin-top:12px;border-collapse:collapse;font-size:.88rem;">
+                <thead><tr style="border-bottom:2px solid var(--border);">
+                    <th style="text-align:left;padding:6px 4px;">Mês</th><th style="text-align:right;padding:6px 4px;">Vendas</th><th style="text-align:right;padding:6px 4px;">Receita</th>
+                </tr></thead>
+                <tbody>
+                    ${Array.from({length:3}, (_,i) => {
+                        const d = new Date(); d.setMonth(d.getMonth() - (2-i));
+                        const mk = d.toISOString().slice(0,7);
+                        const mv = clients.filter(c => (c.closedDate||'').startsWith(mk));
+                        const mr = mv.reduce((s,c)=>s+(Number(c.monthlyFee)||0),0);
+                        const isAtual = mk === month;
+                        return `<tr style="border-bottom:1px solid var(--border);${isAtual?'font-weight:700;background:var(--bg);':''}">
+                            <td style="padding:8px 4px;">${isAtual?'▶ ':''} ${d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'})}</td>
+                            <td style="padding:8px 4px;text-align:right;">${mv.length}</td>
+                            <td style="padding:8px 4px;text-align:right;">R$ ${formatCurrency(mr)}</td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>🔮 Projeção — próximos 3 meses</h3>
+            <p class="text-muted" style="font-size:.82rem;margin:4px 0 14px;">Base no ritmo atual de ${avgMonthlySales} vendas/mês.</p>
+            ${proj3.map((v, i) => {
+                const d = new Date(); d.setMonth(d.getMonth() + i + 1);
+                const label = d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+                const pct = Math.min(100, ((Number(v) / Math.max(1, Number(proj3[2]))) * 100));
+                return `<div style="margin-bottom:14px;">
+                    <div style="display:flex;justify-content:space-between;font-size:.83rem;margin-bottom:4px;">
+                        <span style="text-transform:capitalize;">${label}</span><strong>R$ ${Number(v).toLocaleString('pt-BR')}</strong>
+                    </div>
+                    <div style="background:var(--border);border-radius:8px;height:8px;"><div style="background:var(--accent);width:${pct}%;height:100%;border-radius:8px;transition:.4s;"></div></div>
+                </div>`;
+            }).join('')}
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>👔 Performance por Gestor</h3>
+        <div style="overflow-x:auto;margin-top:12px;">
+            <table style="width:100%;border-collapse:collapse;font-size:.88rem;">
+                <thead><tr style="border-bottom:2px solid var(--border);">
+                    <th style="text-align:left;padding:8px;">Gestor</th><th style="text-align:right;padding:8px;">Equipe</th><th style="text-align:right;padding:8px;">Clientes</th><th style="text-align:right;padding:8px;">Vendas/mês</th><th style="text-align:right;padding:8px;">Receita gerada</th>
+                </tr></thead>
+                <tbody>
+                    ${gestores.length ? gestores.map(g => {
+                        const gc = clients.filter(c => {
+                            const cons = users.find(u => u.id === c.consultantId || u.id === c.instaladorId);
+                            return c.stage === 'Fechado';
+                        });
+                        const gTeam = users.filter(u => ['consultor','instalador','tecnico'].includes(u.role));
+                        const gRec  = clients.filter(c=>c.stage==='Fechado').reduce((s,c)=>s+(Number(c.monthlyFee)||0),0);
+                        return `<tr style="border-bottom:1px solid var(--border);">
+                            <td style="padding:10px 8px;font-weight:600;">${esc(g.name)}</td>
+                            <td style="padding:10px 8px;text-align:right;">${gTeam.length}</td>
+                            <td style="padding:10px 8px;text-align:right;">${fechados.length}</td>
+                            <td style="padding:10px 8px;text-align:right;">${fechadosMes.length}</td>
+                            <td style="padding:10px 8px;text-align:right;">R$ ${formatCurrency(gRec)}</td>
+                        </tr>`;
+                    }).join('') : `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-soft);">Nenhum gestor cadastrado.</td></tr>`}
+                </tbody>
+            </table>
+        </div>
+    </div>`;
+}
+
+// ── ABA 2: DIMENSIONAMENTO FINANCEIRO ───────────────────────────
+function renderPresidenteFinanceiro() {
+    const el = presidenteEl(); if (!el) return;
+    el.innerHTML = `
+    <div class="section-header"><h2>💰 Dimensionamento Financeiro</h2><p>Calculadoras de margem, precificação e recorrência.</p></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+        <div class="card">
+            <h3>📊 Calculadora de Margem por Produto</h3>
+            <p class="text-muted" style="font-size:.82rem;margin-bottom:16px;">Insira os custos e veja a margem calculada automaticamente.</p>
+            <div class="field"><label>Custo do equipamento (R$)</label><input id="pf_custo_equip" type="number" value="85" min="0" oninput="calcMargemProd()"/></div>
+            <div class="field"><label>Custo de instalação (R$)</label><input id="pf_custo_inst" type="number" value="40" min="0" oninput="calcMargemProd()"/></div>
+            <div class="field"><label>Custo mensal de suporte (R$)</label><input id="pf_custo_suporte" type="number" value="8" min="0" oninput="calcMargemProd()"/></div>
+            <div class="field"><label>Impostos sobre mensalidade (%)</label><input id="pf_impostos" type="number" value="8" min="0" max="100" oninput="calcMargemProd()"/></div>
+            <div class="field"><label>Preço de venda mensal (R$)</label><input id="pf_preco" type="number" value="54.90" min="0" oninput="calcMargemProd()"/></div>
+            <div class="field"><label>Meses de amortização</label><input id="pf_meses" type="number" value="12" min="1" oninput="calcMargemProd()"/></div>
+            <div id="pf_resultado" style="margin-top:16px;"></div>
+        </div>
+        <div class="card">
+            <h3>🎚️ Simulador de Precificação</h3>
+            <p class="text-muted" style="font-size:.82rem;margin-bottom:16px;">Ajuste o preço e veja o impacto na margem e no break-even.</p>
+            <div class="field"><label>Custo total mensal por cliente (R$)</label><input id="pp_custo" type="number" value="35" min="0" oninput="calcPrecificacao()"/></div>
+            <div class="field"><label>Custo fixo mensal da operação (R$)</label><input id="pp_fixo" type="number" value="5000" min="0" oninput="calcPrecificacao()"/></div>
+            <div class="field">
+                <label>Preço de venda: <strong id="pp_preco_label">R$ 54,90</strong></label>
+                <input id="pp_slider" type="range" min="29.90" max="199.90" step="5" value="54.90" oninput="calcPrecificacao();" style="width:100%;margin-top:8px;"/>
+            </div>
+            <div id="pp_resultado" style="margin-top:16px;"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>🔄 Calculadora de Recorrência</h3>
+        <p class="text-muted" style="font-size:.82rem;margin-bottom:16px;">Projete a receita recorrente com diferentes cenários de crescimento.</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;">
+            <div class="field"><label>Clientes na base</label><input id="pr_base" type="number" value="50" min="0" oninput="calcRecorrencia()"/></div>
+            <div class="field"><label>Novos clientes/mês</label><input id="pr_novos" type="number" value="8" min="0" oninput="calcRecorrencia()"/></div>
+            <div class="field"><label>Churn mensal (%)</label><input id="pr_churn" type="number" value="3" min="0" max="100" oninput="calcRecorrencia()"/></div>
+            <div class="field"><label>Mensalidade média (R$)</label><input id="pr_fee" type="number" value="54.90" min="0" oninput="calcRecorrencia()"/></div>
+            <div class="field"><label>Custo var. por cliente (R$)</label><input id="pr_custo_var" type="number" value="12" min="0" oninput="calcRecorrencia()"/></div>
+            <div class="field"><label>Custo fixo mensal (R$)</label><input id="pr_custo_fixo" type="number" value="5000" min="0" oninput="calcRecorrencia()"/></div>
+        </div>
+        <div id="pr_resultado"></div>
+    </div>`;
+
+    setTimeout(() => { calcMargemProd(); calcPrecificacao(); calcRecorrencia(); }, 50);
+}
+
+function calcMargemProd() {
+    const eq  = Number(document.getElementById('pf_custo_equip')?.value)||0;
+    const ins = Number(document.getElementById('pf_custo_inst')?.value)||0;
+    const sup = Number(document.getElementById('pf_custo_suporte')?.value)||0;
+    const imp = Number(document.getElementById('pf_impostos')?.value)||0;
+    const preco = Number(document.getElementById('pf_preco')?.value)||0;
+    const meses = Number(document.getElementById('pf_meses')?.value)||12;
+    const el  = document.getElementById('pf_resultado');
+    if (!el || preco === 0) return;
+    const amortEq    = (eq + ins) / meses;
+    const custoMensal = amortEq + sup + (preco * imp / 100);
+    const margem      = preco - custoMensal;
+    const margemPct   = (margem / preco * 100);
+    const breakeven   = Math.ceil((eq + ins) / Math.max(0.01, margem));
+    el.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            ${[['Custo mensal total', `R$ ${formatCurrency(custoMensal)}`],['Margem bruta/mês', `R$ ${formatCurrency(margem)}`],['Margem (%)', `${margemPct.toFixed(1)}%`],['Break-even', `${breakeven} meses`]].map(([l,v])=>`
+            <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center;">
+                <div style="font-size:.78rem;color:var(--text-soft);">${l}</div>
+                <div style="font-size:1.3rem;font-weight:700;color:${l.includes('Margem')?'var(--success)':'var(--text)'};">${v}</div>
+            </div>`).join('')}
+        </div>`;
+}
+
+function calcPrecificacao() {
+    const custo = Number(document.getElementById('pp_custo')?.value)||0;
+    const fixo  = Number(document.getElementById('pp_fixo')?.value)||0;
+    const preco = Number(document.getElementById('pp_slider')?.value)||54.90;
+    const lbl   = document.getElementById('pp_preco_label');
+    const el    = document.getElementById('pp_resultado');
+    if (lbl) lbl.textContent = `R$ ${formatCurrency(preco)}`;
+    if (!el) return;
+    const margem     = preco - custo;
+    const margemPct  = preco > 0 ? (margem / preco * 100) : 0;
+    const beClientes = margem > 0 ? Math.ceil(fixo / margem) : '∞';
+    el.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center;">
+                <div style="font-size:.78rem;color:var(--text-soft);">Margem por cliente</div>
+                <div style="font-size:1.3rem;font-weight:700;color:${margem>0?'var(--success)':'var(--danger)}'};">R$ ${formatCurrency(margem)}</div>
+            </div>
+            <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center;">
+                <div style="font-size:.78rem;color:var(--text-soft);">Margem líquida</div>
+                <div style="font-size:1.3rem;font-weight:700;">${margemPct.toFixed(1)}%</div>
+            </div>
+            <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center;">
+                <div style="font-size:.78rem;color:var(--text-soft);">Clientes p/ break-even</div>
+                <div style="font-size:1.3rem;font-weight:700;">${beClientes}</div>
+            </div>
+        </div>`;
+}
+
+function calcRecorrencia() {
+    const base  = Number(document.getElementById('pr_base')?.value)||0;
+    const novos = Number(document.getElementById('pr_novos')?.value)||0;
+    const churn = Number(document.getElementById('pr_churn')?.value)||0;
+    const fee   = Number(document.getElementById('pr_fee')?.value)||0;
+    const cv    = Number(document.getElementById('pr_custo_var')?.value)||0;
+    const fixo  = Number(document.getElementById('pr_custo_fixo')?.value)||0;
+    const el    = document.getElementById('pr_resultado');
+    if (!el) return;
+    let rows = '';
+    let clients = base;
+    for (let i = 1; i <= 12; i++) {
+        clients = clients * (1 - churn/100) + novos;
+        const rec    = clients * fee;
+        const custos = clients * cv + fixo;
+        const lucro  = rec - custos;
+        rows += `<tr style="border-bottom:1px solid var(--border);${i===1?'font-weight:600;':''}">
+            <td style="padding:7px 8px;">Mês ${i}</td>
+            <td style="padding:7px 8px;text-align:right;">${Math.round(clients)}</td>
+            <td style="padding:7px 8px;text-align:right;">R$ ${formatCurrency(rec)}</td>
+            <td style="padding:7px 8px;text-align:right;">R$ ${formatCurrency(custos)}</td>
+            <td style="padding:7px 8px;text-align:right;color:${lucro>0?'var(--success)':'var(--danger)'};">R$ ${formatCurrency(lucro)}</td>
+        </tr>`;
+    }
+    el.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+        <thead><tr style="border-bottom:2px solid var(--border);background:var(--bg);">
+            <th style="padding:8px;text-align:left;">Mês</th><th style="padding:8px;text-align:right;">Clientes</th><th style="padding:8px;text-align:right;">Receita</th><th style="padding:8px;text-align:right;">Custos</th><th style="padding:8px;text-align:right;">Lucro</th>
+        </tr></thead><tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+// ── ABA 3: COMISSIONAMENTO ──────────────────────────────────────
+function renderPresidenteComissionamento() {
+    const el = presidenteEl(); if (!el) return;
+    const rules = app.state.commissionRules || {};
+    const hist  = (rules.history || []).slice(0, 10);
+    el.innerHTML = `
+    <div class="section-header"><h2>💵 Gestão de Comissionamento</h2><p>Define as regras de comissão para toda a equipe.</p></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+        <div class="card">
+            <h3>👤 Consultores</h3>
+            <div class="field"><label>Comissão por venda (R$)</label><input id="cr_cons_venda" type="number" value="${rules.consultorFirstSale||50}" min="0"/></div>
+            <h4 style="margin:16px 0 8px;font-size:.9rem;">Faixas de recorrência</h4>
+            ${(rules.consultorRecurrence||[]).map((f,i)=>`
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;align-items:end;">
+                <div class="field" style="margin:0;"><label style="font-size:.78rem;">De (vendas)</label><input class="cr_rec_min" type="number" value="${f.minSales}" min="0" data-i="${i}"/></div>
+                <div class="field" style="margin:0;"><label style="font-size:.78rem;">Até (null=∞)</label><input class="cr_rec_max" type="number" value="${f.maxSales||''}" min="0" placeholder="∞" data-i="${i}"/></div>
+                <div class="field" style="margin:0;"><label style="font-size:.78rem;">% Recorrência</label><input class="cr_rec_pct" type="number" value="${f.pct}" min="0" max="100" data-i="${i}"/></div>
+            </div>`).join('')}
+        </div>
+        <div class="card">
+            <h3>🤝 Parceiros e Equipe</h3>
+            <div class="field"><label>Comissão de instalação por parceiro (R$)</label><input id="cr_inst_comis" type="number" value="${rules.instaladorInstall||60}" min="0"/></div>
+            <div class="field"><label>% comissão por indicação (Parceiro Indicador)</label><input id="cr_ind_pct" type="number" value="${rules.indicadorRef||10}" min="0" max="100"/></div>
+            <div class="field"><label>Bônus por indicação de consultor (R$)</label><input id="cr_ref_bonus" type="number" value="${rules.referralBonus||100}" min="0"/></div>
+            <div class="field" style="margin-top:8px;">
+                <label>Motivo da alteração</label>
+                <input id="cr_motivo" type="text" placeholder="Ex: Ajuste de margem Q2 2026"/>
+            </div>
+            <button class="primary-btn" style="width:100%;margin-top:12px;" onclick="saveComissionRules()">💾 Salvar regras de comissionamento</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>📋 Histórico de alterações</h3>
+        ${hist.length ? `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+            <thead><tr style="border-bottom:2px solid var(--border);">
+                <th style="padding:8px;text-align:left;">Data</th><th style="padding:8px;text-align:left;">Motivo</th><th style="padding:8px;text-align:left;">Por</th><th style="padding:8px;text-align:right;">Venda</th><th style="padding:8px;text-align:right;">Instalação</th>
+            </tr></thead>
+            <tbody>${hist.map(h=>`<tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:8px;">${formatDate(h.date)}</td><td style="padding:8px;">${esc(h.motivo||'—')}</td><td style="padding:8px;">${esc(h.by||'—')}</td>
+                <td style="padding:8px;text-align:right;">R$ ${formatCurrency(h.consultorFirstSale||0)}</td><td style="padding:8px;text-align:right;">R$ ${formatCurrency(h.instaladorInstall||0)}</td>
+            </tr>`).join('')}</tbody>
+        </table></div>` : '<p class="text-muted">Nenhuma alteração registrada.</p>'}
+    </div>`;
+}
+
+function saveComissionRules() {
+    const rules = app.state.commissionRules || {};
+    const prev  = JSON.parse(JSON.stringify(rules));
+    rules.consultorFirstSale = Number(document.getElementById('cr_cons_venda')?.value) || rules.consultorFirstSale;
+    rules.instaladorInstall  = Number(document.getElementById('cr_inst_comis')?.value) || rules.instaladorInstall;
+    rules.indicadorRef       = Number(document.getElementById('cr_ind_pct')?.value)    || rules.indicadorRef;
+    rules.referralBonus      = Number(document.getElementById('cr_ref_bonus')?.value)  || rules.referralBonus;
+    // Faixas de recorrência
+    const mins = [...document.querySelectorAll('.cr_rec_min')];
+    const maxs = [...document.querySelectorAll('.cr_rec_max')];
+    const pcts = [...document.querySelectorAll('.cr_rec_pct')];
+    rules.consultorRecurrence = mins.map((_,i) => ({
+        minSales: Number(mins[i].value)||0,
+        maxSales: maxs[i].value !== '' ? Number(maxs[i].value) : null,
+        pct:      Number(pcts[i].value)||0
+    }));
+    const motivo = document.getElementById('cr_motivo')?.value || '';
+    if (!rules.history) rules.history = [];
+    rules.history.unshift({ date: todayISO(), motivo, by: app.currentUser.name, consultorFirstSale: rules.consultorFirstSale, instaladorInstall: rules.instaladorInstall });
+    app.state.commissionRules = rules;
+    addAuditLog('commission_rules_update', { motivo, prev });
+    saveState();
+    showToast('Regras de comissionamento salvas com sucesso!', 'success');
+    renderPresidenteComissionamento();
+}
+
+// ── ABA 4: PLANOS E PRODUTOS ────────────────────────────────────
+function renderPresidentePlanos() {
+    const el = presidenteEl(); if (!el) return;
+    const prods = app.state.produtos_config || [];
+    el.innerHTML = `
+    <div class="section-header"><h2>📦 Gestão de Planos e Produtos</h2>
+        <button class="primary-btn" onclick="openPresidenteProdutoModal()">+ Novo produto</button>
+    </div>
+
+    <div class="card" style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:.88rem;">
+            <thead><tr style="border-bottom:2px solid var(--border);">
+                <th style="padding:10px 8px;text-align:left;">Produto</th>
+                <th style="padding:10px 8px;text-align:left;">Categoria</th>
+                <th style="padding:10px 8px;text-align:right;">Mensalidade</th>
+                <th style="padding:10px 8px;text-align:right;">Custo interno</th>
+                <th style="padding:10px 8px;text-align:right;">Margem</th>
+                <th style="padding:10px 8px;text-align:center;">Status</th>
+                <th style="padding:10px 8px;text-align:center;">Ações</th>
+            </tr></thead>
+            <tbody>
+                ${prods.length ? prods.map(p => {
+                    const custo = Number(p.custoInterno)||0;
+                    const fee   = Number(p.mensalidade)||0;
+                    const margem = fee > 0 ? ((fee - custo) / fee * 100).toFixed(0) : '—';
+                    return `<tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:10px 8px;font-weight:600;">${p.icone||''} ${esc(p.nome)}</td>
+                        <td style="padding:10px 8px;color:var(--text-soft);">${esc(p.categoria||'')}</td>
+                        <td style="padding:10px 8px;text-align:right;">R$ ${formatCurrency(fee)}</td>
+                        <td style="padding:10px 8px;text-align:right;color:var(--text-soft);">R$ ${formatCurrency(custo)}</td>
+                        <td style="padding:10px 8px;text-align:right;color:${fee>custo?'var(--success)':'var(--danger)'};">${margem}%</td>
+                        <td style="padding:10px 8px;text-align:center;">
+                            <span class="pill ${p.status==='ativo'?'pill-closed':'pill-lost'}">${p.status||'ativo'}</span>
+                        </td>
+                        <td style="padding:10px 8px;text-align:center;white-space:nowrap;">
+                            <button class="secondary-btn" style="padding:4px 10px;font-size:.78rem;" onclick="openPresidenteProdutoModal('${p.id}')">✏️ Editar</button>
+                            <button class="secondary-btn" style="padding:4px 10px;font-size:.78rem;margin-left:4px;" onclick="togglePresidenteProduto('${p.id}')">${p.status==='ativo'?'🚫 Desativar':'✅ Ativar'}</button>
+                        </td>
+                    </tr>`;
+                }).join('') : `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-soft);">Nenhum produto cadastrado. Clique em "+ Novo produto" para começar.</td></tr>`}
+            </tbody>
+        </table>
+    </div>`;
+}
+
+function openPresidenteProdutoModal(id) {
+    const p = id ? (app.state.produtos_config||[]).find(x=>x.id===id) : null;
+    const cats = ['rastreamento','sst','chatbot','contabilidade','marketing','outros'];
+    showModal(p ? `Editar: ${esc(p.nome)}` : 'Novo Produto', `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="field full-width"><label>Nome do produto *</label><input id="pp_nome" type="text" value="${esc(p?.nome||'')}" placeholder="Ex: Rastreador Veicular"/></div>
+            <div class="field full-width"><label>Descrição</label><textarea id="pp_desc" rows="2">${esc(p?.descricao||'')}</textarea></div>
+            <div class="field"><label>Categoria</label>
+                <select id="pp_cat">${cats.map(c=>`<option value="${c}" ${p?.categoria===c?'selected':''}>${c}</option>`).join('')}</select>
+            </div>
+            <div class="field"><label>Ícone (emoji)</label><input id="pp_icon" type="text" value="${esc(p?.icone||'📦')}" maxlength="4"/></div>
+            <div class="field"><label>Mensalidade (R$)</label><input id="pp_fee" type="number" value="${p?.mensalidade||0}" min="0" step="0.01"/></div>
+            <div class="field"><label>Taxa de adesão (R$)</label><input id="pp_adesao" type="number" value="${p?.adesao||0}" min="0" step="0.01"/></div>
+            <div class="field"><label>🔒 Custo interno (R$)</label><input id="pp_custo" type="number" value="${p?.custoInterno||0}" min="0" step="0.01"/></div>
+            <div class="field"><label>Status</label>
+                <select id="pp_status"><option value="ativo" ${(p?.status||'ativo')==='ativo'?'selected':''}>Ativo</option><option value="inativo" ${p?.status==='inativo'?'selected':''}>Inativo</option></select>
+            </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+            ${id ? `<button class="secondary-btn" onclick="deletePresidenteProduto('${id}')">🗑️ Excluir</button>` : ''}
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+            <button class="primary-btn" onclick="savePresidenteProduto('${id||''}')">Salvar produto</button>
+        </div>`);
+}
+
+function savePresidenteProduto(id) {
+    const nome = document.getElementById('pp_nome')?.value.trim();
+    if (!nome) { showToast('Nome é obrigatório.', 'error'); return; }
+    const data = {
+        nome, descricao: document.getElementById('pp_desc')?.value.trim(),
+        categoria: document.getElementById('pp_cat')?.value,
+        icone: document.getElementById('pp_icon')?.value.trim() || '📦',
+        mensalidade: Number(document.getElementById('pp_fee')?.value)||0,
+        adesao: Number(document.getElementById('pp_adesao')?.value)||0,
+        custoInterno: Number(document.getElementById('pp_custo')?.value)||0,
+        status: document.getElementById('pp_status')?.value || 'ativo'
+    };
+    if (id) {
+        const p = (app.state.produtos_config||[]).find(x=>x.id===id);
+        if (p) Object.assign(p, data);
+        addAuditLog('produto_update', { id, nome });
+        showToast(`Produto "${nome}" atualizado.`, 'success');
+    } else {
+        if (!app.state.produtos_config) app.state.produtos_config = [];
+        app.state.produtos_config.push({ id: `prod_${Date.now()}`, ...data });
+        addAuditLog('produto_create', { nome });
+        showToast(`Produto "${nome}" criado com sucesso!`, 'success');
+    }
+    saveState(); closeModal(); renderPresidentePlanos();
+}
+
+function togglePresidenteProduto(id) {
+    const p = (app.state.produtos_config||[]).find(x=>x.id===id);
+    if (!p) return;
+    p.status = p.status === 'ativo' ? 'inativo' : 'ativo';
+    addAuditLog('produto_status_change', { id, nome: p.nome, newStatus: p.status });
+    saveState();
+    showToast(`Produto "${p.nome}" ${p.status === 'ativo' ? 'ativado' : 'desativado'}.`, 'info');
+    renderPresidentePlanos();
+}
+
+function deletePresidenteProduto(id) {
+    const p = (app.state.produtos_config||[]).find(x=>x.id===id);
+    if (!p || !confirm(`Excluir o produto "${p.nome}"?`)) return;
+    app.state.produtos_config = app.state.produtos_config.filter(x=>x.id!==id);
+    addAuditLog('produto_delete', { id, nome: p.nome });
+    saveState(); closeModal();
+    showToast(`Produto "${p.nome}" excluído.`, 'info');
+    renderPresidentePlanos();
+}
+
+// ── ABA 5: REGRAS DE RECORRÊNCIA ────────────────────────────────
+function renderPresidenteRecorrencia() {
+    const el = presidenteEl(); if (!el) return;
+    const rr   = app.state.recurrenceRules || {};
+    const hist = (rr.history || []).slice(0,8);
+    el.innerHTML = `
+    <div class="section-header"><h2>🔄 Regras de Recorrência</h2><p>Define as condições para ativação e manutenção da recorrência.</p></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+        <div class="card">
+            <h3>⚙️ Parâmetros de recorrência</h3>
+            <div class="field"><label>Período de carência (dias)</label><input id="rr_carencia" type="number" value="${rr.gracePeriodDays||30}" min="0"/>
+                <small style="color:var(--text-soft);">Dias após a venda para início da comissão de recorrência.</small>
+            </div>
+            <div class="field"><label>Mínimo de clientes ativos para ativar recorrência</label><input id="rr_min_clients" type="number" value="${rr.minClientsToActivate||1}" min="1"/>
+            </div>
+            <div class="field"><label>Mínimo de vendas mensais para manter recorrência</label><input id="rr_min_vendas" type="number" value="${rr.minMonthlySales||0}" min="0"/>
+                <small style="color:var(--text-soft);">0 = sem mínimo. Se o consultor não bater, perde a recorrência.</small>
+            </div>
+            <div class="field"><label>Motivo da alteração</label><input id="rr_motivo" type="text" placeholder="Ex: Revisão de política Q3 2026"/></div>
+            <button class="primary-btn" style="width:100%;margin-top:8px;" onclick="saveRecurrenceRules()">💾 Salvar regras</button>
+        </div>
+        <div class="card">
+            <h3>💡 Simulador de impacto na folha</h3>
+            <p class="text-muted" style="font-size:.82rem;margin-bottom:16px;">Veja o impacto das regras atuais nas comissões de recorrência.</p>
+            ${(function(){
+                const consultors = (app.state.users||[]).filter(u=>u.role==='consultor');
+                const clients    = app.state.clients||[];
+                let total = 0;
+                const rows = consultors.map(c => {
+                    const ativos = clients.filter(x=>x.consultantId===c.id && x.stage==='Fechado').length;
+                    const fee    = clients.filter(x=>x.consultantId===c.id && x.stage==='Fechado').reduce((s,x)=>s+(Number(x.monthlyFee)||0),0);
+                    const eligible = ativos >= (rr.minClientsToActivate||1);
+                    const tiers = rr.consultorRecurrence || (app.state.commissionRules||{}).consultorRecurrence || [{minSales:1,maxSales:4,pct:10}];
+                    const sales  = clients.filter(x=>x.consultantId===c.id && (x.closedDate||'').startsWith(getCurrentMonthKey())).length;
+                    const tier   = [...tiers].reverse().find(t=>sales>=t.minSales) || tiers[0];
+                    const comis  = eligible ? fee * ((tier?.pct||10) / 100) : 0;
+                    total += comis;
+                    return `<tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:8px;">${esc(c.name)}</td>
+                        <td style="padding:8px;text-align:center;">${ativos}</td>
+                        <td style="padding:8px;text-align:center;">${eligible?'✅':'❌'}</td>
+                        <td style="padding:8px;text-align:right;color:var(--success);">R$ ${formatCurrency(comis)}</td>
+                    </tr>`;
+                }).join('');
+                return consultors.length ? `<table style="width:100%;border-collapse:collapse;font-size:.83rem;">
+                    <thead><tr style="border-bottom:2px solid var(--border);">
+                        <th style="padding:8px;text-align:left;">Consultor</th><th style="padding:8px;text-align:center;">Ativos</th><th style="padding:8px;text-align:center;">Elegível</th><th style="padding:8px;text-align:right;">Recorrência</th>
+                    </tr></thead>
+                    <tbody>${rows}<tr style="font-weight:700;border-top:2px solid var(--border);">
+                        <td colspan="3" style="padding:10px 8px;">Total a pagar</td>
+                        <td style="padding:10px 8px;text-align:right;color:var(--accent);">R$ ${formatCurrency(total)}</td>
+                    </tr></tbody></table>` : '<p class="text-muted">Nenhum consultor cadastrado.</p>';
+            })()}
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>📋 Histórico de alterações</h3>
+        ${hist.length ? `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+            <thead><tr style="border-bottom:2px solid var(--border);">
+                <th style="padding:8px;text-align:left;">Data</th><th style="padding:8px;text-align:left;">Motivo</th><th style="padding:8px;text-align:left;">Por</th><th style="padding:8px;text-align:right;">Carência</th><th style="padding:8px;text-align:right;">Mín. vendas</th>
+            </tr></thead>
+            <tbody>${hist.map(h=>`<tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:8px;">${formatDate(h.date)}</td><td style="padding:8px;">${esc(h.motivo||'—')}</td><td style="padding:8px;">${esc(h.by||'—')}</td>
+                <td style="padding:8px;text-align:right;">${h.gracePeriodDays||0} dias</td><td style="padding:8px;text-align:right;">${h.minMonthlySales||0}</td>
+            </tr>`).join('')}</tbody>
+        </table></div>` : '<p class="text-muted">Nenhuma alteração registrada.</p>'}
+    </div>`;
+}
+
+function saveRecurrenceRules() {
+    const rr = app.state.recurrenceRules || {};
+    rr.gracePeriodDays     = Number(document.getElementById('rr_carencia')?.value)||0;
+    rr.minClientsToActivate = Number(document.getElementById('rr_min_clients')?.value)||1;
+    rr.minMonthlySales      = Number(document.getElementById('rr_min_vendas')?.value)||0;
+    const motivo = document.getElementById('rr_motivo')?.value || '';
+    if (!rr.history) rr.history = [];
+    rr.history.unshift({ date: todayISO(), motivo, by: app.currentUser.name, gracePeriodDays: rr.gracePeriodDays, minMonthlySales: rr.minMonthlySales });
+    app.state.recurrenceRules = rr;
+    addAuditLog('recurrence_rules_update', { motivo });
+    saveState();
+    showToast('Regras de recorrência salvas!', 'success');
+    renderPresidenteRecorrencia();
+}
+
+// ── ABA 6: GESTÃO DE GESTORES ───────────────────────────────────
+function renderPresidenteGestores() {
+    const el = presidenteEl(); if (!el) return;
+    const gestores = (app.state.users||[]).filter(u=>u.role==='gestor');
+    const clients  = app.state.clients||[];
+    el.innerHTML = `
+    <div class="section-header"><h2>👔 Gestão de Gestores</h2>
+        <button class="primary-btn" onclick="openGestorModal()">+ Novo gestor</button>
+    </div>
+
+    <div class="card" style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:.88rem;">
+            <thead><tr style="border-bottom:2px solid var(--border);">
+                <th style="padding:10px 8px;text-align:left;">Nome</th>
+                <th style="padding:10px 8px;text-align:left;">E-mail</th>
+                <th style="padding:10px 8px;text-align:right;">Clientes</th>
+                <th style="padding:10px 8px;text-align:right;">Consultores</th>
+                <th style="padding:10px 8px;text-align:center;">Região</th>
+                <th style="padding:10px 8px;text-align:center;">Ações</th>
+            </tr></thead>
+            <tbody>
+                ${gestores.length ? gestores.map(g => {
+                    const totalClients  = clients.filter(c=>c.stage==='Fechado').length;
+                    const totalConsults = (app.state.users||[]).filter(u=>u.role==='consultor').length;
+                    return `<tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:10px 8px;font-weight:600;">${esc(g.name)}</td>
+                        <td style="padding:10px 8px;color:var(--text-soft);">${esc(g.email)}</td>
+                        <td style="padding:10px 8px;text-align:right;">${totalClients}</td>
+                        <td style="padding:10px 8px;text-align:right;">${totalConsults}</td>
+                        <td style="padding:10px 8px;text-align:center;">${esc(g.region||'—')}</td>
+                        <td style="padding:10px 8px;text-align:center;white-space:nowrap;">
+                            <button class="secondary-btn" style="padding:4px 10px;font-size:.78rem;" onclick="openGestorModal('${g.id}')">✏️ Editar</button>
+                            <button class="secondary-btn" style="padding:4px 10px;font-size:.78rem;margin-left:4px;" onclick="deleteGestorById('${g.id}')">🗑️</button>
+                        </td>
+                    </tr>`;
+                }).join('') : `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-soft);">Nenhum gestor cadastrado.</td></tr>`}
+            </tbody>
+        </table>
+    </div>`;
+}
+
+function openGestorModal(id) {
+    const g = id ? (app.state.users||[]).find(u=>u.id===id) : null;
+    showModal(g ? `Editar gestor: ${esc(g.name)}` : 'Novo Gestor', `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="field full-width"><label>Nome completo *</label><input id="gm_nome" type="text" value="${esc(g?.name||'')}" placeholder="Nome do gestor"/></div>
+            <div class="field"><label>E-mail *</label><input id="gm_email" type="email" value="${esc(g?.email||'')}" placeholder="gestor@tracktiv.com.br"/></div>
+            <div class="field"><label>Senha *</label><input id="gm_pass" type="password" value="${esc(g?.password||'')}" placeholder="Mínimo 8 caracteres"/></div>
+            <div class="field"><label>WhatsApp</label><input id="gm_wa" type="tel" value="${esc(g?.whatsapp||'')}" placeholder="(11) 99999-9999"/></div>
+            <div class="field"><label>Região/Equipe</label><input id="gm_region" type="text" value="${esc(g?.region||'')}" placeholder="Ex: São Paulo Interior"/></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+            <button class="primary-btn" onclick="saveGestorById('${id||''}')">Salvar gestor</button>
+        </div>`);
+}
+
+function saveGestorById(id) {
+    const nome  = document.getElementById('gm_nome')?.value.trim();
+    const email = document.getElementById('gm_email')?.value.trim().toLowerCase();
+    const pass  = document.getElementById('gm_pass')?.value.trim();
+    if (!nome || !email || !pass) { showToast('Nome, e-mail e senha são obrigatórios.', 'error'); return; }
+    if (pass.length < 8) { showToast('Senha deve ter pelo menos 8 caracteres.', 'error'); return; }
+    const extra = { whatsapp: document.getElementById('gm_wa')?.value.trim(), region: document.getElementById('gm_region')?.value.trim() };
+    if (id) {
+        const u = (app.state.users||[]).find(u=>u.id===id);
+        if (u) Object.assign(u, { name: nome, email, password: pass, ...extra });
+        addAuditLog('gestor_update', { id, name: nome });
+        showToast(`Gestor "${nome}" atualizado.`, 'success');
+    } else {
+        const dupEmail = (app.state.users||[]).some(u=>u.email===email);
+        if (dupEmail) { showToast('E-mail já cadastrado.', 'error'); return; }
+        const newId = `gestor_${Date.now()}`;
+        if (!app.state.users) app.state.users = [];
+        app.state.users.push({ id: newId, name: nome, email, password: pass, role: 'gestor', ...extra });
+        addAuditLog('gestor_create', { id: newId, name: nome });
+        showToast(`Gestor "${nome}" criado com sucesso!`, 'success');
+    }
+    saveState(); closeModal(); renderPresidenteGestores();
+}
+
+function deleteGestorById(id) {
+    const u = (app.state.users||[]).find(u=>u.id===id);
+    if (!u || !confirm(`Excluir o gestor ${u.name}? Esta ação não pode ser desfeita.`)) return;
+    app.state.users = app.state.users.filter(u=>u.id!==id);
+    addAuditLog('gestor_delete', { id, name: u.name });
+    saveState();
+    showToast(`Gestor "${u.name}" excluído.`, 'info');
+    renderPresidenteGestores();
+}
+
+// ── ABA 7: AUDITORIA ────────────────────────────────────────────
+function renderPresidenteAuditoria() {
+    const el = presidenteEl(); if (!el) return;
+    const log = app.state.auditLog || [];
+
+    const ACTION_LABELS = {
+        login: 'Login', consultor_create: 'Consultor criado', consultor_update: 'Consultor editado',
+        consultor_delete: 'Consultor excluído', client_create: 'Cliente criado', client_update: 'Cliente editado',
+        client_delete: 'Cliente excluído', gestor_create: 'Gestor criado', gestor_update: 'Gestor editado',
+        gestor_delete: 'Gestor excluído', produto_create: 'Produto criado', produto_update: 'Produto editado',
+        produto_delete: 'Produto excluído', commission_rules_update: 'Comissões alteradas',
+        recurrence_rules_update: 'Recorrência alterada', produto_status_change: 'Status produto alterado',
+        parceiro_create: 'Parceiro criado', parceiro_update: 'Parceiro editado'
+    };
+
+    el.innerHTML = `
+    <div class="section-header"><h2>🔍 Auditoria Completa</h2><p>Log de todas as ações registradas no sistema.</p></div>
+
+    <div class="card" style="margin-bottom:20px;">
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="margin:0;flex:1;min-width:160px;"><label>Filtrar por usuário</label>
+                <input id="audit_user_filter" type="text" placeholder="Nome ou e-mail..." oninput="filterAuditLog()"/>
+            </div>
+            <div class="field" style="margin:0;"><label>Tipo de ação</label>
+                <select id="audit_action_filter" onchange="filterAuditLog()">
+                    <option value="">Todas</option>
+                    ${Object.entries(ACTION_LABELS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+                </select>
+            </div>
+            <div class="field" style="margin:0;"><label>De</label><input id="audit_from" type="date" onchange="filterAuditLog()"/></div>
+            <div class="field" style="margin:0;"><label>Até</label><input id="audit_to" type="date" onchange="filterAuditLog()"/></div>
+            <button class="secondary-btn" onclick="exportAuditPDF()">📄 Exportar PDF</button>
+        </div>
+    </div>
+
+    <div class="card" style="overflow-x:auto;" id="auditLogTable">
+        ${renderAuditTable(log, ACTION_LABELS)}
+    </div>`;
+
+    // Guarda reference para filtragem
+    window._auditAllLog = log;
+    window._auditActionLabels = ACTION_LABELS;
+}
+
+function renderAuditTable(log, labels) {
+    if (!log.length) return '<p class="text-muted" style="padding:24px;text-align:center;">Nenhuma ação registrada ainda.</p>';
+    return `<table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+        <thead><tr style="border-bottom:2px solid var(--border);">
+            <th style="padding:10px 8px;text-align:left;">Data/Hora</th>
+            <th style="padding:10px 8px;text-align:left;">Ação</th>
+            <th style="padding:10px 8px;text-align:left;">Usuário</th>
+            <th style="padding:10px 8px;text-align:left;">Role</th>
+            <th style="padding:10px 8px;text-align:left;">Detalhes</th>
+        </tr></thead>
+        <tbody>
+            ${log.slice(0, 200).map(entry => {
+                const dt = new Date(entry.at);
+                const dtStr = isNaN(dt) ? entry.at : dt.toLocaleString('pt-BR');
+                const label = labels[entry.action] || entry.action;
+                const det   = entry.details ? (entry.details.name || entry.details.motivo || JSON.stringify(entry.details)).slice(0, 60) : '—';
+                return `<tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:9px 8px;white-space:nowrap;font-size:.8rem;color:var(--text-soft);">${dtStr}</td>
+                    <td style="padding:9px 8px;"><span class="pill ${entry.action.includes('delete')?'pill-lost':entry.action.includes('create')?'pill-closed':'pill-proposal'}">${label}</span></td>
+                    <td style="padding:9px 8px;">${esc(entry.actor?.name||'—')}</td>
+                    <td style="padding:9px 8px;color:var(--text-soft);font-size:.8rem;">${esc(entry.actor?.role||'—')}</td>
+                    <td style="padding:9px 8px;color:var(--text-soft);font-size:.8rem;">${esc(det)}</td>
+                </tr>`;
+            }).join('')}
+        </tbody>
+    </table>`;
+}
+
+function filterAuditLog() {
+    const log    = window._auditAllLog || [];
+    const labels = window._auditActionLabels || {};
+    const user   = (document.getElementById('audit_user_filter')?.value||'').toLowerCase();
+    const action = document.getElementById('audit_action_filter')?.value||'';
+    const from   = document.getElementById('audit_from')?.value||'';
+    const to     = document.getElementById('audit_to')?.value||'';
+    const filtered = log.filter(e => {
+        if (user   && !((e.actor?.name||'').toLowerCase().includes(user))) return false;
+        if (action && e.action !== action) return false;
+        if (from   && e.at < from) return false;
+        if (to     && e.at.slice(0,10) > to) return false;
+        return true;
+    });
+    const tbl = document.getElementById('auditLogTable');
+    if (tbl) tbl.innerHTML = renderAuditTable(filtered, labels);
+}
+
+function exportAuditPDF() {
+    showToast('Preparando exportação... Clique em Imprimir na janela que abrirá.', 'info', 4000);
+    setTimeout(() => window.print(), 500);
+}
+
+// ── ABA 8: CONFIGURAÇÕES GLOBAIS ────────────────────────────────
+function renderPresidenteConfig() {
+    const el = presidenteEl(); if (!el) return;
+    const cfg = app.state.presidenteConfig || {};
+    el.innerHTML = `
+    <div class="section-header"><h2>⚙️ Configurações Globais</h2><p>Dados da empresa, notificações, backup e reset do sistema.</p></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+        <div class="card">
+            <h3>🏢 Dados da empresa</h3>
+            <div class="field"><label>Nome da empresa</label><input id="cfg_nome" type="text" value="${esc(cfg.companyName||'Tracktiv')}" placeholder="Tracktiv"/></div>
+            <div class="field"><label>CNPJ</label><input id="cfg_cnpj" type="text" value="${esc(cfg.cnpj||'')}" placeholder="00.000.000/0001-00"/></div>
+            <div class="field"><label>Endereço</label><input id="cfg_addr" type="text" value="${esc(cfg.address||'')}" placeholder="Rua, número, cidade/UF"/></div>
+            <div class="field"><label>E-mail de contato</label><input id="cfg_email" type="email" value="${esc(cfg.email||'')}" placeholder="contato@tracktiv.com.br"/></div>
+            <div class="field"><label>Telefone</label><input id="cfg_phone" type="tel" value="${esc(cfg.phone||'')}" placeholder="(11) 99999-9999"/></div>
+            <button class="primary-btn" style="width:100%;margin-top:8px;" onclick="savePresidenteConfig()">💾 Salvar dados da empresa</button>
+        </div>
+        <div class="card">
+            <h3>📤 Backup e exportação</h3>
+            <p class="text-muted" style="font-size:.85rem;margin-bottom:16px;">Exporte todos os dados do sistema em formato JSON para backup ou migração.</p>
+            <button class="secondary-btn" style="width:100%;margin-bottom:12px;" onclick="exportarDados()">📥 Exportar todos os dados (JSON)</button>
+            <button class="secondary-btn" style="width:100%;margin-bottom:12px;" onclick="importarDados()">📤 Importar dados (JSON)</button>
+            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="processImportFile(this)"/>
+
+            <h3 style="margin-top:20px;">🔔 Notificações globais</h3>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:8px;">
+                <input type="checkbox" id="cfg_notif_churn" ${cfg.notifChurn!==false?'checked':''} style="width:16px;height:16px;"/>
+                Alertas de churn automáticos
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                <input type="checkbox" id="cfg_notif_meta" ${cfg.notifMeta!==false?'checked':''} style="width:16px;height:16px;"/>
+                Notificação ao atingir metas
+            </label>
+        </div>
+    </div>
+
+    <div class="card" style="border:2px solid var(--danger);">
+        <h3 style="color:var(--danger);">⚠️ Zona de Perigo</h3>
+        <p style="color:var(--text-soft);font-size:.85rem;margin-bottom:16px;">Estas ações são <strong>irreversíveis</strong>. Use com extremo cuidado.</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <button class="secondary-btn" style="border-color:var(--warning);color:var(--warning);" onclick="resetDemoData()">🔄 Recarregar dados de demonstração</button>
+            <button class="secondary-btn" style="border-color:var(--danger);color:var(--danger);" onclick="resetSystemFull()">💣 Reset completo do sistema</button>
+        </div>
+    </div>`;
+}
+
+function savePresidenteConfig() {
+    if (!app.state.presidenteConfig) app.state.presidenteConfig = {};
+    Object.assign(app.state.presidenteConfig, {
+        companyName: document.getElementById('cfg_nome')?.value.trim() || 'Tracktiv',
+        cnpj:    document.getElementById('cfg_cnpj')?.value.trim(),
+        address: document.getElementById('cfg_addr')?.value.trim(),
+        email:   document.getElementById('cfg_email')?.value.trim(),
+        phone:   document.getElementById('cfg_phone')?.value.trim(),
+        notifChurn: document.getElementById('cfg_notif_churn')?.checked,
+        notifMeta:  document.getElementById('cfg_notif_meta')?.checked
+    });
+    addAuditLog('config_update', { companyName: app.state.presidenteConfig.companyName });
+    saveState();
+    showToast('Configurações salvas com sucesso!', 'success');
+}
+
+function exportarDados() {
+    const data = JSON.stringify(app.state, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `tracktiv_backup_${todayISO()}.json`;
+    a.click(); URL.revokeObjectURL(url);
+    showToast('Backup exportado com sucesso!', 'success');
+}
+
+function importarDados() {
+    document.getElementById('importFile')?.click();
+}
+
+function processImportFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!data.users) throw new Error('Arquivo inválido');
+            if (!confirm('Isso substituirá TODOS os dados atuais. Confirma a importação?')) return;
+            app.state = data;
+            saveState();
+            showToast('Dados importados com sucesso! Recarregando...', 'success');
+            setTimeout(() => location.reload(), 1500);
+        } catch(err) {
+            showToast('Arquivo JSON inválido ou corrompido.', 'error');
+        }
+    };
+    reader.readAsText(file);
+}
+
+function resetDemoData() {
+    if (!confirm('Carregar dados de demonstração? Os dados atuais serão substituídos.')) return;
+    app.state = JSON.parse(JSON.stringify(sampleState));
+    saveState();
+    showToast('Dados de demonstração carregados!', 'info');
+    renderPresidenteOverview();
+}
+
+function resetSystemFull() {
+    const input = prompt('ATENÇÃO: isso apagará TODOS os dados.\nDigite CONFIRMAR para prosseguir:');
+    if (input !== 'CONFIRMAR') { showToast('Reset cancelado.', 'info'); return; }
+    app.state = JSON.parse(JSON.stringify(cleanState));
+    saveState();
+    showToast('Sistema resetado. Você será desconectado.', 'warning', 3000);
+    setTimeout(() => {
+        app.currentUser = null;
+        document.getElementById('appScreen').classList.add('hidden');
+        document.getElementById('loginScreen').classList.remove('hidden');
+    }, 2500);
+}
+
+// ── ABA 9: SIMULADOR DE PROJEÇÃO DE LUCRO ──────────────────────
+function renderPresidenteSimulador() {
+    const el = presidenteEl(); if (!el) return;
+    const sims = app.state.savedSimulations || [];
+    el.innerHTML = `
+    <div class="section-header"><h2>🧮 Simulador de Projeção de Lucro</h2><p>Simule cenários completos com variáveis configuráveis e compare resultados.</p></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+        <div class="card">
+            <h3>⚙️ Variáveis do cenário</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="field"><label>Consultores ativos</label><input id="sim_cons" type="number" value="5" min="1" oninput="calcSimulador()"/></div>
+                <div class="field"><label>Meta vendas/consultor/mês</label><input id="sim_meta" type="number" value="8" min="0" oninput="calcSimulador()"/></div>
+                <div class="field"><label>Taxa de conversão (%)</label><input id="sim_conv" type="number" value="30" min="0" max="100" oninput="calcSimulador()"/></div>
+                <div class="field"><label>Churn mensal (%)</label><input id="sim_churn" type="number" value="3" min="0" max="100" oninput="calcSimulador()"/></div>
+                <div class="field"><label>% Plano Essencial (R$44,90)</label><input id="sim_pct_ess" type="number" value="30" min="0" max="100" oninput="calcSimulador()"/></div>
+                <div class="field"><label>% Plano Profissional (R$54,90)</label><input id="sim_pct_pro" type="number" value="50" min="0" max="100" oninput="calcSimulador()"/></div>
+                <div class="field"><label>% Plano Controle Total (R$64,90)</label><input id="sim_pct_ct" type="number" value="20" min="0" max="100" oninput="calcSimulador()"/></div>
+                <div class="field"><label>Custo fixo mensal (R$)</label><input id="sim_fixo" type="number" value="8000" min="0" oninput="calcSimulador()"/></div>
+                <div class="field"><label>Custo variável por cliente (R$)</label><input id="sim_cv" type="number" value="12" min="0" oninput="calcSimulador()"/></div>
+                <div class="field"><label>% comissão total da equipe</label><input id="sim_comis_pct" type="number" value="18" min="0" max="100" oninput="calcSimulador()"/></div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:12px;">
+                <button class="primary-btn" style="flex:1;" onclick="calcSimulador()">▶ Calcular</button>
+                <button class="secondary-btn" onclick="saveSimulacao()">💾 Salvar cenário</button>
+            </div>
+        </div>
+        <div id="sim_resultado" class="card">
+            <div style="text-align:center;padding:40px;color:var(--text-soft);">
+                <div style="font-size:2.5rem;margin-bottom:12px;">🧮</div>
+                <p>Configure as variáveis e clique em Calcular para ver a projeção.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="sim_tabela_card" class="card" style="display:none;">
+        <h3>📅 Projeção de 12 meses</h3>
+        <div id="sim_tabela" style="overflow-x:auto;margin-top:12px;"></div>
+    </div>
+
+    ${sims.length ? `
+    <div class="card">
+        <h3>📂 Cenários salvos</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-top:12px;">
+            ${sims.map(s => `
+            <div style="background:var(--bg);border-radius:12px;padding:16px;border:1px solid var(--border);">
+                <div style="font-weight:700;margin-bottom:4px;">${esc(s.name)}</div>
+                <div style="font-size:.8rem;color:var(--text-soft);margin-bottom:10px;">${formatDate(s.date)}</div>
+                <div style="display:flex;justify-content:space-between;font-size:.83rem;">
+                    <span>Receita 12m</span><strong>R$ ${Number(s.receita12m||0).toLocaleString('pt-BR')}</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:.83rem;">
+                    <span>Margem final</span><strong style="color:${(s.margem12m||0)>0?'var(--success)':'var(--danger)'};">R$ ${Number(s.margem12m||0).toLocaleString('pt-BR')}</strong>
+                </div>
+                <button class="secondary-btn" style="width:100%;margin-top:12px;font-size:.78rem;" onclick="deleteSimulacao('${s.id}')">🗑️ Excluir</button>
+            </div>`).join('')}
+        </div>
+    </div>` : ''}`;
+
+    setTimeout(calcSimulador, 50);
+}
+
+function calcSimulador() {
+    const cons      = Number(document.getElementById('sim_cons')?.value)||1;
+    const meta      = Number(document.getElementById('sim_meta')?.value)||0;
+    const conv      = Number(document.getElementById('sim_conv')?.value)||30;
+    const churn     = Number(document.getElementById('sim_churn')?.value)||3;
+    const pctEss    = Number(document.getElementById('sim_pct_ess')?.value)||30;
+    const pctPro    = Number(document.getElementById('sim_pct_pro')?.value)||50;
+    const pctCT     = Number(document.getElementById('sim_pct_ct')?.value)||20;
+    const fixo      = Number(document.getElementById('sim_fixo')?.value)||0;
+    const cv        = Number(document.getElementById('sim_cv')?.value)||0;
+    const comisPct  = Number(document.getElementById('sim_comis_pct')?.value)||18;
+
+    const vendasMes = Math.round(cons * meta * conv / 100);
+    const ticketMed = (44.90 * pctEss/100) + (54.90 * pctPro/100) + (64.90 * pctCT/100);
+
+    const el = document.getElementById('sim_resultado');
+    if (!el) return;
+
+    // Projeção 12 meses
+    let clients = 0;
+    const meses = [];
+    for (let i = 1; i <= 12; i++) {
+        clients = clients * (1 - churn/100) + vendasMes;
+        const rec    = clients * ticketMed;
+        const comis  = rec * comisPct / 100;
+        const custos = clients * cv + fixo + comis;
+        const lucro  = rec - custos;
+        meses.push({ i, clients: Math.round(clients), rec, comis, custos, lucro });
+    }
+
+    const m1  = meses[0];
+    const m3  = meses[2];
+    const m12 = meses[11];
+
+    // Cenários
+    const calcCenario = (fator) => {
+        let c = 0;
+        let lucro12 = 0;
+        for (let i = 1; i <= 12; i++) {
+            c = c * (1 - churn/100) + vendasMes * fator;
+            lucro12 += c * ticketMed * (1 - comisPct/100) - c * cv - fixo;
+        }
+        return lucro12;
+    };
+
+    el.innerHTML = `
+        <h3>📊 Resultado — Mês 1</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;">
+            ${[
+                ['Vendas geradas', vendasMes],
+                ['Clientes no mês', m1.clients],
+                [`Receita bruta`, `R$ ${formatCurrency(m1.rec)}`],
+                [`Comissões`, `R$ ${formatCurrency(m1.comis)}`],
+                [`Custos totais`, `R$ ${formatCurrency(m1.custos)}`],
+                [`Lucro líquido`, `R$ ${formatCurrency(m1.lucro)}`]
+            ].map(([l,v])=>`<div style="background:var(--bg);border-radius:10px;padding:10px;text-align:center;">
+                <div style="font-size:.75rem;color:var(--text-soft);">${l}</div>
+                <div style="font-size:1.1rem;font-weight:700;">${v}</div>
+            </div>`).join('')}
+        </div>
+        <h4 style="margin:16px 0 8px;">📅 3 cenários — 12 meses</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            ${[
+                ['😟 Pessimista', 0.7, 'var(--danger)'],
+                ['😐 Realista', 1, 'var(--accent)'],
+                ['😊 Otimista', 1.3, 'var(--success)']
+            ].map(([l,f,c])=>{
+                const v = calcCenario(f);
+                return `<div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center;">
+                    <div style="font-size:.8rem;color:var(--text-soft);">${l}</div>
+                    <div style="font-size:1.1rem;font-weight:700;color:${c};">R$ ${formatCurrency(v)}</div>
+                    <div style="font-size:.72rem;color:var(--text-soft);">lucro 12 meses</div>
+                </div>`;
+            }).join('')}
+        </div>`;
+
+    // Tabela de 12 meses
+    const tblCard = document.getElementById('sim_tabela_card');
+    const tbl     = document.getElementById('sim_tabela');
+    if (tblCard) tblCard.style.display = '';
+    if (tbl) {
+        tbl.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:.83rem;">
+            <thead><tr style="border-bottom:2px solid var(--border);">
+                <th style="padding:8px;text-align:left;">Mês</th>
+                <th style="padding:8px;text-align:right;">Clientes</th>
+                <th style="padding:8px;text-align:right;">Receita</th>
+                <th style="padding:8px;text-align:right;">Comissões</th>
+                <th style="padding:8px;text-align:right;">Custos</th>
+                <th style="padding:8px;text-align:right;">Lucro</th>
+            </tr></thead>
+            <tbody>
+                ${meses.map(m=>`<tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:8px;">Mês ${m.i}</td>
+                    <td style="padding:8px;text-align:right;">${m.clients}</td>
+                    <td style="padding:8px;text-align:right;">R$ ${formatCurrency(m.rec)}</td>
+                    <td style="padding:8px;text-align:right;">R$ ${formatCurrency(m.comis)}</td>
+                    <td style="padding:8px;text-align:right;">R$ ${formatCurrency(m.custos)}</td>
+                    <td style="padding:8px;text-align:right;font-weight:${m.i===12?700:400};color:${m.lucro>0?'var(--success)':'var(--danger)'};">R$ ${formatCurrency(m.lucro)}</td>
+                </tr>`).join('')}
+            </tbody>
+        </table>`;
+    }
+
+    // Salva dados para exportação
+    window._simData = { vendasMes, ticketMed, meses, m12, churn, comisPct };
+}
+
+function saveSimulacao() {
+    const sd = window._simData;
+    if (!sd) { showToast('Calcule a simulação primeiro.', 'warning'); return; }
+    const name = prompt('Nome para este cenário:', `Cenário ${todayISO()}`);
+    if (!name) return;
+    if (!app.state.savedSimulations) app.state.savedSimulations = [];
+    app.state.savedSimulations.unshift({
+        id: `sim_${Date.now()}`, name, date: todayISO(),
+        receita12m: sd.meses[11]?.rec || 0,
+        margem12m:  sd.meses[11]?.lucro || 0,
+        data: sd
+    });
+    saveState();
+    showToast(`Cenário "${name}" salvo!`, 'success');
+    renderPresidenteSimulador();
+}
+
+function deleteSimulacao(id) {
+    app.state.savedSimulations = (app.state.savedSimulations||[]).filter(s=>s.id!==id);
+    saveState();
+    showToast('Cenário excluído.', 'info');
+    renderPresidenteSimulador();
 }
 
 document.addEventListener('DOMContentLoaded', init);

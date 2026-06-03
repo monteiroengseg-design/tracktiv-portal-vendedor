@@ -2500,3 +2500,48 @@ td strong { color: var(--text); font-weight: 600; }
     0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
     40% { transform: scale(1); opacity: 1; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   PAINEL DO PRESIDENTE
+═══════════════════════════════════════════════════════════ */
+.pres-kpi {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 20px;
+}
+.pres-kpi-icon {
+    font-size: 2rem;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+.pres-kpi .metric {
+    font-size: 1.6rem;
+    line-height: 1.1;
+    margin: 2px 0;
+}
+.pres-kpi .text-muted { margin: 0; }
+
+/* Sidebar do Presidente — destaque visual */
+[data-role="presidente"] .tabs {
+    background: linear-gradient(180deg, #0f1c2e 0%, #1a2e4a 100%);
+}
+[data-role="presidente"] .tab.active {
+    background: linear-gradient(90deg, var(--accent), #ff9a2e);
+    color: #fff;
+}
+
+/* Tabelas do presidente */
+.pres-table th {
+    background: var(--bg);
+    font-size: .82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
