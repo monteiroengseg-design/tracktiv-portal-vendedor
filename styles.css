@@ -2355,6 +2355,37 @@ td strong { color: var(--text); font-weight: 600; }
 }
 
 /* ═══════════════════════════════════════════════════════════
+   EDITOR DE FORMULÁRIO DO TÉCNICO
+═══════════════════════════════════════════════════════════ */
+.tec-form-field-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    transition: background .15s; gap: 12px;
+}
+.tec-form-field-row:last-child { border-bottom: none; }
+.tec-form-field-row:hover { background: var(--bg); }
+.field-row-inactive { opacity: 0.55; }
+.field-row-info { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.field-row-drag { color: var(--text-muted); font-size: 1.1rem; cursor: default; user-select: none; flex-shrink: 0; }
+.field-row-label { font-weight: 600; font-size: 0.92rem; color: var(--text); margin-right: 6px; }
+.field-row-type { font-size: 0.78rem; color: var(--text-soft); }
+.field-row-badge { display: inline-block; font-size: 0.7rem; padding: 1px 7px; border-radius: 99px; margin-left: 4px; }
+.badge-req { background: #fef3c7; color: #92400e; }
+.badge-opt { background: #f0f9ff; color: #0369a1; }
+.badge-sys { background: #f3f4f6; color: #6b7280; }
+.field-row-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.icon-btn {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    width: 28px; height: 28px; font-size: 0.82rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-soft); transition: background .15s, border-color .15s;
+}
+.icon-btn:hover { background: var(--bg-2); border-color: var(--text-soft); }
+.icon-btn-active { border-color: var(--success); color: var(--success); }
+.icon-btn-danger:hover { background: #fee2e2; border-color: var(--danger); color: var(--danger); }
+.badge-info { background: #eff6ff; color: #1d4ed8; }
+
+/* ═══════════════════════════════════════════════════════════
    TOAST NOTIFICATIONS
 ═══════════════════════════════════════════════════════════ */
 #toastContainer {

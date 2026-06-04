@@ -168,10 +168,13 @@ const NAV_TREE = {
         { id: 'i_mensagens',   label: 'Mensagens',      icon: '💬', action: () => openChatOverlay('gestor') }
     ],
     tecnico: [
-        { id: 't_dashboard', label: 'Dashboard',     icon: '📊', section: 'tecnicoDashboard' },
-        { id: 't_clientes',  label: 'Meus Clientes', icon: '👤', section: 'tecnicoClientes' },
-        { id: 't_chamados',  label: 'Chamados',      icon: '🎫', section: 'tecnicoChamados' },
-        { id: 't_mensagens', label: 'Mensagens',     icon: '💬', action: () => openChatOverlay('gestor') }
+        { id: 't_dashboard',  label: 'Dashboard',      icon: '📊', section: 'tecnicoDashboard' },
+        { id: 't_clientes',   label: 'Meus Clientes',  icon: '👤', section: 'tecnicoClientes' },
+        { id: 't_chamados',   label: 'Chamados',       icon: '🎫', section: 'tecnicoChamados' },
+        { id: 't_link',       label: 'Meu Link',       icon: '🔗', render: () => renderMeuLinkTecnico() },
+        { id: 't_formulario', label: 'Meu Formulário', icon: '📝', render: () => renderTecnicoFormEditor() },
+        { id: 't_respostas',  label: 'Respostas',      icon: '📥', render: () => renderTecnicoFormSubmissions() },
+        { id: 't_mensagens',  label: 'Mensagens',      icon: '💬', action: () => openChatOverlay('gestor') }
     ]
 };
 
@@ -199,6 +202,32 @@ const NAV_TREE_PRESIDENTE = [
 ];
 
 const stageOrder = ['Novo Lead', 'Contato Feito', 'Apresentação', 'Proposta', 'Fechado', 'Perdido'];
+
+const TECNICO_SEGMENTS = [
+    { key: 'sst',          label: 'Segurança do Trabalho',  icon: '🦺' },
+    { key: 'rastreamento', label: 'Rastreamento Veicular',  icon: '📡' },
+    { key: 'contabilidade',label: 'Contabilidade',          icon: '📊' },
+    { key: 'chatbot',      label: 'Chatbot',                icon: '💬' },
+    { key: 'marketing',    label: 'Sites e Marketing',      icon: '🌐' }
+];
+const PRODUCT_SEGMENT_MAP = {
+    'Segurança do Trabalho':    'sst',
+    'Rastreador Veicular':      'rastreamento',
+    'Consultoria Contábil':     'contabilidade',
+    'Contabilidade':            'contabilidade',
+    'Chatbot de Atendimento':   'chatbot',
+    'Chatbot':                  'chatbot',
+    'Sites e Marketing Digital':'marketing',
+    'Marketing Digital':        'marketing'
+};
+const TECNICO_DEFAULT_FORM_FIELDS = [
+    { id: 'tf_name',    label: 'Nome completo', type: 'text',     required: true,  active: true, system: true  },
+    { id: 'tf_phone',   label: 'Telefone',      type: 'text',     required: true,  active: true, system: true  },
+    { id: 'tf_iswa',    label: 'É WhatsApp?',   type: 'yesno',    required: false, active: true, system: true  },
+    { id: 'tf_email',   label: 'E-mail',        type: 'email',    required: false, active: true, system: false },
+    { id: 'tf_address', label: 'Endereço',      type: 'text',     required: false, active: true, system: false },
+    { id: 'tf_notes',   label: 'Observações',   type: 'textarea', required: false, active: true, system: false }
+];
 
 const SCORE_QUESTIONS = {
     'Novo Lead':     ['O cliente demonstrou interesse espontâneo?', 'Você conseguiu falar diretamente com o decisor?', 'O cliente tem veículo próprio ou frota?', 'O cliente já teve algum problema de segurança com veículo?', 'O cliente conhecia o serviço de rastreamento antes?'],
@@ -1413,7 +1442,8 @@ const sampleState = {
         { id: 'cliente_demo', name: 'Auto Prime Transportes', email: 'cliente@tracktiv.com', password: 'Cliente123', role: 'cliente',
           clientId: 'c1', referralCode: 'AUTOPRIME23', points: 150, contractedServices: ['rastreamento'] },
         { id: 'tecnico_1', name: 'Rafael Santos', email: 'tecnico@tracktiv.com', password: 'Tecnico123', role: 'tecnico',
-          cpf: '555.666.777-88', phone: '(11) 94455-6677', whatsapp: '(11) 94455-6677', specialty: 'Rastreamento Veicular' }
+          cpf: '555.666.777-88', phone: '(11) 94455-6677', whatsapp: '(11) 94455-6677', specialty: 'Rastreamento Veicular',
+          qualifications: ['rastreamento'] }
     ],
     clients: [
         // Laura Mendes
@@ -2000,8 +2030,11 @@ function loadState() {
             if (!app.state.recurrenceRules)   app.state.recurrenceRules   = { gracePeriodDays: 30, minClientsToActivate: 1, minMonthlySales: 0, history: [] };
             if (!app.state.recurrenceRules.history) app.state.recurrenceRules.history = [];
             if (!app.state.savedSimulations)  app.state.savedSimulations  = [];
-            if (!app.state.simCustomCosts)    app.state.simCustomCosts    = [];
-            if (!app.state.simCustomRevenues) app.state.simCustomRevenues = [];
+            if (!app.state.simCustomCosts)       app.state.simCustomCosts       = [];
+            if (!app.state.simCustomRevenues)  app.state.simCustomRevenues  = [];
+            // Migração: Qualificação, Link e Formulário do Técnico
+            if (!app.state.tecnicoForms)         app.state.tecnicoForms         = {};
+            if (!app.state.tecnicoSubmissions)   app.state.tecnicoSubmissions   = {};
         } catch (e) {
             app.state = JSON.parse(JSON.stringify(cleanState));
         }
@@ -8578,12 +8611,28 @@ function renderTecnicoDashboard() {
     const waiting = myChamados.filter(c => c.status === 'Aguardando cliente').length;
     const closed  = myChamados.filter(c => ['Resolvido','Fechado'].includes(c.status)).length;
 
+    const tUser = (app.state.users || []).find(u => u.id === uid);
+    const quals = tUser ? (tUser.qualifications || []) : [];
+    const visibleClients = (app.state.clients || []).filter(c => {
+        if (!assignedIds.includes(c.id)) return false;
+        if (!quals.length) return true;
+        const seg = PRODUCT_SEGMENT_MAP[c.product];
+        return !seg || quals.includes(seg);
+    });
+    const qualBadges = quals.length
+        ? quals.map(q => { const s = TECNICO_SEGMENTS.find(x=>x.key===q); return s ? `<span class="badge badge-info" style="font-size:0.75rem;">${s.icon} ${s.label}</span>` : ''; }).join(' ')
+        : '<span class="badge badge-active" style="font-size:0.75rem;">Todos os segmentos</span>';
+
     const stats = document.getElementById('tecnicoStats');
     if (stats) stats.innerHTML = `
-        <div class="stat-card"><div class="stat-value">${assignedIds.length}</div><div class="stat-label">Clientes atribuídos</div></div>
+        <div class="stat-card"><div class="stat-value">${visibleClients.length}</div><div class="stat-label">Clientes do meu segmento</div></div>
         <div class="stat-card"><div class="stat-value">${open}</div><div class="stat-label">Chamados abertos</div></div>
         <div class="stat-card"><div class="stat-value">${inProg}</div><div class="stat-label">Em andamento</div></div>
         <div class="stat-card"><div class="stat-value">${waiting}</div><div class="stat-label">Aguard. cliente</div></div>
+        <div class="stat-card" style="grid-column:1/-1;text-align:left;padding:12px 16px;">
+            <div class="stat-label" style="margin-bottom:6px;">Meus segmentos</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">${qualBadges}</div>
+        </div>
     `;
 
     const recentes = document.getElementById('tecnicoChamadosRecentes');
@@ -8608,13 +8657,24 @@ function renderTecnicoDashboard() {
 function renderTecnicoClientes() {
     if (!app.currentUser || app.currentUser.role !== 'tecnico') return;
     const uid = app.currentUser.id;
+    const tUser = (app.state.users || []).find(u => u.id === uid);
     const assignedIds = ((app.state.tecnicoClients || {})[uid] || []);
-    const clients = (app.state.clients || []).filter(c => assignedIds.includes(c.id));
+    const quals = tUser ? (tUser.qualifications || []) : [];
+    const clients = (app.state.clients || []).filter(c => {
+        if (!assignedIds.includes(c.id)) return false;
+        if (!quals.length) return true;
+        const seg = PRODUCT_SEGMENT_MAP[c.product];
+        return !seg || quals.includes(seg);
+    });
     const el = document.getElementById('tecnicoClientesContent');
     if (!el) return;
 
     if (clients.length === 0) {
-        el.innerHTML = '<div class="card"><p class="text-muted">Nenhum cliente atribuído ainda. Aguarde o gestor atribuir clientes a você.</p></div>';
+        const totalAssigned = assignedIds.length;
+        const msg = totalAssigned > 0 && quals.length
+            ? `Você tem ${totalAssigned} cliente${totalAssigned !== 1 ? 's' : ''} atribuído${totalAssigned !== 1 ? 's' : ''}, mas nenhum pertence aos seus segmentos qualificados.`
+            : 'Nenhum cliente atribuído ainda. Aguarde o gestor atribuir clientes a você.';
+        el.innerHTML = `<div class="card"><p class="text-muted">${msg}</p></div>`;
         return;
     }
     el.innerHTML = `<div class="card" style="overflow-x:auto;">
@@ -9000,14 +9060,18 @@ function renderGestorTecnicos() {
             ? `<div class="card"><p class="text-muted">Nenhum técnico cadastrado. Clique em "+ Novo técnico" para começar.</p></div>`
             : `<div class="card" style="overflow-x:auto;">
                 <table>
-                    <thead><tr><th>Nome</th><th>Especialidade</th><th>Telefone</th><th>Clientes</th><th>Chamados abertos</th><th>Ações</th></tr></thead>
+                    <thead><tr><th>Nome</th><th>Qualificações</th><th>Telefone</th><th>Clientes</th><th>Chamados abertos</th><th>Ações</th></tr></thead>
                     <tbody>
                     ${tecnicos.map(t => {
-                        const aIds       = tClients[t.id] || [];
-                        const openChams  = chamados.filter(c => c.tecnicoId === t.id && ['Aberto','Em andamento','Aguardando cliente'].includes(c.status)).length;
+                        const aIds      = tClients[t.id] || [];
+                        const openChams = chamados.filter(c => c.tecnicoId === t.id && ['Aberto','Em andamento','Aguardando cliente'].includes(c.status)).length;
+                        const quals     = (t.qualifications || []);
+                        const qualHtml  = quals.length
+                            ? quals.map(q => { const s = TECNICO_SEGMENTS.find(x=>x.key===q); return s ? `<span class="badge badge-info" style="margin:1px;font-size:0.72rem;">${s.icon} ${s.label}</span>` : ''; }).join('')
+                            : '<span class="text-muted" style="font-size:0.82rem;">Todos os segmentos</span>';
                         return `<tr>
                             <td><strong>${esc(t.name)}</strong><br><small class="text-muted">${esc(t.email)}</small></td>
-                            <td>${esc(t.specialty || '—')}</td>
+                            <td>${qualHtml}</td>
                             <td>${esc(t.phone || '—')}</td>
                             <td><span class="badge badge-active">${aIds.length} cliente${aIds.length !== 1 ? 's' : ''}</span></td>
                             <td>${openChams > 0 ? `<span class="badge badge-warn">${openChams}</span>` : '<span class="badge badge-active">0</span>'}</td>
@@ -9027,6 +9091,12 @@ function renderGestorTecnicos() {
 
 function openTecnicoModal(tecnicoId) {
     const t = tecnicoId ? (app.state.users || []).find(u => u.id === tecnicoId) : null;
+    const quals = t ? (t.qualifications || []) : [];
+    const qualChecks = TECNICO_SEGMENTS.map(s => `
+        <label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;">
+            <input type="checkbox" class="tec-qual-cb" value="${s.key}" ${quals.includes(s.key) ? 'checked' : ''} style="width:15px;height:15px;">
+            <span>${s.icon} ${s.label}</span>
+        </label>`).join('');
     showModal(t ? 'Editar técnico' : 'Cadastrar técnico', `
         <form onsubmit="saveTecnico(event,'${tecnicoId || ''}')">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -9037,6 +9107,13 @@ function openTecnicoModal(tecnicoId) {
                 <div class="field"><label>Telefone</label><input id="tecTel" value="${t ? esc(t.phone || '') : ''}"></div>
                 <div class="field"><label>WhatsApp</label><input id="tecWA" value="${t ? esc(t.whatsapp || '') : ''}"></div>
                 <div class="field" style="grid-column:1/-1;"><label>Especialidade</label><input id="tecEsp" value="${t ? esc(t.specialty || '') : ''}" placeholder="Ex: Rastreamento Veicular"></div>
+                <div class="field" style="grid-column:1/-1;">
+                    <label style="margin-bottom:6px;display:block;">Qualificações (segmentos que o técnico atende)</label>
+                    <div style="border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg);">
+                        ${qualChecks}
+                    </div>
+                    <small class="text-muted">O técnico verá apenas clientes dos segmentos selecionados.</small>
+                </div>
             </div>
             <div class="actions">
                 <button type="submit" class="primary-btn">${t ? 'Salvar' : 'Cadastrar'}</button>
@@ -9055,17 +9132,19 @@ function saveTecnico(e, tecnicoId) {
     const tel   = document.getElementById('tecTel').value.trim();
     const wa    = document.getElementById('tecWA').value.trim();
     const esp   = document.getElementById('tecEsp').value.trim();
+    const quals = Array.from(document.querySelectorAll('.tec-qual-cb:checked')).map(cb => cb.value);
     const users = app.state.users || [];
 
     if (tecnicoId) {
         const u = users.find(x => x.id === tecnicoId);
         if (!u) return;
         u.name = nome; u.email = email; u.cpf = cpf; u.phone = tel; u.whatsapp = wa; u.specialty = esp;
+        u.qualifications = quals;
         if (senha) u.password = senha;
         showToast(`Dados de "${nome}" atualizados.`, 'success');
     } else {
         if (users.find(x => x.email === email)) { showToast('Este e-mail já está cadastrado no sistema.', 'error'); return; }
-        const newT = { id: 'tecnico_' + Date.now(), name: nome, email, password: senha, role: 'tecnico', cpf, phone: tel, whatsapp: wa, specialty: esp };
+        const newT = { id: 'tecnico_' + Date.now(), name: nome, email, password: senha, role: 'tecnico', cpf, phone: tel, whatsapp: wa, specialty: esp, qualifications: quals };
         users.push(newT);
         if (!app.state.tecnicoClients) app.state.tecnicoClients = {};
         app.state.tecnicoClients[newT.id] = [];
@@ -9487,8 +9566,9 @@ function renderCustomFieldInput(field, value) {
 }
 
 const FIELD_TYPE_LABELS = {
-    text: 'Texto', email: 'E-mail', tel: 'Telefone', number: 'Número', textarea: 'Texto longo',
-    date: 'Data', select: 'Seleção', radio: 'Opção', checkbox: 'Checkbox', multicheck: 'Múltipla'
+    text: 'Texto simples', email: 'E-mail', tel: 'Telefone', number: 'Número', textarea: 'Texto longo',
+    date: 'Data', select: 'Seleção única', radio: 'Opção', checkbox: 'Checkbox', multicheck: 'Múltipla escolha',
+    yesno: 'Sim / Não', file: 'Anexo de arquivo', camera: 'Foto pela câmera', password: 'Senha'
 };
 
 const FORM_LABELS = { cliente: 'Cadastro de Cliente', consultor: 'Cadastro de Consultor', instalador: 'Cadastro de Instalador' };
@@ -10095,8 +10175,9 @@ function renderComunicadosMural() {
 function init() {
     loadState();
 
-    // Verificar se é acesso via link de cadastro público
+    // Verificar se é acesso via link público (consultor ou técnico)
     if (checkPublicCadastroParam()) return;
+    if (checkTecnicoFormParam()) return;
 
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
     document.getElementById('demoButton').addEventListener('click', handleDemo);
@@ -13857,6 +13938,468 @@ function deleteSimulacao(id) {
     saveState();
     showToast('Cenário excluído.', 'info');
     renderPresidenteSimulador();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   QUALIFICAÇÃO, LINK E FORMULÁRIO DO TÉCNICO
+═══════════════════════════════════════════════════════════════════ */
+
+// ── HELPERS ──────────────────────────────────────────────────────
+
+function getTecnicoFormFields(tecnicoId) {
+    const saved = (app.state.tecnicoForms || {})[tecnicoId];
+    if (saved && saved.fields && saved.fields.length) return JSON.parse(JSON.stringify(saved.fields));
+    return JSON.parse(JSON.stringify(TECNICO_DEFAULT_FORM_FIELDS));
+}
+
+function saveTecnicoFormFields(tecnicoId, fields) {
+    if (!app.state.tecnicoForms) app.state.tecnicoForms = {};
+    app.state.tecnicoForms[tecnicoId] = { fields };
+    saveState();
+}
+
+// ── LINK PERSONALIZADO ───────────────────────────────────────────
+
+function getTecnicoLinkCode(userId) {
+    return btoa(userId).replace(/=/g, '');
+}
+
+function resolveTecnicoFromCode(code) {
+    try {
+        const padded = code + '=='.slice((code.length % 4) || 4);
+        const userId = atob(padded);
+        return (app.state.users || []).find(u => u.id === userId && u.role === 'tecnico');
+    } catch (e) { return null; }
+}
+
+function getTecnicoPublicLink(userId) {
+    const code = getTecnicoLinkCode(userId);
+    return `${window.location.origin}${window.location.pathname}?tecnico=${code}`;
+}
+
+function checkTecnicoFormParam() {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('tecnico');
+    if (!code) return false;
+    const tecnico = resolveTecnicoFromCode(code);
+    showTecnicoPublicForm(tecnico);
+    return true;
+}
+
+// ── FORMULÁRIO PÚBLICO ───────────────────────────────────────────
+
+function showTecnicoPublicForm(tecnico) {
+    const overlay = document.createElement('div');
+    overlay.id = 'tecnicoPublicFormScreen';
+    overlay.className = 'public-cadastro-screen';
+    document.body.appendChild(overlay);
+
+    const loginEl = document.getElementById('loginScreen');
+    if (loginEl) loginEl.style.display = 'none';
+
+    function renderForm() {
+        const fields = tecnico ? getTecnicoFormFields(tecnico.id) : JSON.parse(JSON.stringify(TECNICO_DEFAULT_FORM_FIELDS));
+        const activeFields = fields.filter(f => f.active);
+
+        overlay.innerHTML = `
+        <div class="public-form-container">
+            <div class="public-form-header">
+                <div class="public-logo">
+                    <span style="font-size:1.8rem;">📡</span>
+                    <span class="public-brand">Tracktiv</span>
+                </div>
+                ${tecnico
+                    ? `<div class="public-consultor-tag">Técnico responsável: <strong>${esc(tecnico.name)}</strong></div>`
+                    : `<div class="public-consultor-tag" style="color:#ef4444;">⚠️ Link inválido — mas você ainda pode preencher</div>`}
+            </div>
+            <div style="padding:20px 28px 8px;">
+                <h2 style="margin:0 0 4px;font-size:1.25rem;color:var(--primary);">Formulário de atendimento</h2>
+                <p style="margin:0;color:var(--text-soft);font-size:0.9rem;">Preencha seus dados para que possamos entrar em contato.</p>
+            </div>
+            <form id="tecnicoPublicForm" class="public-form-body">
+                <div class="pub-form-grid">
+                    ${activeFields.map(f => _renderTecPubField(f)).join('')}
+                </div>
+                <div class="public-form-actions" style="margin-top:24px;">
+                    <button type="submit" class="primary-btn" style="background:linear-gradient(135deg,var(--accent),#e06b00);flex:1;">✅ Enviar</button>
+                </div>
+                <div id="tecPubFormError" class="error-text" style="margin-top:8px;"></div>
+            </form>
+        </div>`;
+
+        document.getElementById('tecnicoPublicForm').addEventListener('submit', async e => {
+            e.preventDefault();
+            const errEl = document.getElementById('tecPubFormError');
+            errEl.textContent = '';
+            const data = {};
+            let valid = true;
+
+            for (const f of activeFields) {
+                if (f.type === 'multicheck') {
+                    data[f.id] = Array.from(document.querySelectorAll(`.tpf_mc_${f.id}:checked`)).map(c => c.value);
+                    if (f.required && !data[f.id].length) { errEl.textContent = `Selecione ao menos uma opção em "${f.label}".`; valid = false; break; }
+                } else if (f.type === 'file' || f.type === 'camera') {
+                    data[f.id] = null; // handled with FileReader below
+                } else {
+                    const inp = document.getElementById(`tpf_${f.id}`);
+                    data[f.id] = inp ? inp.value.trim() : '';
+                    if (f.required && !data[f.id]) { errEl.textContent = `O campo "${f.label}" é obrigatório.`; if(inp) inp.focus(); valid = false; break; }
+                }
+            }
+            if (!valid) return;
+
+            // Process file/camera inputs with FileReader
+            const filePromises = [];
+            for (const f of activeFields) {
+                if (f.type === 'file' || f.type === 'camera') {
+                    const inp = document.getElementById(`tpf_${f.id}`);
+                    if (inp && inp.files[0]) {
+                        if (inp.files[0].size > 5242880) { errEl.textContent = `Arquivo "${f.label}" é muito grande (máx. 5 MB).`; valid = false; break; }
+                        filePromises.push(new Promise(resolve => {
+                            const reader = new FileReader();
+                            reader.onload = ev => { data[f.id] = { name: inp.files[0].name, data: ev.target.result, type: inp.files[0].type, size: inp.files[0].size }; resolve(); };
+                            reader.readAsDataURL(inp.files[0]);
+                        }));
+                    }
+                    if (f.required && !inp?.files?.[0]) { errEl.textContent = `O campo "${f.label}" é obrigatório.`; valid = false; break; }
+                }
+            }
+            if (!valid) return;
+            await Promise.all(filePromises);
+
+            if (!app.state.tecnicoSubmissions) app.state.tecnicoSubmissions = {};
+            const tecId = tecnico ? tecnico.id : '__unknown__';
+            if (!app.state.tecnicoSubmissions[tecId]) app.state.tecnicoSubmissions[tecId] = [];
+            const sub = { id: `tsub_${Date.now()}`, submittedAt: todayISO(), data };
+            app.state.tecnicoSubmissions[tecId].push(sub);
+            if (tecnico) {
+                const nomeVal = data['tf_name'] || 'cliente desconhecido';
+                addNotification(tecnico.id, 'info', `📥 Nova resposta no seu formulário: ${esc(nomeVal)}`, null);
+            }
+            saveState();
+
+            overlay.innerHTML = `
+            <div class="public-form-container" style="text-align:center;padding:48px 32px;">
+                <div style="font-size:4rem;margin-bottom:20px;">✅</div>
+                <h2 style="color:var(--primary);margin-bottom:12px;">Dados recebidos!</h2>
+                <p style="color:var(--text-soft);font-size:1.05rem;margin-bottom:8px;">Obrigado pelo preenchimento!</p>
+                <p style="color:var(--text-soft);margin-bottom:28px;">Em breve um de nossos especialistas entrará em contato.</p>
+                <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px 20px;margin-bottom:28px;text-align:left;font-size:0.9rem;color:#065f46;">
+                    <strong>✅ O que acontece agora?</strong><br>
+                    • Seu atendente recebeu uma notificação<br>
+                    • Em até 24h entraremos em contato<br>
+                    • Seus dados estão seguros conosco
+                </div>
+                <p style="color:var(--text-muted);font-size:0.85rem;">© Tracktiv — Rastreamento e Segurança Veicular</p>
+            </div>`;
+        });
+    }
+
+    renderForm();
+}
+
+function _renderTecPubField(f) {
+    const req = f.required ? ' *' : '';
+    const reqAttr = f.required ? ' required' : '';
+    const wide = ['textarea','file','camera','multicheck'].includes(f.type) ? 'full-width' : '';
+    if (f.type === 'text' || f.type === 'number' || f.type === 'date') {
+        return `<div class="field ${wide}"><label>${esc(f.label)}${req}</label><input id="tpf_${f.id}" type="${f.type}"${reqAttr} placeholder="${esc(f.placeholder||'')}"></div>`;
+    }
+    if (f.type === 'email') {
+        return `<div class="field ${wide}"><label>${esc(f.label)}${req}</label><input id="tpf_${f.id}" type="email"${reqAttr} placeholder="seu@email.com"></div>`;
+    }
+    if (f.type === 'textarea') {
+        return `<div class="field full-width"><label>${esc(f.label)}${req}</label><textarea id="tpf_${f.id}" rows="3"${reqAttr} placeholder="${esc(f.placeholder||'')}"></textarea></div>`;
+    }
+    if (f.type === 'yesno') {
+        return `<div class="field ${wide}"><label>${esc(f.label)}${req}</label><select id="tpf_${f.id}"${reqAttr}><option value="">Selecione…</option><option value="sim">Sim</option><option value="nao">Não</option></select></div>`;
+    }
+    if (f.type === 'select') {
+        const opts = (f.options||[]).map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+        return `<div class="field ${wide}"><label>${esc(f.label)}${req}</label><select id="tpf_${f.id}"${reqAttr}><option value="">Selecione…</option>${opts}</select></div>`;
+    }
+    if (f.type === 'multicheck') {
+        const opts = (f.options||[]).map(o=>`<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;"><input type="checkbox" class="tpf_mc_${f.id}" value="${esc(o)}" style="width:15px;height:15px;">${esc(o)}</label>`).join('');
+        return `<div class="field full-width"><label>${esc(f.label)}${req}</label><div style="margin-top:6px;">${opts}</div></div>`;
+    }
+    if (f.type === 'file') {
+        return `<div class="field full-width"><label>${esc(f.label)}${req}</label><input id="tpf_${f.id}" type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"${reqAttr}></div>`;
+    }
+    if (f.type === 'camera') {
+        return `<div class="field full-width"><label>${esc(f.label)}${req}</label><input id="tpf_${f.id}" type="file" accept="image/*" capture="environment"${reqAttr}></div>`;
+    }
+    return '';
+}
+
+// ── PAINEL DO TÉCNICO: MEU LINK ───────────────────────────────────
+
+function renderMeuLinkTecnico() {
+    const u = app.currentUser;
+    if (!u || u.role !== 'tecnico') return;
+    const link = getTecnicoPublicLink(u.id);
+    const waMsg = encodeURIComponent(`Olá! Preencha o formulário de atendimento Tracktiv pelo link:\n${link}\n\nQualquer dúvida, estou à disposição! 😊`);
+    const subs = ((app.state.tecnicoSubmissions || {})[u.id] || []);
+    const subsThisMonth = subs.filter(s => (s.submittedAt || '').startsWith(getCurrentMonthKey()));
+
+    const el = document.getElementById('dynamicContent');
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>🔗 Meu Link de Formulário</h2>
+            <p>Compartilhe seu link personalizado. Novos formulários chegam direto no seu painel.</p></div>
+            <button class="secondary-btn" onclick="renderTecnicoFormEditor()">📝 Editar formulário</button>
+        </div>
+
+        <div class="card" style="text-align:center;margin-bottom:20px;">
+            <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:8px;font-weight:600;letter-spacing:.05em;">SEU LINK PERSONALIZADO</div>
+            <div class="meu-link-url">${esc(link)}</div>
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap;">
+                <button class="primary-btn" id="copyTecLinkBtn">📋 Copiar link</button>
+                <a href="https://wa.me/?text=${waMsg}" target="_blank" class="secondary-btn" style="text-decoration:none;">💬 Compartilhar no WhatsApp</a>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+            <div class="card" style="text-align:center;">
+                <h3>Respostas este mês</h3>
+                <div class="metric" style="font-size:2.5rem;">${subsThisMonth.length}</div>
+                <small style="color:var(--text-soft);">${getCurrentMonthLabel()}</small>
+            </div>
+            <div class="card" style="text-align:center;">
+                <h3>Total acumulado</h3>
+                <div class="metric" style="font-size:2.5rem;">${subs.length}</div>
+                <small style="color:var(--text-soft);">todas as respostas</small>
+            </div>
+        </div>
+
+        ${subs.length ? `
+        <div class="card" style="text-align:center;padding:20px;">
+            <button class="primary-btn" onclick="renderTecnicoFormSubmissions()">📥 Ver todas as respostas (${subs.length})</button>
+        </div>` : `
+        <div class="card" style="text-align:center;padding:40px;color:var(--text-soft);">
+            <div style="font-size:2.5rem;margin-bottom:12px;">📝</div>
+            <p>Nenhuma resposta recebida ainda.</p>
+            <p style="font-size:0.88rem;">Compartilhe seu link para começar a receber dados dos clientes!</p>
+        </div>`}
+    `;
+    showSection('dynamicContent');
+
+    document.getElementById('copyTecLinkBtn').addEventListener('click', () => {
+        navigator.clipboard.writeText(link).then(() => {
+            showToast('Link copiado!', 'success');
+            const btn = document.getElementById('copyTecLinkBtn');
+            if (btn) { btn.textContent = '✅ Copiado!'; setTimeout(() => { if (document.getElementById('copyTecLinkBtn')) document.getElementById('copyTecLinkBtn').textContent = '📋 Copiar link'; }, 2000); }
+        }).catch(() => showToast('Não foi possível copiar automaticamente.', 'warning'));
+    });
+}
+
+// ── EDITOR DE FORMULÁRIO ─────────────────────────────────────────
+
+function renderTecnicoFormEditor() {
+    const u = app.currentUser;
+    if (!u || u.role !== 'tecnico') return;
+    const fields = getTecnicoFormFields(u.id);
+
+    const el = document.getElementById('dynamicContent');
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>📝 Meu Formulário</h2>
+            <p>Personalize os campos que seus clientes preenchem pelo link. As alterações refletem imediatamente.</p></div>
+            <button class="secondary-btn" onclick="renderMeuLinkTecnico()">🔗 Ver meu link</button>
+        </div>
+
+        <div id="tecFormFieldsList">
+            ${_renderFormFieldsList(fields, u.id)}
+        </div>
+
+        <div class="card" style="margin-top:20px;">
+            <h3 style="margin:0 0 16px;">➕ Adicionar novo campo</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="field" style="margin:0;">
+                    <label>Nome do campo *</label>
+                    <input id="newFieldLabel" type="text" placeholder="Ex: Data de nascimento">
+                </div>
+                <div class="field" style="margin:0;">
+                    <label>Tipo *</label>
+                    <select id="newFieldType" onchange="onNewFieldTypeChange()">
+                        <option value="text">Texto simples</option>
+                        <option value="textarea">Texto longo</option>
+                        <option value="number">Número</option>
+                        <option value="date">Data</option>
+                        <option value="yesno">Sim / Não</option>
+                        <option value="select">Seleção única (dropdown)</option>
+                        <option value="multicheck">Múltipla escolha (checkboxes)</option>
+                        <option value="file">Anexo de arquivo (PDF, imagem)</option>
+                        <option value="camera">Foto pela câmera</option>
+                    </select>
+                </div>
+            </div>
+            <div id="newFieldOptionsWrap" style="display:none;margin-top:12px;">
+                <div class="field" style="margin:0;">
+                    <label>Opções (separadas por vírgula) *</label>
+                    <input id="newFieldOptions" type="text" placeholder="Opção 1, Opção 2, Opção 3">
+                </div>
+            </div>
+            <div style="margin-top:14px;">
+                <button class="primary-btn" onclick="addTecnicoFormField('${u.id}')">+ Adicionar campo</button>
+            </div>
+            <div id="addFieldError" class="error-text" style="margin-top:8px;"></div>
+        </div>
+    `;
+    showSection('dynamicContent');
+}
+
+function _renderFormFieldsList(fields, tecId) {
+    if (!fields.length) return '<div class="card"><p class="text-muted">Nenhum campo no formulário.</p></div>';
+    return `<div class="card" style="padding:0;overflow:hidden;">
+        <div style="padding:12px 20px;border-bottom:1px solid var(--border);background:var(--bg);display:flex;justify-content:space-between;align-items:center;">
+            <strong>Campos do formulário</strong>
+            <span style="font-size:0.82rem;color:var(--text-soft);">${fields.filter(f=>f.active).length} ativos de ${fields.length} total</span>
+        </div>
+        ${fields.map((f, idx) => `
+        <div class="tec-form-field-row ${f.active ? '' : 'field-row-inactive'}">
+            <div class="field-row-info">
+                <span class="field-row-drag" title="Usar ▲▼ para reordenar">⠿</span>
+                <div>
+                    <span class="field-row-label">${esc(f.label)}</span>
+                    <span class="field-row-type">${esc(FIELD_TYPE_LABELS[f.type] || f.type)}</span>
+                    ${f.required ? '<span class="field-row-badge badge-req">Obrigatório</span>' : '<span class="field-row-badge badge-opt">Opcional</span>'}
+                    ${f.system ? '<span class="field-row-badge badge-sys">Sistema</span>' : ''}
+                    ${!f.active ? '<span class="field-row-badge" style="background:#fee2e2;color:#b91c1c;">Desativado</span>' : ''}
+                </div>
+            </div>
+            <div class="field-row-actions">
+                ${idx > 0
+                    ? `<button class="icon-btn" onclick="moveTecnicoField('${tecId}',${idx},-1)" title="Mover para cima">▲</button>`
+                    : '<span style="width:28px;display:inline-block;"></span>'}
+                ${idx < fields.length - 1
+                    ? `<button class="icon-btn" onclick="moveTecnicoField('${tecId}',${idx},1)" title="Mover para baixo">▼</button>`
+                    : '<span style="width:28px;display:inline-block;"></span>'}
+                <button class="icon-btn" onclick="toggleTecnicoField('${tecId}',${idx})" title="${f.active ? 'Desativar campo' : 'Ativar campo'}">${f.active ? '👁' : '🚫'}</button>
+                <button class="icon-btn" onclick="toggleTecnicoFieldRequired('${tecId}',${idx})" title="${f.required ? 'Tornar opcional' : 'Tornar obrigatório'}">⭐</button>
+                <button class="icon-btn" onclick="renameTecnicoField('${tecId}',${idx})" title="Renomear campo">✏️</button>
+                ${!f.system ? `<button class="icon-btn icon-btn-danger" onclick="removeTecnicoField('${tecId}',${idx})" title="Remover campo">🗑</button>` : ''}
+            </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function onNewFieldTypeChange() {
+    const type = document.getElementById('newFieldType')?.value;
+    const wrap = document.getElementById('newFieldOptionsWrap');
+    if (wrap) wrap.style.display = (type === 'select' || type === 'multicheck') ? 'block' : 'none';
+}
+
+function addTecnicoFormField(tecId) {
+    const label = (document.getElementById('newFieldLabel')?.value || '').trim();
+    const type  = document.getElementById('newFieldType')?.value || 'text';
+    const errEl = document.getElementById('addFieldError');
+    if (errEl) errEl.textContent = '';
+    if (!label) { if (errEl) errEl.textContent = 'O nome do campo é obrigatório.'; return; }
+    const fields = getTecnicoFormFields(tecId);
+    if (fields.find(f => f.label.toLowerCase() === label.toLowerCase())) {
+        if (errEl) errEl.textContent = 'Já existe um campo com este nome.'; return;
+    }
+    const newField = { id: 'tf_custom_' + Date.now(), label, type, required: false, active: true, system: false };
+    if (type === 'select' || type === 'multicheck') {
+        const optsRaw = (document.getElementById('newFieldOptions')?.value || '');
+        newField.options = optsRaw.split(',').map(o => o.trim()).filter(Boolean);
+        if (!newField.options.length) { if (errEl) errEl.textContent = 'Adicione pelo menos uma opção (separadas por vírgula).'; return; }
+    }
+    fields.push(newField);
+    saveTecnicoFormFields(tecId, fields);
+    showToast(`Campo "${label}" adicionado!`, 'success');
+    renderTecnicoFormEditor();
+}
+
+function toggleTecnicoField(tecId, idx) {
+    const fields = getTecnicoFormFields(tecId);
+    if (fields[idx]) { fields[idx].active = !fields[idx].active; saveTecnicoFormFields(tecId, fields); renderTecnicoFormEditor(); }
+}
+
+function toggleTecnicoFieldRequired(tecId, idx) {
+    const fields = getTecnicoFormFields(tecId);
+    if (fields[idx]) { fields[idx].required = !fields[idx].required; saveTecnicoFormFields(tecId, fields); renderTecnicoFormEditor(); }
+}
+
+function renameTecnicoField(tecId, idx) {
+    const fields = getTecnicoFormFields(tecId);
+    if (!fields[idx]) return;
+    const newLabel = prompt('Novo nome para este campo:', fields[idx].label);
+    if (!newLabel || !newLabel.trim()) return;
+    fields[idx].label = newLabel.trim();
+    saveTecnicoFormFields(tecId, fields);
+    showToast('Campo renomeado.', 'success');
+    renderTecnicoFormEditor();
+}
+
+function removeTecnicoField(tecId, idx) {
+    const fields = getTecnicoFormFields(tecId);
+    if (!fields[idx] || fields[idx].system) return;
+    if (!confirm(`Remover campo "${fields[idx].label}"?`)) return;
+    fields.splice(idx, 1);
+    saveTecnicoFormFields(tecId, fields);
+    renderTecnicoFormEditor();
+}
+
+function moveTecnicoField(tecId, idx, dir) {
+    const fields = getTecnicoFormFields(tecId);
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= fields.length) return;
+    [fields[idx], fields[newIdx]] = [fields[newIdx], fields[idx]];
+    saveTecnicoFormFields(tecId, fields);
+    renderTecnicoFormEditor();
+}
+
+// ── RESPOSTAS DO FORMULÁRIO ──────────────────────────────────────
+
+function renderTecnicoFormSubmissions() {
+    const u = app.currentUser;
+    if (!u || u.role !== 'tecnico') return;
+    const fields = getTecnicoFormFields(u.id);
+    const subs = ((app.state.tecnicoSubmissions || {})[u.id] || [])
+        .slice().sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+
+    const el = document.getElementById('dynamicContent');
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>📥 Respostas do Formulário</h2>
+            <p>${subs.length} resposta${subs.length !== 1 ? 's' : ''} recebida${subs.length !== 1 ? 's' : ''} via link.</p></div>
+            <button class="secondary-btn" onclick="renderMeuLinkTecnico()">🔗 Meu link</button>
+        </div>
+        ${subs.length === 0
+            ? `<div class="card" style="text-align:center;padding:48px;color:var(--text-soft);">
+                <div style="font-size:2.5rem;margin-bottom:12px;">📝</div>
+                <p>Nenhuma resposta ainda.</p>
+                <p style="font-size:0.88rem;">Compartilhe seu link para começar a receber dados!</p>
+               </div>`
+            : subs.map(s => {
+                const nome = s.data['tf_name'] || '—';
+                const tel  = s.data['tf_phone'] || '';
+                const dataEntries = fields
+                    .filter(f => f.active && s.data[f.id] !== undefined && s.data[f.id] !== null && s.data[f.id] !== '')
+                    .map(f => {
+                        let val = s.data[f.id];
+                        if (Array.isArray(val)) val = val.length ? val.join(', ') : '—';
+                        if (val && typeof val === 'object' && val.name) val = `📎 ${val.name}`;
+                        if (!val) return '';
+                        return `<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:0.88rem;">
+                            <span style="color:var(--text-soft);min-width:140px;flex-shrink:0;">${esc(f.label)}</span>
+                            <span>${esc(String(val))}</span>
+                        </div>`;
+                    }).join('');
+                return `<div class="card" style="margin-bottom:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                        <div>
+                            <strong style="font-size:1rem;">${esc(nome)}</strong>
+                            ${tel ? `<span style="color:var(--text-soft);margin-left:10px;font-size:0.88rem;">📞 ${esc(tel)}</span>` : ''}
+                        </div>
+                        <span class="badge badge-active" style="font-size:0.78rem;">${formatDate(s.submittedAt)}</span>
+                    </div>
+                    ${dataEntries || '<p class="text-muted" style="margin:0;">Sem dados adicionais.</p>'}
+                </div>`;
+            }).join('')}
+    `;
+    showSection('dynamicContent');
 }
 
 document.addEventListener('DOMContentLoaded', init);
