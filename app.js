@@ -173,7 +173,7 @@ const NAV_TREE = {
         { id: 't_clientes',   label: 'Meus Clientes',  icon: '👤', section: 'tecnicoClientes' },
         { id: 't_chamados',   label: 'Chamados',       icon: '🎫', section: 'tecnicoChamados' },
         { id: 't_link',       label: 'Meu Link',       icon: '🔗', render: () => renderMeuLinkTecnico() },
-        { id: 't_formulario', label: 'Meu Formulário', icon: '📝', render: () => renderTecnicoFormEditor() },
+        { id: 't_formulario', label: 'Meus Formulários', icon: '📝', render: () => renderTecnicoFormLibrary() },
         { id: 't_respostas',  label: 'Respostas',      icon: '📥', render: () => renderTecnicoFormSubmissions() },
         { id: 't_mensagens',  label: 'Mensagens',      icon: '💬', action: () => openChatOverlay('gestor') }
     ]
@@ -2038,6 +2038,19 @@ function loadState() {
             if (!app.state.tecnicoSubmissions)   app.state.tecnicoSubmissions   = {};
             if (!app.state.tecnicoFormSends)     app.state.tecnicoFormSends     = [];
             if (!app.state.tecnicoLinkStats)     app.state.tecnicoLinkStats     = {};
+            // Migração: converte formato antigo { fields:[...] } para array de formulários
+            Object.keys(app.state.tecnicoForms).forEach(tecId => {
+                const v = app.state.tecnicoForms[tecId];
+                if (v && !Array.isArray(v)) {
+                    app.state.tecnicoForms[tecId] = [{
+                        id: 'tform_default_' + tecId,
+                        name: 'Formulário padrão',
+                        sector: 'rastreamento',
+                        createdAt: todayISO(),
+                        fields: v.fields || JSON.parse(JSON.stringify(TECNICO_DEFAULT_FORM_FIELDS))
+                    }];
+                }
+            });
         } catch (e) {
             app.state = JSON.parse(JSON.stringify(cleanState));
         }
@@ -13988,16 +14001,30 @@ function deleteSimulacao(id) {
 
 // ── HELPERS ──────────────────────────────────────────────────────
 
-function getTecnicoFormFields(tecnicoId) {
-    const saved = (app.state.tecnicoForms || {})[tecnicoId];
-    if (saved && saved.fields && saved.fields.length) return JSON.parse(JSON.stringify(saved.fields));
-    return JSON.parse(JSON.stringify(TECNICO_DEFAULT_FORM_FIELDS));
+function getTecnicoForms(tecId) {
+    const data = (app.state.tecnicoForms || {})[tecId];
+    if (Array.isArray(data) && data.length) return data;
+    const def = { id: 'tform_default_' + tecId, name: 'Formulário padrão', sector: 'rastreamento', createdAt: todayISO(), fields: JSON.parse(JSON.stringify(TECNICO_DEFAULT_FORM_FIELDS)) };
+    if (!app.state.tecnicoForms) app.state.tecnicoForms = {};
+    app.state.tecnicoForms[tecId] = [def];
+    return [def];
 }
 
-function saveTecnicoFormFields(tecnicoId, fields) {
-    if (!app.state.tecnicoForms) app.state.tecnicoForms = {};
-    app.state.tecnicoForms[tecnicoId] = { fields };
-    saveState();
+function getTecnicoFormById(tecId, formId) {
+    return getTecnicoForms(tecId).find(f => f.id === formId) || null;
+}
+
+// Backward compat — returns first form's fields (used by public link)
+function getTecnicoFormFields(tecId, formId) {
+    const form = formId ? getTecnicoFormById(tecId, formId) : getTecnicoForms(tecId)[0];
+    return form ? JSON.parse(JSON.stringify(form.fields)) : JSON.parse(JSON.stringify(TECNICO_DEFAULT_FORM_FIELDS));
+}
+
+// Backward compat — saves to specific or first form
+function saveTecnicoFormFields(tecId, fields, formId) {
+    const forms = getTecnicoForms(tecId);
+    const target = formId ? forms.find(f => f.id === formId) : forms[0];
+    if (target) { target.fields = fields; app.state.tecnicoForms[tecId] = forms; saveState(); }
 }
 
 // ── LINK PERSONALIZADO ───────────────────────────────────────────
@@ -14228,7 +14255,7 @@ function renderMeuLinkTecnico() {
         <div class="section-header" style="margin-bottom:24px;">
             <div><h2>🔗 Meu Link de Formulário</h2>
             <p>Compartilhe seu link ou envie diretamente para um cliente.</p></div>
-            <button class="secondary-btn" onclick="renderTecnicoFormEditor()">📝 Editar formulário</button>
+            <button class="secondary-btn" onclick="renderTecnicoFormLibrary()">📝 Meus formulários</button>
         </div>
 
         <!-- Link público -->
@@ -14317,34 +14344,156 @@ function renderMeuLinkTecnico() {
     });
 }
 
-// ── EDITOR DE FORMULÁRIO ─────────────────────────────────────────
+// ── BIBLIOTECA DE FORMULÁRIOS ─────────────────────────────────────
 
-function renderTecnicoFormEditor() {
+function renderTecnicoFormLibrary() {
     const u = app.currentUser;
     if (!u || u.role !== 'tecnico') return;
-    const fields = getTecnicoFormFields(u.id);
-
+    const forms = getTecnicoForms(u.id);
     const el = document.getElementById('dynamicContent');
     el.innerHTML = `
         <div class="section-header" style="margin-bottom:24px;">
-            <div><h2>📝 Meu Formulário</h2>
-            <p>Personalize os campos que seus clientes preenchem pelo link. As alterações refletem imediatamente.</p></div>
-            <button class="secondary-btn" onclick="renderMeuLinkTecnico()">🔗 Ver meu link</button>
+            <div><h2>📝 Meus Formulários</h2>
+            <p>Crie e gerencie formulários personalizados para enviar aos seus clientes.</p></div>
+            <button class="primary-btn" onclick="openCreateFormModal('${u.id}')">+ Criar formulário</button>
         </div>
+        ${forms.length === 0
+            ? `<div class="card" style="text-align:center;padding:48px;color:var(--text-soft);">
+                <div style="font-size:2.5rem;margin-bottom:12px;">📝</div>
+                <p>Nenhum formulário criado ainda.</p>
+                <button class="primary-btn" style="margin-top:12px;" onclick="openCreateFormModal('${u.id}')">+ Criar primeiro formulário</button>
+               </div>`
+            : forms.map(form => {
+                const seg    = TECNICO_SEGMENTS.find(s => s.key === form.sector);
+                const active = (form.fields || []).filter(f => f.active).length;
+                const total  = (form.fields || []).length;
+                return `<div class="card" style="margin-bottom:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:180px;">
+                        <div style="font-weight:700;font-size:1rem;">${esc(form.name)}</div>
+                        <div style="font-size:0.82rem;color:var(--text-soft);margin-top:3px;">
+                            ${seg ? `${seg.icon} ${seg.label}` : '📋 Geral'} &bull; ${active} campo${active !== 1 ? 's' : ''} ativo${active !== 1 ? 's' : ''} de ${total}
+                        </div>
+                        <div style="font-size:0.78rem;color:var(--text-muted);">Criado em ${formatDate(form.createdAt)}</div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;">
+                        <button class="secondary-btn" style="font-size:0.82rem;" onclick="renderTecnicoFormEditorById('${form.id}','${u.id}')">✏️ Editar</button>
+                        <button class="secondary-btn" style="font-size:0.82rem;" onclick="duplicateTecnicoForm('${form.id}','${u.id}')">📋 Duplicar</button>
+                        <button class="danger-btn"    style="font-size:0.82rem;" onclick="deleteTecnicoForm('${form.id}','${u.id}')">🗑</button>
+                    </div>
+                </div>`;
+            }).join('')}
+    `;
+    showSection('dynamicContent');
+}
 
+function openCreateFormModal(tecId) {
+    showModal('Criar novo formulário', `
+        <div class="field">
+            <label>Nome do formulário *</label>
+            <input id="newFormName" type="text" placeholder="Ex: Ficha de atendimento SST">
+        </div>
+        <div class="field">
+            <label>Setor</label>
+            <select id="newFormSector">
+                ${TECNICO_SEGMENTS.map(s => `<option value="${s.key}">${s.icon} ${s.label}</option>`).join('')}
+                <option value="geral">📋 Geral</option>
+            </select>
+        </div>
+        <div class="field">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="newFormCopyDefault" checked style="width:15px;height:15px;">
+                Iniciar com campos padrão (nome, telefone, e-mail…)
+            </label>
+        </div>
+        <div id="createFormError" class="error-text" style="margin-top:4px;"></div>
+        <div class="actions" style="margin-top:16px;">
+            <button class="primary-btn" onclick="saveNewForm('${tecId}')">Criar formulário</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+    setTimeout(() => document.getElementById('newFormName')?.focus(), 100);
+}
+
+function saveNewForm(tecId) {
+    const name        = (document.getElementById('newFormName')?.value || '').trim();
+    const sector      = document.getElementById('newFormSector')?.value || 'geral';
+    const copyDefault = document.getElementById('newFormCopyDefault')?.checked ?? true;
+    const errEl       = document.getElementById('createFormError');
+    if (!name) { if (errEl) errEl.textContent = 'O nome é obrigatório.'; return; }
+    const forms = getTecnicoForms(tecId);
+    if (forms.find(f => f.name.toLowerCase() === name.toLowerCase())) {
+        if (errEl) errEl.textContent = 'Já existe um formulário com este nome.'; return;
+    }
+    const newForm = {
+        id: 'tform_' + Date.now(), name, sector,
+        createdAt: todayISO(),
+        fields: copyDefault ? JSON.parse(JSON.stringify(TECNICO_DEFAULT_FORM_FIELDS)) : []
+    };
+    forms.push(newForm);
+    if (!app.state.tecnicoForms) app.state.tecnicoForms = {};
+    app.state.tecnicoForms[tecId] = forms;
+    saveState();
+    closeModal();
+    showToast(`Formulário "${name}" criado!`, 'success');
+    renderTecnicoFormEditorById(newForm.id, tecId);
+}
+
+function duplicateTecnicoForm(formId, tecId) {
+    const forms    = getTecnicoForms(tecId);
+    const original = forms.find(f => f.id === formId);
+    if (!original) return;
+    const copy = JSON.parse(JSON.stringify(original));
+    copy.id = 'tform_' + Date.now();
+    copy.name = original.name + ' (cópia)';
+    copy.createdAt = todayISO();
+    forms.push(copy);
+    app.state.tecnicoForms[tecId] = forms;
+    saveState();
+    showToast(`Formulário "${copy.name}" criado!`, 'success');
+    renderTecnicoFormLibrary();
+}
+
+function deleteTecnicoForm(formId, tecId) {
+    const forms = getTecnicoForms(tecId);
+    if (forms.length <= 1) { showToast('Você precisa ter pelo menos um formulário.', 'warning'); return; }
+    const form = forms.find(f => f.id === formId);
+    if (!form) return;
+    if (!confirm(`Excluir o formulário "${form.name}"?`)) return;
+    app.state.tecnicoForms[tecId] = forms.filter(f => f.id !== formId);
+    saveState();
+    showToast('Formulário excluído.', 'success');
+    renderTecnicoFormLibrary();
+}
+
+// ── EDITOR POR FORMULÁRIO ─────────────────────────────────────────
+
+function renderTecnicoFormEditor() { renderTecnicoFormLibrary(); } // compat redirect
+
+function renderTecnicoFormEditorById(formId, tecId) {
+    tecId = tecId || app.currentUser?.id;
+    const form = getTecnicoFormById(tecId, formId);
+    if (!form) { showToast('Formulário não encontrado.', 'error'); renderTecnicoFormLibrary(); return; }
+    const fields = form.fields || [];
+    const seg    = TECNICO_SEGMENTS.find(s => s.key === form.sector);
+    const el     = document.getElementById('dynamicContent');
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div>
+                <button class="secondary-btn" style="font-size:0.78rem;padding:4px 10px;margin-bottom:8px;" onclick="renderTecnicoFormLibrary()">← Meus Formulários</button>
+                <h2>✏️ ${esc(form.name)}</h2>
+                <p>${seg ? `${seg.icon} ${seg.label}` : '📋 Geral'} &bull; ${fields.filter(f=>f.active).length} campos ativos de ${fields.length}</p>
+            </div>
+            <button class="secondary-btn" onclick="openRenameFormModal('${formId}','${tecId}')">✏️ Renomear</button>
+        </div>
         <div id="tecFormFieldsList">
-            ${_renderFormFieldsList(fields, u.id)}
+            ${_renderFormFieldsList(fields, tecId, formId)}
         </div>
-
         <div class="card" style="margin-top:20px;">
             <h3 style="margin:0 0 16px;">➕ Adicionar novo campo</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <div class="field" style="margin:0;">
-                    <label>Nome do campo *</label>
-                    <input id="newFieldLabel" type="text" placeholder="Ex: Data de nascimento">
-                </div>
-                <div class="field" style="margin:0;">
-                    <label>Tipo *</label>
+                <div class="field" style="margin:0;"><label>Nome do campo *</label>
+                    <input id="newFieldLabel" type="text" placeholder="Ex: Data de nascimento"></div>
+                <div class="field" style="margin:0;"><label>Tipo *</label>
                     <select id="newFieldType" onchange="onNewFieldTypeChange()">
                         <option value="text">Texto simples</option>
                         <option value="textarea">Texto longo</option>
@@ -14355,17 +14504,14 @@ function renderTecnicoFormEditor() {
                         <option value="multicheck">Múltipla escolha (checkboxes)</option>
                         <option value="file">Anexo de arquivo (PDF, imagem)</option>
                         <option value="camera">Foto pela câmera</option>
-                    </select>
-                </div>
+                    </select></div>
             </div>
             <div id="newFieldOptionsWrap" style="display:none;margin-top:12px;">
-                <div class="field" style="margin:0;">
-                    <label>Opções (separadas por vírgula) *</label>
-                    <input id="newFieldOptions" type="text" placeholder="Opção 1, Opção 2, Opção 3">
-                </div>
+                <div class="field" style="margin:0;"><label>Opções (separadas por vírgula) *</label>
+                    <input id="newFieldOptions" type="text" placeholder="Opção 1, Opção 2, Opção 3"></div>
             </div>
             <div style="margin-top:14px;">
-                <button class="primary-btn" onclick="addTecnicoFormField('${u.id}')">+ Adicionar campo</button>
+                <button class="primary-btn" onclick="addTecnicoFormField('${tecId}','${formId}')">+ Adicionar campo</button>
             </div>
             <div id="addFieldError" class="error-text" style="margin-top:8px;"></div>
         </div>
@@ -14373,8 +14519,42 @@ function renderTecnicoFormEditor() {
     showSection('dynamicContent');
 }
 
-function _renderFormFieldsList(fields, tecId) {
-    if (!fields.length) return '<div class="card"><p class="text-muted">Nenhum campo no formulário.</p></div>';
+function openRenameFormModal(formId, tecId) {
+    const form = getTecnicoFormById(tecId, formId);
+    if (!form) return;
+    showModal('Renomear formulário', `
+        <div class="field"><label>Nome *</label>
+            <input id="renameFormInput" type="text" value="${esc(form.name)}"></div>
+        <div class="field"><label>Setor</label>
+            <select id="renameFormSector">
+                ${TECNICO_SEGMENTS.map(s => `<option value="${s.key}" ${form.sector===s.key?'selected':''}>${s.icon} ${s.label}</option>`).join('')}
+                <option value="geral" ${form.sector==='geral'?'selected':''}>📋 Geral</option>
+            </select></div>
+        <div class="actions" style="margin-top:16px;">
+            <button class="primary-btn" onclick="_saveRenameForm('${formId}','${tecId}')">Salvar</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+}
+
+function _saveRenameForm(formId, tecId) {
+    const name   = (document.getElementById('renameFormInput')?.value || '').trim();
+    const sector = document.getElementById('renameFormSector')?.value || 'geral';
+    if (!name) { showToast('Nome é obrigatório.', 'warning'); return; }
+    const forms = getTecnicoForms(tecId);
+    const form  = forms.find(f => f.id === formId);
+    if (!form) return;
+    form.name = name; form.sector = sector;
+    app.state.tecnicoForms[tecId] = forms;
+    saveState();
+    closeModal();
+    showToast('Formulário atualizado.', 'success');
+    renderTecnicoFormEditorById(formId, tecId);
+}
+
+function _renderFormFieldsList(fields, tecId, formId) {
+    const fid = formId || '';
+    if (!fields.length) return `<div class="card"><p class="text-muted">Nenhum campo ainda. Use "Adicionar novo campo" abaixo para começar.</p></div>`;
     return `<div class="card" style="padding:0;overflow:hidden;">
         <div style="padding:12px 20px;border-bottom:1px solid var(--border);background:var(--bg);display:flex;justify-content:space-between;align-items:center;">
             <strong>Campos do formulário</strong>
@@ -14394,15 +14574,15 @@ function _renderFormFieldsList(fields, tecId) {
             </div>
             <div class="field-row-actions">
                 ${idx > 0
-                    ? `<button class="icon-btn" onclick="moveTecnicoField('${tecId}',${idx},-1)" title="Mover para cima">▲</button>`
+                    ? `<button class="icon-btn" onclick="moveTecnicoField('${tecId}','${fid}',${idx},-1)" title="Mover para cima">▲</button>`
                     : '<span style="width:28px;display:inline-block;"></span>'}
                 ${idx < fields.length - 1
-                    ? `<button class="icon-btn" onclick="moveTecnicoField('${tecId}',${idx},1)" title="Mover para baixo">▼</button>`
+                    ? `<button class="icon-btn" onclick="moveTecnicoField('${tecId}','${fid}',${idx},1)" title="Mover para baixo">▼</button>`
                     : '<span style="width:28px;display:inline-block;"></span>'}
-                <button class="icon-btn" onclick="toggleTecnicoField('${tecId}',${idx})" title="${f.active ? 'Desativar campo' : 'Ativar campo'}">${f.active ? '👁' : '🚫'}</button>
-                <button class="icon-btn" onclick="toggleTecnicoFieldRequired('${tecId}',${idx})" title="${f.required ? 'Tornar opcional' : 'Tornar obrigatório'}">⭐</button>
-                <button class="icon-btn" onclick="renameTecnicoField('${tecId}',${idx})" title="Renomear campo">✏️</button>
-                ${!f.system ? `<button class="icon-btn icon-btn-danger" onclick="removeTecnicoField('${tecId}',${idx})" title="Remover campo">🗑</button>` : ''}
+                <button class="icon-btn" onclick="toggleTecnicoField('${tecId}','${fid}',${idx})" title="${f.active ? 'Desativar' : 'Ativar'}">${f.active ? '👁' : '🚫'}</button>
+                <button class="icon-btn" onclick="toggleTecnicoFieldRequired('${tecId}','${fid}',${idx})" title="${f.required ? 'Tornar opcional' : 'Tornar obrigatório'}">⭐</button>
+                <button class="icon-btn" onclick="renameTecnicoField('${tecId}','${fid}',${idx})" title="Renomear">✏️</button>
+                ${!f.system ? `<button class="icon-btn icon-btn-danger" onclick="removeTecnicoField('${tecId}','${fid}',${idx})" title="Remover">🗑</button>` : ''}
             </div>
         </div>`).join('')}
     </div>`;
@@ -14414,13 +14594,13 @@ function onNewFieldTypeChange() {
     if (wrap) wrap.style.display = (type === 'select' || type === 'multicheck') ? 'block' : 'none';
 }
 
-function addTecnicoFormField(tecId) {
+function addTecnicoFormField(tecId, formId) {
     const label = (document.getElementById('newFieldLabel')?.value || '').trim();
     const type  = document.getElementById('newFieldType')?.value || 'text';
     const errEl = document.getElementById('addFieldError');
     if (errEl) errEl.textContent = '';
     if (!label) { if (errEl) errEl.textContent = 'O nome do campo é obrigatório.'; return; }
-    const fields = getTecnicoFormFields(tecId);
+    const fields = getTecnicoFormFields(tecId, formId);
     if (fields.find(f => f.label.toLowerCase() === label.toLowerCase())) {
         if (errEl) errEl.textContent = 'Já existe um campo com este nome.'; return;
     }
@@ -14428,51 +14608,51 @@ function addTecnicoFormField(tecId) {
     if (type === 'select' || type === 'multicheck') {
         const optsRaw = (document.getElementById('newFieldOptions')?.value || '');
         newField.options = optsRaw.split(',').map(o => o.trim()).filter(Boolean);
-        if (!newField.options.length) { if (errEl) errEl.textContent = 'Adicione pelo menos uma opção (separadas por vírgula).'; return; }
+        if (!newField.options.length) { if (errEl) errEl.textContent = 'Adicione pelo menos uma opção.'; return; }
     }
     fields.push(newField);
-    saveTecnicoFormFields(tecId, fields);
+    saveTecnicoFormFields(tecId, fields, formId);
     showToast(`Campo "${label}" adicionado!`, 'success');
-    renderTecnicoFormEditor();
+    renderTecnicoFormEditorById(formId, tecId);
 }
 
-function toggleTecnicoField(tecId, idx) {
-    const fields = getTecnicoFormFields(tecId);
-    if (fields[idx]) { fields[idx].active = !fields[idx].active; saveTecnicoFormFields(tecId, fields); renderTecnicoFormEditor(); }
+function toggleTecnicoField(tecId, formId, idx) {
+    const fields = getTecnicoFormFields(tecId, formId);
+    if (fields[idx]) { fields[idx].active = !fields[idx].active; saveTecnicoFormFields(tecId, fields, formId); renderTecnicoFormEditorById(formId, tecId); }
 }
 
-function toggleTecnicoFieldRequired(tecId, idx) {
-    const fields = getTecnicoFormFields(tecId);
-    if (fields[idx]) { fields[idx].required = !fields[idx].required; saveTecnicoFormFields(tecId, fields); renderTecnicoFormEditor(); }
+function toggleTecnicoFieldRequired(tecId, formId, idx) {
+    const fields = getTecnicoFormFields(tecId, formId);
+    if (fields[idx]) { fields[idx].required = !fields[idx].required; saveTecnicoFormFields(tecId, fields, formId); renderTecnicoFormEditorById(formId, tecId); }
 }
 
-function renameTecnicoField(tecId, idx) {
-    const fields = getTecnicoFormFields(tecId);
+function renameTecnicoField(tecId, formId, idx) {
+    const fields = getTecnicoFormFields(tecId, formId);
     if (!fields[idx]) return;
     const newLabel = prompt('Novo nome para este campo:', fields[idx].label);
     if (!newLabel || !newLabel.trim()) return;
     fields[idx].label = newLabel.trim();
-    saveTecnicoFormFields(tecId, fields);
+    saveTecnicoFormFields(tecId, fields, formId);
     showToast('Campo renomeado.', 'success');
-    renderTecnicoFormEditor();
+    renderTecnicoFormEditorById(formId, tecId);
 }
 
-function removeTecnicoField(tecId, idx) {
-    const fields = getTecnicoFormFields(tecId);
+function removeTecnicoField(tecId, formId, idx) {
+    const fields = getTecnicoFormFields(tecId, formId);
     if (!fields[idx] || fields[idx].system) return;
     if (!confirm(`Remover campo "${fields[idx].label}"?`)) return;
     fields.splice(idx, 1);
-    saveTecnicoFormFields(tecId, fields);
-    renderTecnicoFormEditor();
+    saveTecnicoFormFields(tecId, fields, formId);
+    renderTecnicoFormEditorById(formId, tecId);
 }
 
-function moveTecnicoField(tecId, idx, dir) {
-    const fields = getTecnicoFormFields(tecId);
+function moveTecnicoField(tecId, formId, idx, dir) {
+    const fields = getTecnicoFormFields(tecId, formId);
     const newIdx = idx + dir;
     if (newIdx < 0 || newIdx >= fields.length) return;
     [fields[idx], fields[newIdx]] = [fields[newIdx], fields[idx]];
-    saveTecnicoFormFields(tecId, fields);
-    renderTecnicoFormEditor();
+    saveTecnicoFormFields(tecId, fields, formId);
+    renderTecnicoFormEditorById(formId, tecId);
 }
 
 // ── RESPOSTAS DO FORMULÁRIO ──────────────────────────────────────
@@ -14557,7 +14737,18 @@ function openSendFormModal(tecnicoId) {
         return;
     }
 
+    const forms = getTecnicoForms(tecnicoId);
+
     showModal('📤 Enviar formulário para cliente', `
+        <div class="field">
+            <label>Formulário *</label>
+            <select id="sendFormId">
+                ${forms.map(f => {
+                    const seg = TECNICO_SEGMENTS.find(s => s.key === f.sector);
+                    return `<option value="${f.id}">${esc(f.name)}${seg ? ' — ' + seg.icon + ' ' + seg.label : ''}</option>`;
+                }).join('')}
+            </select>
+        </div>
         <div class="field">
             <label>Cliente *</label>
             <select id="sendFormClientId">
@@ -14578,30 +14769,30 @@ function openSendFormModal(tecnicoId) {
 }
 
 function sendTecnicoFormToClient(tecnicoId) {
+    const formId   = document.getElementById('sendFormId')?.value;
     const clientId = document.getElementById('sendFormClientId')?.value;
     const msg      = (document.getElementById('sendFormMsg')?.value || '').trim();
     const errEl    = document.getElementById('sendFormError');
 
+    if (!formId)   { if (errEl) errEl.textContent = 'Selecione um formulário.'; return; }
     if (!clientId) { if (errEl) errEl.textContent = 'Selecione um cliente.'; return; }
 
     const tec    = (app.state.users || []).find(u => u.id === tecnicoId);
     const client = (app.state.clients || []).find(c => c.id === clientId);
-    if (!tec || !client) return;
+    const form   = getTecnicoFormById(tecnicoId, formId);
+    if (!tec || !client || !form) return;
 
-    // Find the client portal user
     const clientUser = (app.state.users || []).find(u => u.role === 'cliente' && u.clientId === clientId);
-
-    // Get current form fields snapshot
-    const fields = getTecnicoFormFields(tecnicoId);
 
     const send = {
         id:           `tfs_${Date.now()}`,
         tecnicoId,
+        formId,
         clientId,
         clientName:   client.name,
         clientUserId: clientUser ? clientUser.id : null,
-        formFields:   fields,
-        title:        'Formulário de atendimento',
+        formFields:   JSON.parse(JSON.stringify(form.fields)),
+        title:        form.name,
         message:      msg,
         sentAt:       todayISO(),
         openedAt:     null,
@@ -14613,14 +14804,13 @@ function sendTecnicoFormToClient(tecnicoId) {
     if (!app.state.tecnicoFormSends) app.state.tecnicoFormSends = [];
     app.state.tecnicoFormSends.push(send);
 
-    // Notify client
     if (clientUser) {
-        addNotification(clientUser.id, 'info', `📝 ${esc(tec.name)} enviou um formulário para você preencher.`, null);
+        addNotification(clientUser.id, 'info', `📝 ${esc(tec.name)} enviou o formulário "${esc(form.name)}" para você preencher.`, null);
     }
 
     saveState();
     closeModal();
-    showToast(`Formulário enviado para ${client.name}!`, 'success');
+    showToast(`Formulário "${form.name}" enviado para ${client.name}!`, 'success');
     renderMeuLinkTecnico();
 }
 
