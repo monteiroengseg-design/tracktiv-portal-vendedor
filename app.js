@@ -67,7 +67,8 @@ const NAV_TREE = {
         { id: 'g_tecnicos',    label: 'Técnicos',        icon: '🛠️', children: [
             { id: 'g_tec_lista',    label: 'Lista de Técnicos',    icon: '📋', render: () => renderGestorTecnicos() },
             { id: 'g_tec_new',      label: 'Cadastrar Novo',        icon: '➕', action: () => openTecnicoModal() },
-            { id: 'g_tec_chams',    label: 'Todos os Chamados',     icon: '🎫', render: () => renderGestorChamados() }
+            { id: 'g_tec_chams',    label: 'Todos os Chamados',     icon: '🎫', render: () => renderGestorChamados() },
+            { id: 'g_tec_forms',    label: 'Formulários Enviados',  icon: '📋', render: () => renderGestorTecnicoFormHistory() }
         ]},
         { id: 'g_clientes',    label: 'Clientes',        icon: '🌐', children: [
             { id: 'g_cli_lista',    label: 'Lista de Clientes',      icon: '📋', section: 'gestorClientesPortal' },
@@ -2035,6 +2036,8 @@ function loadState() {
             // Migração: Qualificação, Link e Formulário do Técnico
             if (!app.state.tecnicoForms)         app.state.tecnicoForms         = {};
             if (!app.state.tecnicoSubmissions)   app.state.tecnicoSubmissions   = {};
+            if (!app.state.tecnicoFormSends)     app.state.tecnicoFormSends     = [];
+            if (!app.state.tecnicoLinkStats)     app.state.tecnicoLinkStats     = {};
         } catch (e) {
             app.state = JSON.parse(JSON.stringify(cleanState));
         }
@@ -5251,6 +5254,9 @@ function _clienteRenderCurrentView() {
     } else if (ns.group === 'requeridos') {
         showClienteSection('clienteDynamic');
         renderClienteChecklistBoard();
+    } else if (ns.group === 'formularios') {
+        showClienteSection('clienteDynamic');
+        renderClienteFormulariosPendentes();
     }
 }
 
@@ -5351,6 +5357,20 @@ function renderClienteNav() {
                 const badge = document.createElement('span');
                 badge.className = 'nav-badge'; badge.style.background = '#dc3545'; badge.style.marginLeft = 'auto';
                 badge.textContent = chkPending;
+                lastBtn.appendChild(badge);
+            }
+        }
+        // Formulários enviados pelo técnico
+        const formsPending = (app.state.tecnicoFormSends || []).filter(s => s.clientId === u.clientId && s.status !== 'preenchido').length;
+        tabs.appendChild(mkBtn('📝', 'Formulários', false, ns.group === 'formularios', formsPending > 0, () => {
+            clienteNavTo(1, 'formularios');
+        }));
+        if (formsPending > 0) {
+            const lastBtn = tabs.lastElementChild;
+            if (lastBtn) {
+                const badge = document.createElement('span');
+                badge.className = 'nav-badge'; badge.style.background = '#f5820d'; badge.style.marginLeft = 'auto';
+                badge.textContent = formsPending;
                 lastBtn.appendChild(badge);
             }
         }
@@ -5489,14 +5509,17 @@ function renderClienteHome() {
     const chkTotal = chkItems.length;
     const chkPct = chkTotal > 0 ? Math.round(chkDone / chkTotal * 100) : 100;
     const hasPendingDocs = chkTotal > 0 && chkDone < chkTotal;
-    const hasAnyAlert = hasIncomplete || hasPendingDocs;
+    // Pending forms sent by technician
+    const pendingForms = (app.state.tecnicoFormSends || []).filter(s => s.clientId === u.clientId && s.status !== 'preenchido');
+    const hasPendingForms = pendingForms.length > 0;
+    const hasAnyAlert = hasIncomplete || hasPendingDocs || hasPendingForms;
 
     el.innerHTML = `
         <div class="section-header">
             <div><h2>Bem-vindo, ${esc(u.name)}!</h2>
             <p>Seu portal de documentos, serviços e indicações Tracktiv.</p></div>
         </div>
-        ${hasAnyAlert ? `<div style="background:#fff3cd;border:1.5px solid #ffc107;border-radius:14px;padding:14px 18px;margin-bottom:16px;font-size:0.9rem;">🔴 <strong>Ação necessária:</strong>${hasIncomplete ? ' Formulários incompletos.' : ''}${hasPendingDocs ? ` ${chkTotal - chkDone} documento${chkTotal - chkDone > 1 ? 's' : ''} pendente${chkTotal - chkDone > 1 ? 's' : ''} no checklist.` : ''}</div>` : ''}
+        ${hasAnyAlert ? `<div style="background:#fff3cd;border:1.5px solid #ffc107;border-radius:14px;padding:14px 18px;margin-bottom:16px;font-size:0.9rem;">🔴 <strong>Ação necessária:</strong>${hasIncomplete ? ' Formulários incompletos.' : ''}${hasPendingDocs ? ` ${chkTotal - chkDone} documento${chkTotal - chkDone > 1 ? 's' : ''} pendente${chkTotal - chkDone > 1 ? 's' : ''} no checklist.` : ''}${hasPendingForms ? ` <strong>${pendingForms.length} formulário${pendingForms.length > 1 ? 's' : ''}</strong> enviado${pendingForms.length > 1 ? 's' : ''} pelo técnico aguardando seu preenchimento.` : ''}</div>` : ''}
         <div class="cards-grid" style="margin-bottom:16px;">
             <div class="card"><h3>Plano atual</h3><div class="metric" style="font-size:1.4rem;">${esc(crm?.plan || '—')}</div><small>${crm ? `R$ ${formatCurrency(crm.monthlyFee)}/mês` : ''}</small></div>
             <div class="card"><h3>Documentos disponíveis</h3><div class="metric">${docs.length}</div><small>em todos os serviços</small></div>
@@ -5557,8 +5580,27 @@ function renderClienteHome() {
                 <button class="secondary-btn" onclick="clienteNavTo(1,'indicacao')">🎁 Indicação</button>
                 <button class="secondary-btn" onclick="clienteNavTo(1,'documentos')">📁 Documentos</button>
                 ${chkTotal > 0 ? `<button class="secondary-btn${_chkPendingCount(u.id) > 0 ? '" style="border-color:#dc3545;color:#dc3545;' : '"'} onclick="clienteNavTo(1,'requeridos')">📋 Requeridos${_chkPendingCount(u.id) > 0 ? ` (${_chkPendingCount(u.id)})` : ''}</button>` : ''}
+                ${hasPendingForms ? `<button class="secondary-btn" style="border-color:#f5820d;color:#f5820d;" onclick="clienteNavTo(1,'formularios')">📝 Formulários (${pendingForms.length})</button>` : ''}
             </div>
         </div>
+        ${hasPendingForms ? `
+        <div class="card" style="border:1.5px solid #f5820d;margin-top:0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                <h3 style="margin:0;">📝 Formulários Pendentes</h3>
+                <button class="secondary-btn" style="font-size:0.82rem;" onclick="clienteNavTo(1,'formularios')">Ver todos</button>
+            </div>
+            ${pendingForms.slice(0,2).map(s => {
+                const tec = (app.state.users || []).find(u2 => u2.id === s.tecnicoId);
+                return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+                    <span style="font-size:1.2rem;">📝</span>
+                    <div style="flex:1;">
+                        <div style="font-weight:600;font-size:0.9rem;">${esc(s.title || 'Formulário de atendimento')}</div>
+                        <small style="color:var(--text-soft);">${tec ? esc(tec.name) : 'Técnico'} · Enviado em ${formatDate(s.sentAt)}</small>
+                    </div>
+                    <button class="primary-btn" style="font-size:0.78rem;padding:5px 12px;" onclick="clienteNavTo(1,'formularios')">Preencher</button>
+                </div>`;
+            }).join('')}
+        </div>` : ''}
         ${crm && crm.stage === 'Fechado' ? `
         <div class="recovery-emergency-card">
             <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
@@ -13981,14 +14023,15 @@ function checkTecnicoFormParam() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('tecnico');
     if (!code) return false;
+    const sendId = params.get('send') || null;
     const tecnico = resolveTecnicoFromCode(code);
-    showTecnicoPublicForm(tecnico);
+    showTecnicoPublicForm(tecnico, sendId);
     return true;
 }
 
 // ── FORMULÁRIO PÚBLICO ───────────────────────────────────────────
 
-function showTecnicoPublicForm(tecnico) {
+function showTecnicoPublicForm(tecnico, sendId) {
     const overlay = document.createElement('div');
     overlay.id = 'tecnicoPublicFormScreen';
     overlay.className = 'public-cadastro-screen';
@@ -13996,6 +14039,20 @@ function showTecnicoPublicForm(tecnico) {
 
     const loginEl = document.getElementById('loginScreen');
     if (loginEl) loginEl.style.display = 'none';
+
+    // Track access
+    if (tecnico) {
+        if (!app.state.tecnicoLinkStats) app.state.tecnicoLinkStats = {};
+        if (!app.state.tecnicoLinkStats[tecnico.id]) app.state.tecnicoLinkStats[tecnico.id] = { accesses: 0, lastAccess: null };
+        app.state.tecnicoLinkStats[tecnico.id].accesses++;
+        app.state.tecnicoLinkStats[tecnico.id].lastAccess = todayISO();
+        // If opened from a sent form link, mark as 'aberto'
+        if (sendId) {
+            const send = (app.state.tecnicoFormSends || []).find(s => s.id === sendId);
+            if (send && send.status === 'enviado') { send.status = 'aberto'; send.openedAt = todayISO(); }
+        }
+        saveState();
+    }
 
     function renderForm() {
         const fields = tecnico ? getTecnicoFormFields(tecnico.id) : JSON.parse(JSON.stringify(TECNICO_DEFAULT_FORM_FIELDS));
@@ -14070,8 +14127,13 @@ function showTecnicoPublicForm(tecnico) {
             if (!app.state.tecnicoSubmissions) app.state.tecnicoSubmissions = {};
             const tecId = tecnico ? tecnico.id : '__unknown__';
             if (!app.state.tecnicoSubmissions[tecId]) app.state.tecnicoSubmissions[tecId] = [];
-            const sub = { id: `tsub_${Date.now()}`, submittedAt: todayISO(), data };
+            const sub = { id: `tsub_${Date.now()}`, submittedAt: todayISO(), sendId: sendId || null, data };
             app.state.tecnicoSubmissions[tecId].push(sub);
+            // If this was a sent form, mark as preenchido
+            if (sendId) {
+                const send = (app.state.tecnicoFormSends || []).find(s => s.id === sendId);
+                if (send) { send.status = 'preenchido'; send.submittedAt = todayISO(); send.submission = data; }
+            }
             if (tecnico) {
                 const nomeVal = data['tf_name'] || 'cliente desconhecido';
                 addNotification(tecnico.id, 'info', `📥 Nova resposta no seu formulário: ${esc(nomeVal)}`, null);
@@ -14138,48 +14200,111 @@ function renderMeuLinkTecnico() {
     if (!u || u.role !== 'tecnico') return;
     const link = getTecnicoPublicLink(u.id);
     const waMsg = encodeURIComponent(`Olá! Preencha o formulário de atendimento Tracktiv pelo link:\n${link}\n\nQualquer dúvida, estou à disposição! 😊`);
+
+    // Stats
     const subs = ((app.state.tecnicoSubmissions || {})[u.id] || []);
     const subsThisMonth = subs.filter(s => (s.submittedAt || '').startsWith(getCurrentMonthKey()));
+    const stats = (app.state.tecnicoLinkStats || {})[u.id] || { accesses: 0, lastAccess: null };
+
+    // Sent forms
+    const sends = (app.state.tecnicoFormSends || []).filter(s => s.tecnicoId === u.id)
+        .sort((a, b) => b.sentAt.localeCompare(a.sentAt));
+    const abertos    = sends.filter(s => s.status === 'aberto').length;
+    const preenchidos = sends.filter(s => s.status === 'preenchido').length;
+    const pendentes  = sends.filter(s => s.status === 'enviado').length;
+
+    // Assigned clients for "send to client" button
+    const assignedIds = ((app.state.tecnicoClients || {})[u.id] || []);
+    const hasClients = assignedIds.length > 0;
+
+    const statusBadge = s => {
+        if (s.status === 'preenchido') return '<span class="badge badge-active" style="font-size:0.72rem;">✅ Preenchido</span>';
+        if (s.status === 'aberto')     return '<span class="badge badge-warn" style="font-size:0.72rem;">👁 Aberto</span>';
+        return '<span class="badge" style="background:#f1f5f9;color:#64748b;font-size:0.72rem;">📨 Enviado</span>';
+    };
 
     const el = document.getElementById('dynamicContent');
     el.innerHTML = `
         <div class="section-header" style="margin-bottom:24px;">
             <div><h2>🔗 Meu Link de Formulário</h2>
-            <p>Compartilhe seu link personalizado. Novos formulários chegam direto no seu painel.</p></div>
+            <p>Compartilhe seu link ou envie diretamente para um cliente.</p></div>
             <button class="secondary-btn" onclick="renderTecnicoFormEditor()">📝 Editar formulário</button>
         </div>
 
+        <!-- Link público -->
         <div class="card" style="text-align:center;margin-bottom:20px;">
             <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:8px;font-weight:600;letter-spacing:.05em;">SEU LINK PERSONALIZADO</div>
             <div class="meu-link-url">${esc(link)}</div>
             <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap;">
                 <button class="primary-btn" id="copyTecLinkBtn">📋 Copiar link</button>
                 <a href="https://wa.me/?text=${waMsg}" target="_blank" class="secondary-btn" style="text-decoration:none;">💬 Compartilhar no WhatsApp</a>
+                <button class="secondary-btn" onclick="openSendFormModal('${u.id}')" ${!hasClients ? 'disabled title="Aguardando gestor designar clientes"' : ''}>📤 Enviar para cliente</button>
             </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
-            <div class="card" style="text-align:center;">
-                <h3>Respostas este mês</h3>
-                <div class="metric" style="font-size:2.5rem;">${subsThisMonth.length}</div>
-                <small style="color:var(--text-soft);">${getCurrentMonthLabel()}</small>
+        ${abertos > 0 ? `<div style="background:#fff3cd;border:1.5px solid #ffc107;border-radius:12px;padding:12px 18px;margin-bottom:16px;font-size:0.9rem;">
+            👁 <strong>${abertos} cliente${abertos > 1 ? 's' : ''} abriu seu formulário mas ainda não preencheu.</strong> Considere fazer um follow-up!
+        </div>` : ''}
+
+        <!-- Stats grid -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;">
+            <div class="card" style="text-align:center;padding:14px;">
+                <div class="metric" style="font-size:2rem;">${stats.accesses}</div>
+                <small style="color:var(--text-soft);">Acessos ao link</small>
             </div>
-            <div class="card" style="text-align:center;">
-                <h3>Total acumulado</h3>
-                <div class="metric" style="font-size:2.5rem;">${subs.length}</div>
-                <small style="color:var(--text-soft);">todas as respostas</small>
+            <div class="card" style="text-align:center;padding:14px;">
+                <div class="metric" style="font-size:2rem;">${subs.length}</div>
+                <small style="color:var(--text-soft);">Respostas públicas</small>
             </div>
+            <div class="card" style="text-align:center;padding:14px;">
+                <div class="metric" style="font-size:2rem;color:var(--success);">${preenchidos}</div>
+                <small style="color:var(--text-soft);">Formulários preenchidos</small>
+            </div>
+            <div class="card" style="text-align:center;padding:14px;">
+                <div class="metric" style="font-size:2rem;color:${abertos > 0 ? 'var(--warning)' : 'var(--text)'};">${abertos}</div>
+                <small style="color:var(--text-soft);">Abertos sem resposta</small>
+            </div>
+        </div>
+        ${stats.lastAccess ? `<p style="font-size:0.82rem;color:var(--text-soft);margin-bottom:16px;">Último acesso ao link: <strong>${formatDate(stats.lastAccess)}</strong></p>` : ''}
+
+        <!-- Formulários enviados -->
+        <div class="card" style="padding:0;overflow:hidden;">
+            <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                <strong>Formulários enviados para clientes (${sends.length})</strong>
+                <button class="primary-btn" style="font-size:0.82rem;padding:6px 14px;" onclick="openSendFormModal('${u.id}')" ${!hasClients ? 'disabled' : ''}>+ Enviar novo</button>
+            </div>
+            ${sends.length === 0
+                ? `<div style="padding:32px;text-align:center;color:var(--text-soft);">
+                    <p>Nenhum formulário enviado ainda.</p>
+                    ${hasClients ? `<button class="primary-btn" onclick="openSendFormModal('${u.id}')">📤 Enviar para um cliente</button>` : `<p style="font-size:0.88rem;">Aguardando o gestor designar clientes a você.</p>`}
+                   </div>`
+                : `<table style="width:100%;border-collapse:collapse;">
+                    <thead style="background:var(--bg);">
+                        <tr>
+                            <th style="padding:10px 16px;text-align:left;font-size:0.82rem;font-weight:600;">Cliente</th>
+                            <th style="padding:10px 16px;text-align:left;font-size:0.82rem;font-weight:600;">Enviado em</th>
+                            <th style="padding:10px 16px;text-align:left;font-size:0.82rem;font-weight:600;">Status</th>
+                            <th style="padding:10px 16px;text-align:left;font-size:0.82rem;font-weight:600;">Preenchido em</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sends.map(s => {
+                            const client = (app.state.clients || []).find(c => c.id === s.clientId);
+                            return `<tr style="border-top:1px solid var(--border);">
+                                <td style="padding:10px 16px;font-size:0.88rem;"><strong>${esc(client ? client.name : s.clientName || '—')}</strong></td>
+                                <td style="padding:10px 16px;font-size:0.88rem;">${formatDate(s.sentAt)}</td>
+                                <td style="padding:10px 16px;">${statusBadge(s)}</td>
+                                <td style="padding:10px 16px;font-size:0.82rem;color:var(--text-soft);">${s.submittedAt ? formatDate(s.submittedAt) : '—'}</td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>`}
         </div>
 
         ${subs.length ? `
-        <div class="card" style="text-align:center;padding:20px;">
-            <button class="primary-btn" onclick="renderTecnicoFormSubmissions()">📥 Ver todas as respostas (${subs.length})</button>
-        </div>` : `
-        <div class="card" style="text-align:center;padding:40px;color:var(--text-soft);">
-            <div style="font-size:2.5rem;margin-bottom:12px;">📝</div>
-            <p>Nenhuma resposta recebida ainda.</p>
-            <p style="font-size:0.88rem;">Compartilhe seu link para começar a receber dados dos clientes!</p>
-        </div>`}
+        <div class="card" style="text-align:center;padding:16px;margin-top:16px;">
+            <button class="secondary-btn" onclick="renderTecnicoFormSubmissions()">📥 Ver respostas públicas do link (${subs.length})</button>
+        </div>` : ''}
     `;
     showSection('dynamicContent');
 
@@ -14398,6 +14523,322 @@ function renderTecnicoFormSubmissions() {
                     ${dataEntries || '<p class="text-muted" style="margin:0;">Sem dados adicionais.</p>'}
                 </div>`;
             }).join('')}
+    `;
+    showSection('dynamicContent');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ENVIO DE FORMULÁRIO PARA CLIENTE + PORTAL DO CLIENTE
+═══════════════════════════════════════════════════════════════════ */
+
+// ── MODAL: ENVIAR FORMULÁRIO PARA CLIENTE ────────────────────────
+
+function openSendFormModal(tecnicoId) {
+    const tec = (app.state.users || []).find(u => u.id === tecnicoId);
+    if (!tec) return;
+    const quals = tec.qualifications || [];
+    const assignedIds = ((app.state.tecnicoClients || {})[tecnicoId] || []);
+    const clients = (app.state.clients || []).filter(c => {
+        if (!assignedIds.includes(c.id)) return false;
+        if (!quals.length) return true;
+        const seg = PRODUCT_SEGMENT_MAP[c.product];
+        return !seg || quals.includes(seg);
+    });
+
+    if (clients.length === 0) {
+        showModal('Enviar formulário', `
+            <div style="text-align:center;padding:24px;">
+                <div style="font-size:2rem;margin-bottom:12px;">👤</div>
+                <p>Nenhum cliente designado ao seu perfil.</p>
+                <p class="text-muted" style="font-size:0.88rem;">Aguarde o gestor atribuir clientes a você.</p>
+            </div>
+            <div class="actions"><button class="secondary-btn" onclick="closeModal()">Fechar</button></div>
+        `);
+        return;
+    }
+
+    showModal('📤 Enviar formulário para cliente', `
+        <div class="field">
+            <label>Cliente *</label>
+            <select id="sendFormClientId">
+                <option value="">Selecione um cliente…</option>
+                ${clients.map(c => `<option value="${c.id}">${esc(c.name)} — ${esc(c.product || '—')}</option>`).join('')}
+            </select>
+        </div>
+        <div class="field">
+            <label>Mensagem personalizada (opcional)</label>
+            <textarea id="sendFormMsg" rows="3" placeholder="Ex: Olá! Preciso que você preencha este formulário para darmos andamento no seu atendimento."></textarea>
+        </div>
+        <div id="sendFormError" class="error-text" style="margin-top:4px;"></div>
+        <div class="actions" style="margin-top:16px;">
+            <button class="primary-btn" onclick="sendTecnicoFormToClient('${tecnicoId}')">📤 Enviar formulário</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+}
+
+function sendTecnicoFormToClient(tecnicoId) {
+    const clientId = document.getElementById('sendFormClientId')?.value;
+    const msg      = (document.getElementById('sendFormMsg')?.value || '').trim();
+    const errEl    = document.getElementById('sendFormError');
+
+    if (!clientId) { if (errEl) errEl.textContent = 'Selecione um cliente.'; return; }
+
+    const tec    = (app.state.users || []).find(u => u.id === tecnicoId);
+    const client = (app.state.clients || []).find(c => c.id === clientId);
+    if (!tec || !client) return;
+
+    // Find the client portal user
+    const clientUser = (app.state.users || []).find(u => u.role === 'cliente' && u.clientId === clientId);
+
+    // Get current form fields snapshot
+    const fields = getTecnicoFormFields(tecnicoId);
+
+    const send = {
+        id:           `tfs_${Date.now()}`,
+        tecnicoId,
+        clientId,
+        clientName:   client.name,
+        clientUserId: clientUser ? clientUser.id : null,
+        formFields:   fields,
+        title:        'Formulário de atendimento',
+        message:      msg,
+        sentAt:       todayISO(),
+        openedAt:     null,
+        submittedAt:  null,
+        submission:   null,
+        status:       'enviado'
+    };
+
+    if (!app.state.tecnicoFormSends) app.state.tecnicoFormSends = [];
+    app.state.tecnicoFormSends.push(send);
+
+    // Notify client
+    if (clientUser) {
+        addNotification(clientUser.id, 'info', `📝 ${esc(tec.name)} enviou um formulário para você preencher.`, null);
+    }
+
+    saveState();
+    closeModal();
+    showToast(`Formulário enviado para ${client.name}!`, 'success');
+    renderMeuLinkTecnico();
+}
+
+// ── PORTAL DO CLIENTE: FORMULÁRIOS PENDENTES ─────────────────────
+
+function renderClienteFormulariosPendentes() {
+    const u = app.currentUser;
+    if (!u) return;
+    const el = document.getElementById('clientePageContent');
+    if (!el) return;
+
+    const sends = (app.state.tecnicoFormSends || [])
+        .filter(s => s.clientId === u.clientId)
+        .sort((a, b) => b.sentAt.localeCompare(a.sentAt));
+
+    const statusBadge = s => {
+        if (s.status === 'preenchido') return '<span class="badge badge-active">✅ Preenchido</span>';
+        if (s.status === 'aberto')     return '<span class="badge badge-warn">👁 Aberto</span>';
+        return '<span class="badge" style="background:#fff3cd;color:#92400e;">📨 Pendente</span>';
+    };
+
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>📝 Formulários</h2>
+            <p>Formulários enviados pelo seu técnico para preenchimento.</p></div>
+        </div>
+        ${sends.length === 0
+            ? `<div class="card" style="text-align:center;padding:48px;color:var(--text-soft);">
+                <div style="font-size:2.5rem;margin-bottom:12px;">📝</div>
+                <p>Nenhum formulário recebido ainda.</p>
+               </div>`
+            : sends.map(s => {
+                const tec = (app.state.users || []).find(u2 => u2.id === s.tecnicoId);
+                const isPending = s.status !== 'preenchido';
+                return `<div class="card" style="margin-bottom:12px;${isPending ? 'border:1.5px solid #f5820d;' : ''}">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+                        <div>
+                            <strong style="font-size:1rem;">${esc(s.title || 'Formulário de atendimento')}</strong>
+                            <div style="font-size:0.85rem;color:var(--text-soft);margin-top:2px;">
+                                ${tec ? `Enviado por: <strong>${esc(tec.name)}</strong>` : 'Técnico'} · ${formatDate(s.sentAt)}
+                            </div>
+                        </div>
+                        ${statusBadge(s)}
+                    </div>
+                    ${s.message ? `<div style="background:var(--bg);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:0.88rem;color:var(--text-soft);border-left:3px solid var(--accent);">${esc(s.message)}</div>` : ''}
+                    ${isPending
+                        ? `<button class="primary-btn" onclick="openClientFormFill('${s.id}')">📝 Preencher formulário</button>`
+                        : `<button class="secondary-btn" disabled>✅ Já preenchido em ${s.submittedAt ? formatDate(s.submittedAt) : '—'}</button>`}
+                </div>`;
+            }).join('')}
+    `;
+}
+
+// ── CLIENTE PREENCHE O FORMULÁRIO ENVIADO ────────────────────────
+
+function openClientFormFill(sendId) {
+    const send = (app.state.tecnicoFormSends || []).find(s => s.id === sendId);
+    if (!send) return;
+    const fields = send.formFields || JSON.parse(JSON.stringify(TECNICO_DEFAULT_FORM_FIELDS));
+    const activeFields = fields.filter(f => f.active);
+    const tec = (app.state.users || []).find(u => u.id === send.tecnicoId);
+
+    // Mark as aberto
+    if (send.status === 'enviado') {
+        send.status = 'aberto';
+        send.openedAt = todayISO();
+        // Also update link stats
+        if (!app.state.tecnicoLinkStats) app.state.tecnicoLinkStats = {};
+        if (!app.state.tecnicoLinkStats[send.tecnicoId]) app.state.tecnicoLinkStats[send.tecnicoId] = { accesses: 0, lastAccess: null };
+        app.state.tecnicoLinkStats[send.tecnicoId].accesses++;
+        app.state.tecnicoLinkStats[send.tecnicoId].lastAccess = todayISO();
+        saveState();
+    }
+
+    showModal(`📝 ${esc(send.title || 'Formulário de atendimento')}`, `
+        ${tec ? `<p class="text-muted" style="margin-bottom:16px;">Enviado por: <strong>${esc(tec.name)}</strong> · ${formatDate(send.sentAt)}</p>` : ''}
+        ${send.message ? `<div style="background:var(--bg);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:0.88rem;border-left:3px solid var(--accent);">${esc(send.message)}</div>` : ''}
+        <form id="clientFormFillForm">
+            <div class="pub-form-grid">
+                ${activeFields.map(f => _renderTecPubField(f)).join('')}
+            </div>
+            <div id="clientFormFillError" class="error-text" style="margin-top:8px;"></div>
+            <div class="actions" style="margin-top:16px;">
+                <button type="submit" class="primary-btn">✅ Enviar</button>
+                <button type="button" class="secondary-btn" onclick="closeModal()">Cancelar</button>
+            </div>
+        </form>
+    `);
+
+    document.getElementById('clientFormFillForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const errEl = document.getElementById('clientFormFillError');
+        errEl.textContent = '';
+        const data = {};
+        let valid = true;
+
+        for (const f of activeFields) {
+            if (f.type === 'multicheck') {
+                data[f.id] = Array.from(document.querySelectorAll(`.tpf_mc_${f.id}:checked`)).map(c => c.value);
+                if (f.required && !data[f.id].length) { errEl.textContent = `Selecione ao menos uma opção em "${f.label}".`; valid = false; break; }
+            } else if (f.type === 'file' || f.type === 'camera') {
+                data[f.id] = null;
+            } else {
+                const inp = document.getElementById(`tpf_${f.id}`);
+                data[f.id] = inp ? inp.value.trim() : '';
+                if (f.required && !data[f.id]) { errEl.textContent = `O campo "${f.label}" é obrigatório.`; if (inp) inp.focus(); valid = false; break; }
+            }
+        }
+        if (!valid) return;
+
+        const filePromises = [];
+        for (const f of activeFields) {
+            if (f.type === 'file' || f.type === 'camera') {
+                const inp = document.getElementById(`tpf_${f.id}`);
+                if (inp && inp.files[0]) {
+                    if (inp.files[0].size > 5242880) { errEl.textContent = `Arquivo "${f.label}" é muito grande (máx. 5 MB).`; valid = false; break; }
+                    filePromises.push(new Promise(resolve => {
+                        const reader = new FileReader();
+                        reader.onload = ev => { data[f.id] = { name: inp.files[0].name, data: ev.target.result, type: inp.files[0].type, size: inp.files[0].size }; resolve(); };
+                        reader.readAsDataURL(inp.files[0]);
+                    }));
+                }
+                if (f.required && !inp?.files?.[0]) { errEl.textContent = `O campo "${f.label}" é obrigatório.`; valid = false; break; }
+            }
+        }
+        if (!valid) return;
+        await Promise.all(filePromises);
+
+        // Save submission
+        send.status      = 'preenchido';
+        send.submittedAt = todayISO();
+        send.submission  = data;
+
+        // Also save to tecnicoSubmissions for unified view
+        if (!app.state.tecnicoSubmissions) app.state.tecnicoSubmissions = {};
+        if (!app.state.tecnicoSubmissions[send.tecnicoId]) app.state.tecnicoSubmissions[send.tecnicoId] = [];
+        app.state.tecnicoSubmissions[send.tecnicoId].push({ id: `tsub_${Date.now()}`, submittedAt: todayISO(), sendId, data });
+
+        // Notify technician
+        const nome = data['tf_name'] || app.currentUser?.name || 'cliente';
+        addNotification(send.tecnicoId, 'info', `✅ ${esc(nome)} preencheu o formulário que você enviou!`, null);
+
+        saveState();
+        closeModal();
+        showToast('Formulário enviado com sucesso!', 'success');
+        renderClienteFormulariosPendentes();
+        renderClienteHome();
+    });
+}
+
+// ── GESTOR: HISTÓRICO DE FORMULÁRIOS ────────────────────────────
+
+function renderGestorTecnicoFormHistory() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const sends  = (app.state.tecnicoFormSends || []).slice().sort((a, b) => b.sentAt.localeCompare(a.sentAt));
+    const tecnicos = (app.state.users || []).filter(u => u.role === 'tecnico');
+    const clients  = app.state.clients || [];
+
+    const totais = {
+        enviados:    sends.filter(s => s.status === 'enviado').length,
+        abertos:     sends.filter(s => s.status === 'aberto').length,
+        preenchidos: sends.filter(s => s.status === 'preenchido').length
+    };
+
+    const statusBadge = s => {
+        if (s.status === 'preenchido') return '<span class="badge badge-active" style="font-size:0.72rem;">✅ Preenchido</span>';
+        if (s.status === 'aberto')     return '<span class="badge badge-warn" style="font-size:0.72rem;">👁 Aberto</span>';
+        return '<span class="badge" style="background:#f1f5f9;color:#64748b;font-size:0.72rem;">📨 Enviado</span>';
+    };
+
+    el.innerHTML = `
+        <div class="section-header">
+            <div><h2>📋 Formulários Enviados pelos Técnicos</h2>
+            <p>Histórico completo de todos os formulários enviados para clientes.</p></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;">
+            <div class="card" style="text-align:center;padding:14px;">
+                <div class="metric" style="font-size:2rem;">${totais.enviados}</div>
+                <small>Aguardando preenchimento</small>
+            </div>
+            <div class="card" style="text-align:center;padding:14px;">
+                <div class="metric" style="font-size:2rem;color:var(--warning);">${totais.abertos}</div>
+                <small>Abertos sem resposta</small>
+            </div>
+            <div class="card" style="text-align:center;padding:14px;">
+                <div class="metric" style="font-size:2rem;color:var(--success);">${totais.preenchidos}</div>
+                <small>Preenchidos</small>
+            </div>
+        </div>
+        ${sends.length === 0
+            ? '<div class="card"><p class="text-muted">Nenhum formulário enviado ainda.</p></div>'
+            : `<div class="card" style="padding:0;overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;">
+                    <thead style="background:var(--bg);">
+                        <tr>
+                            <th style="padding:10px 16px;text-align:left;font-size:0.82rem;">Técnico</th>
+                            <th style="padding:10px 16px;text-align:left;font-size:0.82rem;">Cliente</th>
+                            <th style="padding:10px 16px;text-align:left;font-size:0.82rem;">Enviado em</th>
+                            <th style="padding:10px 16px;text-align:left;font-size:0.82rem;">Status</th>
+                            <th style="padding:10px 16px;text-align:left;font-size:0.82rem;">Preenchido em</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sends.map(s => {
+                            const tec    = tecnicos.find(t => t.id === s.tecnicoId);
+                            const client = clients.find(c => c.id === s.clientId);
+                            return `<tr style="border-top:1px solid var(--border);">
+                                <td style="padding:10px 16px;font-size:0.88rem;">${tec ? esc(tec.name) : '—'}</td>
+                                <td style="padding:10px 16px;font-size:0.88rem;"><strong>${esc(client ? client.name : s.clientName || '—')}</strong></td>
+                                <td style="padding:10px 16px;font-size:0.82rem;">${formatDate(s.sentAt)}</td>
+                                <td style="padding:10px 16px;">${statusBadge(s)}</td>
+                                <td style="padding:10px 16px;font-size:0.82rem;color:var(--text-soft);">${s.submittedAt ? formatDate(s.submittedAt) : '—'}</td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>`}
     `;
     showSection('dynamicContent');
 }
