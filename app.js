@@ -98,7 +98,8 @@ const NAV_TREE = {
             { id: 'g_cfg_metas',    label: 'Metas',                 icon: '🎯', render: () => renderGestorMetas() },
             { id: 'g_cfg_planos',   label: 'Planos e Preços',       icon: '💎', render: () => renderGestorPlanos() },
             { id: 'g_cfg_forms',    label: 'Editor de Formulários', icon: '🔧', render: () => renderGestorFormEditor() },
-            { id: 'g_cfg_modulos',  label: 'Módulos',               icon: '🧩', render: () => renderModulosConfig('gestor') }
+            { id: 'g_cfg_modulos',  label: 'Módulos',               icon: '🧩', render: () => renderModulosConfig('gestor') },
+            { id: 'g_cfg_trein',    label: 'Criar Treinamento',     icon: '🎓', render: () => renderGestorCustomTrainings() }
         ]},
         { id: 'g_produtos_cfg', label: 'Produtos',        icon: '📦', render: () => renderGestorProdutos() },
         { id: 'g_mural',       label: 'Mural e Desafios',icon: '🏆', render: () => renderGestorMuralConfig() },
@@ -1754,16 +1755,19 @@ function esc(v) {
     return String(v ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-function showToast(message, type = 'success', duration = 3500) {
+function showToast(message, type = 'success', htmlOrDuration = 3500) {
     const container = document.getElementById('toastContainer');
     if (!container) return;
+    const isHtml = htmlOrDuration === true;
+    const duration = isHtml ? 6000 : (typeof htmlOrDuration === 'number' ? htmlOrDuration : 3500);
     const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.setAttribute('role', 'alert');
+    const msgContent = isHtml ? message : esc(message);
     toast.innerHTML = `
         <span class="toast-icon">${icons[type] || icons.info}</span>
-        <span class="toast-msg">${esc(message)}</span>
+        <span class="toast-msg">${msgContent}</span>
         <button class="toast-close" aria-label="Fechar">×</button>
     `;
     toast.querySelector('.toast-close').addEventListener('click', () => dismissToast(toast));
@@ -2074,6 +2078,10 @@ function loadState() {
                 MODULE_DEFINITIONS.forEach(m => { if (!app.state.moduleConfig[m.key]) app.state.moduleConfig[m.key] = { enabled: true }; });
             }
             if (!app.state.brandConfig) app.state.brandConfig = { companyName: 'Tracktiv', tagline: 'Portal do Vendedor', logoData: null, primaryColor: '#1a2e4a', accentColor: '#f5820d', sidebarBg: '#0f1c2e', email: '', phone: '', website: '' };
+            // Migração: features novas
+            if (!app.state.emailQueue)        app.state.emailQueue        = [];
+            if (!app.state.customTrainings)   app.state.customTrainings   = [];
+            if (!app.state.clientSignatures)  app.state.clientSignatures  = {};
             // Migração: Qualificação, Link e Formulário do Técnico
             if (!app.state.tecnicoForms)         app.state.tecnicoForms         = {};
             if (!app.state.tecnicoSubmissions)   app.state.tecnicoSubmissions   = {};
@@ -2990,9 +2998,12 @@ function renderTrainingModules() {
     grid.innerHTML = '';
     if (detail) detail.classList.add('hidden');
 
-    const visibleModules = app.currentUser?.role === 'instalador'
+    const baseModules = app.currentUser?.role === 'instalador'
         ? trainingData.filter(m => m.id === 1)
         : trainingData;
+    // Inject custom trainings as extra cards
+    const customMods = (app.state.customTrainings || []).map(ct => ({ id: ct.id, title: ct.name, subtitle: `${(ct.sections||[]).length} seção(ões) · Treinamento da empresa`, _custom: true, _ct: ct }));
+    const visibleModules = [...baseModules, ...customMods];
 
     const overall = getOverallProgress();
 
@@ -4088,6 +4099,7 @@ function showApp() {
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('appScreen').classList.remove('hidden');
     document.getElementById('userNameLabel').textContent = app.currentUser.name;
+    updateEmailQueueBadge();
     const _isIndicador = app.currentUser.role === 'instalador' && app.currentUser.partnerType === 'indicador';
     document.getElementById('pageRoleLabel').textContent =
         app.currentUser.role === 'presidente' ? 'Painel do Presidente' :
@@ -5313,6 +5325,9 @@ function _clienteRenderCurrentView() {
     } else if (ns.group === 'formularios') {
         showClienteSection('clienteDynamic');
         renderClienteFormulariosPendentes();
+    } else if (ns.group === 'assinaturas') {
+        showClienteSection('clienteDynamic');
+        renderClienteAssinaturas();
     }
 }
 
@@ -5420,6 +5435,9 @@ function renderClienteNav() {
         const formsPending = (app.state.tecnicoFormSends || []).filter(s => s.clientId === u.clientId && s.status !== 'preenchido').length;
         tabs.appendChild(mkBtn('📝', 'Formulários', false, ns.group === 'formularios', formsPending > 0, () => {
             clienteNavTo(1, 'formularios');
+        }));
+        tabs.appendChild(mkBtn('✍️', 'Assinaturas', false, ns.group === 'assinaturas', false, () => {
+            clienteNavTo(1, 'assinaturas');
         }));
         if (formsPending > 0) {
             const lastBtn = tabs.lastElementChild;
@@ -7605,22 +7623,120 @@ function renderHistoricoVendas() {
 function renderGestorRelatorios() {
     const el = document.getElementById('pageContent');
     if (!el) return;
-    const consultores = (app.state.users || []).filter(u => u.role === 'consultor');
+    const consultores  = (app.state.users || []).filter(u => u.role === 'consultor');
     const instaladores = (app.state.users || []).filter(u => u.role === 'instalador');
-    const clientes = (app.state.clients || []);
-    const fechadosMes = clientes.filter(isClosedThisMonth);
-    const totalFees = clientes.filter(c => c.stage === 'Fechado').reduce((s, c) => s + (c.monthlyFee || 0), 0);
-    const totalComissoes = consultores.reduce((s, u) => s + getConsultantMetrics(u).commission, 0);
+    const clientes     = (app.state.clients || []);
+    const fechados     = clientes.filter(c => c.stage === 'Fechado');
+    const fechadosMes  = clientes.filter(isClosedThisMonth);
+    const perdidosMes  = clientes.filter(c => c.stage === 'Perdido' && (c.updatedAt||'').startsWith(getCurrentMonthKey()));
+    const totalFees    = fechados.reduce((s, c) => s + (c.monthlyFee || 0), 0);
+    const totalComis   = consultores.reduce((s, u) => s + getConsultantMetrics(u).commission, 0);
+    const convRate     = clientes.length ? ((fechados.length / clientes.length) * 100).toFixed(1) : 0;
+
+    // Last 6 months sales data
+    const months6 = Array.from({length: 6}, (_, i) => {
+        const d = new Date(); d.setMonth(d.getMonth() - (5 - i));
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        const label = d.toLocaleDateString('pt-BR', {month:'short'}).replace('.','');
+        const count = clientes.filter(c => c.stage === 'Fechado' && (c.closedDate||'').startsWith(key)).length;
+        return { label, value: count, key };
+    });
+    const prevMonthSales = months6[4]?.value || 0;
+    const thisMontSales  = months6[5]?.value || 0;
+    const salesTrend = thisMontSales > prevMonthSales ? 'up' : thisMontSales < prevMonthSales ? 'down' : 'flat';
+    const salesTrendPct = prevMonthSales > 0 ? Math.abs(((thisMontSales - prevMonthSales) / prevMonthSales) * 100).toFixed(0) : null;
+
+    // Clients by product
+    const byProduct = {};
+    clientes.forEach(c => { const p = c.product || 'Outros'; byProduct[p] = (byProduct[p]||0) + 1; });
+    const PRODUCT_COLORS = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4'];
+    const productData = Object.entries(byProduct).map(([label, value], i) => ({ label, value, color: PRODUCT_COLORS[i % PRODUCT_COLORS.length] }));
+
+    // Sales by consultant
+    const consData = consultores.map(u => {
+        const m = getConsultantMetrics(u);
+        return { label: u.name.split(' ')[0], value: m.salesCount, color: 'var(--accent)' };
+    }).filter(d => d.value > 0).sort((a,b) => b.value - a.value).slice(0, 6);
+
     el.innerHTML = `
-        <div class="section-header"><div><h2>Relatórios</h2><p>Resumo consolidado do período.</p></div></div>
-        <div class="cards-grid">
-            <div class="card"><h3>Consultores</h3><div class="metric">${consultores.length}</div></div>
-            <div class="card"><h3>Instaladores</h3><div class="metric">${instaladores.length}</div></div>
-            <div class="card"><h3>Total de Clientes</h3><div class="metric">${clientes.length}</div></div>
-            <div class="card"><h3>Vendas este Mês</h3><div class="metric">${fechadosMes.length}</div></div>
-            <div class="card"><h3>Receita Recorrente</h3><div class="metric" style="font-size:1.4rem;">R$ ${formatCurrency(totalFees)}</div><small>mensalidades ativas</small></div>
-            <div class="card"><h3>Comissões Previstas</h3><div class="metric" style="font-size:1.4rem;">R$ ${formatCurrency(totalComissoes)}</div><small>consultores este mês</small></div>
-        </div>`;
+        <div class="section-header">
+            <div><h2>📊 Relatórios</h2><p>Análise completa de desempenho — ${getCurrentMonthLabel()}</p></div>
+            <button class="secondary-btn" onclick="exportRelatorioCSV()">📥 Exportar CSV</button>
+        </div>
+
+        <!-- KPIs com tendências -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:24px;">
+            <div class="card" style="padding:14px;">
+                <div style="font-size:0.75rem;font-weight:600;color:var(--text-soft);margin-bottom:4px;">VENDAS ESTE MÊS</div>
+                <div style="font-size:2rem;font-weight:800;color:var(--primary);">${thisMontSales}</div>
+                <div style="margin-top:4px;">
+                    <span class="report-kpi-trend trend-${salesTrend}">${salesTrend === 'up' ? '▲' : salesTrend === 'down' ? '▼' : '—'} ${salesTrendPct ? salesTrendPct + '%' : 'igual'} vs mês ant.</span>
+                </div>
+            </div>
+            <div class="card" style="padding:14px;">
+                <div style="font-size:0.75rem;font-weight:600;color:var(--text-soft);margin-bottom:4px;">RECEITA RECORRENTE</div>
+                <div style="font-size:1.5rem;font-weight:800;color:var(--primary);">R$ ${formatCurrency(totalFees)}</div>
+                <small style="color:var(--text-soft);">${fechados.length} contratos ativos</small>
+            </div>
+            <div class="card" style="padding:14px;">
+                <div style="font-size:0.75rem;font-weight:600;color:var(--text-soft);margin-bottom:4px;">TAXA DE CONVERSÃO</div>
+                <div style="font-size:2rem;font-weight:800;color:var(--success);">${convRate}%</div>
+                <small style="color:var(--text-soft);">${fechados.length} de ${clientes.length} leads</small>
+            </div>
+            <div class="card" style="padding:14px;">
+                <div style="font-size:0.75rem;font-weight:600;color:var(--text-soft);margin-bottom:4px;">COMISSÕES PREVISTAS</div>
+                <div style="font-size:1.5rem;font-weight:800;color:var(--accent);">R$ ${formatCurrency(totalComis)}</div>
+                <small style="color:var(--text-soft);">${consultores.length} consultores</small>
+            </div>
+            <div class="card" style="padding:14px;">
+                <div style="font-size:0.75rem;font-weight:600;color:var(--text-soft);margin-bottom:4px;">PERDIDOS ESTE MÊS</div>
+                <div style="font-size:2rem;font-weight:800;color:var(--danger);">${perdidosMes.length}</div>
+                <small style="color:var(--text-soft);">leads perdidos</small>
+            </div>
+        </div>
+
+        <!-- Charts row -->
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:24px;">
+            <div class="report-chart-card">
+                <div class="report-chart-title">📈 Vendas por mês (últimos 6 meses)</div>
+                ${_svgBarChart(months6, 520, 200)}
+            </div>
+            <div class="report-chart-card">
+                <div class="report-chart-title">🥧 Clientes por produto</div>
+                ${productData.length ? _svgDonutChart(productData, 180) : '<p class="text-muted">Sem dados.</p>'}
+            </div>
+        </div>
+
+        ${consData.length ? `<div class="report-chart-card" style="margin-bottom:24px;">
+            <div class="report-chart-title">🏆 Vendas por consultor (mês atual)</div>
+            ${_svgBarChart(consData, 520, 180)}
+        </div>` : ''}
+
+        <!-- Tabela detalhada por consultor -->
+        <div class="card" style="overflow-x:auto;">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-weight:700;">Detalhamento por consultor</div>
+            <table>
+                <thead><tr><th>Consultor</th><th>Vendas mês</th><th>Base total</th><th>MRR</th><th>Comissão</th><th>Conv. rate</th></tr></thead>
+                <tbody>
+                ${consultores.map(u => {
+                    const m = getConsultantMetrics(u);
+                    const myCli = clientes.filter(c => c.consultantId === u.id);
+                    const myFec = myCli.filter(c => c.stage === 'Fechado');
+                    const myMrr = myFec.reduce((s,c) => s + (c.monthlyFee||0), 0);
+                    const cr    = myCli.length ? ((myFec.length / myCli.length) * 100).toFixed(0) : 0;
+                    return `<tr>
+                        <td><strong>${esc(u.name)}</strong></td>
+                        <td>${m.salesCount}</td>
+                        <td>${myCli.length}</td>
+                        <td>R$ ${formatCurrency(myMrr)}</td>
+                        <td>R$ ${formatCurrency(m.commission)}</td>
+                        <td><span class="badge badge-info">${cr}%</span></td>
+                    </tr>`;
+                }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-soft);">Nenhum consultor cadastrado.</td></tr>'}
+                </tbody>
+            </table>
+        </div>
+    `;
 }
 
 function renderGestorComissoes() {
@@ -8287,9 +8403,11 @@ function openFollowUpModal(clientId) {
         const notes = document.getElementById('fuNotes').value.trim();
         if (!date) { document.getElementById('fuErr').textContent = 'Data obrigatória.'; return; }
         if (!app.state.followUps) app.state.followUps = [];
-        app.state.followUps.push({ id: `fu_${Date.now()}`, clientId, consultantId: uid, date, time, type, notes, done: false, result: null, createdAt: new Date().toISOString() });
+        const fuId = `fu_${Date.now()}`;
+        app.state.followUps.push({ id: fuId, clientId, consultantId: uid, date, time, type, notes, done: false, result: null, createdAt: new Date().toISOString() });
         saveState(); closeModal();
-        showToast(`Follow-up agendado para ${formatDate(date)}.`, 'success');
+        const gcalLink = getGCalLink(`Follow-up: ${c.name}`, date, `${type}${notes ? ' — ' + notes : ''} | Portal Tracktiv`);
+        showToast(`Follow-up agendado para ${formatDate(date)}. <a href="${gcalLink}" target="_blank" style="color:inherit;font-weight:700;text-decoration:underline;">📅 Adicionar ao Google Agenda</a>`, 'success', true);
     });
 }
 
@@ -8356,6 +8474,7 @@ function renderFollowUpCalendar() {
                 ${!f.done ? `<div class="fu-item-actions">
                     <button class="secondary-btn" style="padding:4px 10px;font-size:0.76rem;" data-done-fu="${esc(f.id)}">✅ Marcar feito</button>
                     ${c ? `<button class="secondary-btn" style="padding:4px 10px;font-size:0.76rem;" data-reagendar="${esc(f.id)}">📅 Reagendar</button>` : ''}
+                    <a href="${getGCalLink(`Follow-up: ${c?.name||''}`, f.date, `${f.type}${f.notes?' — '+f.notes:''}`)}" target="_blank" class="secondary-btn" style="padding:4px 10px;font-size:0.76rem;text-decoration:none;">📆 Google Agenda</a>
                 </div>` : ''}
             </div>
         </div>`;
@@ -10274,6 +10393,8 @@ function init() {
     loadState();
     applyBrandConfig();
 
+    initGlobalSearch();
+
     // Verificar se é acesso via link público (consultor ou técnico)
     if (checkPublicCadastroParam()) return;
     if (checkTecnicoFormParam()) return;
@@ -10473,6 +10594,8 @@ function renderClientesEmRisco() {
         const key = `churn_${c.id}`;
         if (!(app.state.churnAlertsSent || {})[key]) {
             addNotification(app.currentUser.id, 'churn', `⚠️ ${esc(c.name)} atingiu risco ALTO de churn (${calculateChurnScore(c)} pts)`, null);
+            queueEmail(app.currentUser.id, `⚠️ Alerta de churn: ${c.name}`,
+                `O cliente ${c.name} atingiu risco ALTO de cancelamento (${calculateChurnScore(c)} pontos).\n\nAcesse o sistema e tome uma ação de retenção imediatamente.\n\n— Portal Tracktiv`);
             if (!app.state.churnAlertsSent) app.state.churnAlertsSent = {};
             app.state.churnAlertsSent[key] = todayISO();
             saveState();
@@ -12291,6 +12414,8 @@ function showPublicCadastroForm(consultor, code) {
         app.state.clients.push(newClient);
         if (cons) {
             addNotification(cons.id, 'info', `📥 Novo cadastro recebido de ${esc(d.name)}! Verifique seus leads.`, { section: 'consultorCRM' });
+            queueEmail(cons.id, `📥 Novo lead: ${d.name}`,
+                `Novo cadastro recebido pelo seu link!\n\nNome: ${d.name}\nTelefone: ${d.phone || '—'}\nServiço: ${d.product || '—'}\n\nAcesse o portal para acompanhar este lead.\n\n— Portal Tracktiv`);
         }
         saveState();
         delete window._pubFormData;
@@ -14752,6 +14877,460 @@ function renderTecnicoFormSubmissions() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   BUSCA GLOBAL
+═══════════════════════════════════════════════════════════════════ */
+
+function initGlobalSearch() {
+    const input   = document.getElementById('globalSearchInput');
+    const results = document.getElementById('globalSearchResults');
+    if (!input || !results) return;
+
+    input.addEventListener('input', () => {
+        const q = input.value.trim().toLowerCase();
+        if (q.length < 2) { results.classList.add('hidden'); return; }
+        const hits = [];
+        const role = app.currentUser?.role;
+
+        (app.state.clients || []).forEach(c => {
+            if ((c.name||'').toLowerCase().includes(q) || (c.phone||'').includes(q) || (c.email||'').toLowerCase().includes(q) || (c.cpf||'').includes(q)) {
+                hits.push({ icon: '👤', label: c.name, sub: (c.product || '—') + ' · ' + (c.stage || ''), type: 'Cliente', action: () => { openClientProfile(c.id); } });
+            }
+        });
+
+        if (['gestor','presidente'].includes(role)) {
+            (app.state.users || []).forEach(u => {
+                if ((u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q)) {
+                    const roleLabel = { gestor:'Gestor', consultor:'Consultor', tecnico:'Técnico', instalador:'Parceiro', cliente:'Cliente', presidente:'Presidente' }[u.role] || u.role;
+                    hits.push({ icon: '🧑', label: u.name, sub: u.email, type: roleLabel, action: null });
+                }
+            });
+        }
+
+        if (['gestor','tecnico'].includes(role)) {
+            (app.state.chamados || []).forEach(ch => {
+                if ((ch.title||'').toLowerCase().includes(q) || (ch.description||'').toLowerCase().includes(q)) {
+                    hits.push({ icon: '🎫', label: ch.title, sub: ch.status + ' · ' + formatDate(ch.createdAt), type: 'Chamado', action: () => openChamadoDetail(ch.id) });
+                }
+            });
+        }
+
+        if (!hits.length) {
+            results.innerHTML = `<div style="padding:18px;text-align:center;color:var(--text-soft);font-size:0.88rem;">Nenhum resultado para "<strong>${esc(q)}</strong>".</div>`;
+        } else {
+            results.innerHTML = hits.slice(0, 8).map((h, i) => `
+                <div class="search-result-item" data-hit-idx="${i}">
+                    <span class="search-result-icon">${h.icon}</span>
+                    <div style="flex:1;min-width:0;">
+                        <div class="search-result-label">${esc(h.label)}</div>
+                        <div class="search-result-sub">${esc(h.sub)}</div>
+                    </div>
+                    <span class="search-result-type">${h.type}</span>
+                </div>`).join('');
+            results.querySelectorAll('.search-result-item').forEach((el, i) => {
+                if (hits[i].action) el.addEventListener('click', () => {
+                    hits[i].action();
+                    input.value = '';
+                    results.classList.add('hidden');
+                });
+            });
+        }
+        results.classList.remove('hidden');
+    });
+
+    document.addEventListener('click', e => {
+        if (!document.getElementById('globalSearchWrapper')?.contains(e.target)) results.classList.add('hidden');
+    });
+
+    input.addEventListener('keydown', e => { if (e.key === 'Escape') { input.value = ''; results.classList.add('hidden'); } });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   NOTIFICAÇÕES POR E-MAIL (FILA + mailto:)
+═══════════════════════════════════════════════════════════════════ */
+
+function queueEmail(userId, subject, body) {
+    const user = (app.state.users || []).find(u => u.id === userId);
+    const email = user?.notifEmail || user?.email || '';
+    if (!email) return;
+    if (!app.state.emailQueue) app.state.emailQueue = [];
+    app.state.emailQueue.push({ id: `eq_${Date.now()}`, to: email, toName: user.name || '', subject, body, createdAt: todayISO() });
+    saveState();
+    updateEmailQueueBadge();
+}
+
+function updateEmailQueueBadge() {
+    const btn   = document.getElementById('emailQueueBtn');
+    const badge = document.getElementById('emailQueueBadge');
+    const count = (app.state.emailQueue || []).length;
+    if (!btn) return;
+    btn.style.display = count > 0 ? 'flex' : 'none';
+    if (badge) { badge.textContent = count; badge.classList.toggle('hidden', count === 0); }
+}
+
+function openEmailQueueModal() {
+    const queue = app.state.emailQueue || [];
+    if (!queue.length) { showToast('Nenhuma notificação pendente.', 'info'); return; }
+    showModal('📧 Notificações por e-mail pendentes', `
+        <p class="text-muted" style="margin-bottom:14px;font-size:0.88rem;">
+            Clique em "Enviar" para abrir o cliente de e-mail com a mensagem pré-preenchida.
+            Configure seu e-mail de notificação em <strong>Configurações do perfil</strong>.
+        </p>
+        <div style="max-height:400px;overflow-y:auto;">
+            ${queue.map(item => `
+            <div class="email-queue-item">
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;font-size:0.9rem;">${esc(item.subject)}</div>
+                    <div style="font-size:0.78rem;color:var(--text-soft);">Para: ${esc(item.to)} · ${formatDate(item.createdAt)}</div>
+                </div>
+                <div style="display:flex;gap:6px;flex-shrink:0;">
+                    <a href="mailto:${encodeURIComponent(item.to)}?subject=${encodeURIComponent(item.subject)}&body=${encodeURIComponent(item.body)}"
+                       class="primary-btn" style="font-size:0.78rem;padding:5px 10px;text-decoration:none;"
+                       onclick="removeEmailQueueItem('${item.id}')">📤 Enviar</a>
+                    <button class="secondary-btn" style="font-size:0.78rem;padding:5px 10px;" onclick="removeEmailQueueItem('${item.id}')">✕</button>
+                </div>
+            </div>`).join('')}
+        </div>
+        <div class="actions" style="margin-top:12px;">
+            <button class="danger-btn" onclick="clearEmailQueue()">Limpar todas (${queue.length})</button>
+            <button class="secondary-btn" onclick="closeModal()">Fechar</button>
+        </div>
+    `);
+}
+
+function removeEmailQueueItem(id) {
+    app.state.emailQueue = (app.state.emailQueue || []).filter(i => i.id !== id);
+    saveState(); updateEmailQueueBadge();
+    if (!(app.state.emailQueue || []).length) closeModal();
+    else openEmailQueueModal();
+}
+
+function clearEmailQueue() {
+    app.state.emailQueue = [];
+    saveState(); updateEmailQueueBadge(); closeModal();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   GOOGLE AGENDA
+═══════════════════════════════════════════════════════════════════ */
+
+function getGCalLink(title, dateISO, description) {
+    const d = (dateISO || todayISO()).replace(/-/g, '');
+    const params = new URLSearchParams({ action: 'TEMPLATE', text: title, dates: `${d}/${d}`, details: description || '' });
+    return `https://www.google.com/calendar/render?${params.toString()}`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CHARTS SVG
+═══════════════════════════════════════════════════════════════════ */
+
+function _svgBarChart(data, w = 520, h = 200) {
+    if (!data || !data.length) return '<p class="text-muted">Sem dados suficientes.</p>';
+    const pad = { top: 24, right: 16, bottom: 40, left: 44 };
+    const maxVal = Math.max(...data.map(d => d.value), 1);
+    const innerW = w - pad.left - pad.right;
+    const innerH = h - pad.top - pad.bottom;
+    const barSlot = innerW / data.length;
+    const barW = Math.max(barSlot * 0.55, 8);
+
+    const yLines = [0, 0.25, 0.5, 0.75, 1].map(pct => {
+        const val = Math.round(maxVal * pct);
+        const y   = pad.top + innerH * (1 - pct);
+        return `<line x1="${pad.left}" y1="${y}" x2="${w - pad.right}" y2="${y}" stroke="#e2e8f0" stroke-width="1"/>
+                <text x="${pad.left - 4}" y="${y + 4}" text-anchor="end" font-size="10" fill="#94a3b8">${val}</text>`;
+    }).join('');
+
+    const bars = data.map((d, i) => {
+        const bh  = Math.max((d.value / maxVal) * innerH, d.value > 0 ? 3 : 0);
+        const x   = pad.left + i * barSlot + (barSlot - barW) / 2;
+        const y   = pad.top + innerH - bh;
+        const col = d.color || 'var(--accent)';
+        return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="${col}"/>
+                ${d.value > 0 ? `<text x="${(x + barW/2).toFixed(1)}" y="${(y - 4).toFixed(1)}" text-anchor="middle" font-size="10" fill="#475569" font-weight="600">${d.value}</text>` : ''}
+                <text x="${(x + barW/2).toFixed(1)}" y="${(pad.top + innerH + 16).toFixed(1)}" text-anchor="middle" font-size="10" fill="#64748b">${esc(d.label)}</text>`;
+    }).join('');
+
+    return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">${yLines}${bars}</svg>`;
+}
+
+function _svgDonutChart(data, size = 180) {
+    if (!data || !data.length) return '';
+    const total = data.reduce((s, d) => s + d.value, 0);
+    if (!total) return '<p class="text-muted">Sem dados.</p>';
+    const cx = size / 2, cy = size / 2, R = size * 0.38, r = size * 0.22;
+    let angle = -Math.PI / 2;
+    const slices = data.map(d => {
+        const sweep = (d.value / total) * 2 * Math.PI;
+        const x1o = cx + R * Math.cos(angle), y1o = cy + R * Math.sin(angle);
+        const x1i = cx + r * Math.cos(angle), y1i = cy + r * Math.sin(angle);
+        angle += sweep;
+        const x2o = cx + R * Math.cos(angle), y2o = cy + R * Math.sin(angle);
+        const x2i = cx + r * Math.cos(angle), y2i = cy + r * Math.sin(angle);
+        const lg = sweep > Math.PI ? 1 : 0;
+        return `<path d="M${x1i.toFixed(1)},${y1i.toFixed(1)} L${x1o.toFixed(1)},${y1o.toFixed(1)} A${R},${R} 0 ${lg},1 ${x2o.toFixed(1)},${y2o.toFixed(1)} L${x2i.toFixed(1)},${y2i.toFixed(1)} A${r},${r} 0 ${lg},0 ${x1i.toFixed(1)},${y1i.toFixed(1)} Z" fill="${d.color}" opacity="0.88"/>`;
+    }).join('');
+    const legend = data.slice(0, 5).map((d, i) => {
+        const pct = ((d.value/total)*100).toFixed(0);
+        return `<div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;margin-bottom:3px;"><div style="width:10px;height:10px;border-radius:2px;background:${d.color};flex-shrink:0;"></div><span style="color:var(--text-soft);">${esc(d.label)}</span><span style="margin-left:auto;font-weight:700;">${pct}%</span></div>`;
+    }).join('');
+    return `<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <svg viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" style="width:${size}px;height:${size}px;flex-shrink:0;">${slices}
+            <text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">${total}</text>
+            <text x="${cx}" y="${cy+18}" text-anchor="middle" font-size="9" fill="#94a3b8">total</text>
+        </svg>
+        <div style="flex:1;min-width:100px;">${legend}</div>
+    </div>`;
+}
+
+function exportRelatorioCSV() {
+    const clients = app.state.clients || [];
+    const rows = [['Nome','Produto','Plano','Mensalidade','Etapa','Consultor','Data Fechamento']];
+    clients.forEach(c => {
+        const cons = (app.state.users||[]).find(u=>u.id===c.consultantId);
+        rows.push([c.name, c.product||'', c.plan||'', c.monthlyFee||0, c.stage||'', cons?.name||'', c.closedDate||'']);
+    });
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a'); a.href = url; a.download = `relatorio_${todayISO()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    showToast('CSV exportado com sucesso!', 'success');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TREINAMENTOS CUSTOMIZADOS (GESTOR)
+═══════════════════════════════════════════════════════════════════ */
+
+function renderGestorCustomTrainings() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const trainings = app.state.customTrainings || [];
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>🎓 Treinamentos Personalizados</h2>
+            <p>Crie módulos com o conteúdo específico da sua empresa. Aparecem para toda a equipe.</p></div>
+            <button class="primary-btn" onclick="openCreateTrainingModal()">+ Criar treinamento</button>
+        </div>
+        ${trainings.length === 0
+            ? `<div class="card" style="text-align:center;padding:48px;color:var(--text-soft);">
+                <div style="font-size:2.5rem;margin-bottom:12px;">🎓</div>
+                <p>Nenhum treinamento criado ainda.</p>
+                <button class="primary-btn" style="margin-top:12px;" onclick="openCreateTrainingModal()">+ Criar primeiro treinamento</button>
+               </div>`
+            : trainings.map(t => `
+                <div class="custom-training-card">
+                    <div class="custom-training-icon">${esc(t.icon || '📚')}</div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-weight:700;">${esc(t.name)}</div>
+                        <div style="font-size:0.82rem;color:var(--text-soft);margin:2px 0;">${esc(t.desc || '')} &bull; ${(t.sections||[]).length} seção(ões)</div>
+                        <div style="font-size:0.76rem;color:var(--text-muted);">Criado em ${formatDate(t.createdAt)}</div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-shrink:0;">
+                        <button class="secondary-btn" style="font-size:0.8rem;" onclick="openEditTrainingModal('${t.id}')">✏️ Editar</button>
+                        <button class="danger-btn" style="font-size:0.8rem;" onclick="deleteCustomTraining('${t.id}')">🗑</button>
+                    </div>
+                </div>`).join('')}
+    `;
+    showSection('dynamicContent');
+}
+
+function openCreateTrainingModal() {
+    showModal('Criar treinamento personalizado', `
+        <div class="field"><label>Título *</label><input id="ct_name" type="text" placeholder="Ex: Processo de vendas da empresa"></div>
+        <div class="field"><label>Ícone (emoji)</label><input id="ct_icon" type="text" value="📚" maxlength="2"></div>
+        <div class="field"><label>Descrição curta</label><input id="ct_desc" type="text" placeholder="Ex: Como abordar, apresentar e fechar clientes"></div>
+        <div class="field"><label>Conteúdo (seção 1) *</label><textarea id="ct_s1_title" rows="1" placeholder="Título da seção" style="margin-bottom:6px;"></textarea>
+            <textarea id="ct_s1_content" rows="5" placeholder="Conteúdo da seção — você pode usar texto livre, listas com • e exemplos práticos..."></textarea>
+        </div>
+        <div id="ct_more_sections"></div>
+        <button class="secondary-btn" style="font-size:0.82rem;margin-bottom:12px;" onclick="_addTrainingSection()">+ Adicionar seção</button>
+        <div id="ct_err" class="error-text" style="margin-bottom:8px;"></div>
+        <div class="actions">
+            <button class="primary-btn" onclick="saveCustomTraining()">Criar treinamento</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+    window._ctSectionCount = 1;
+}
+
+function _addTrainingSection() {
+    const count = ++window._ctSectionCount;
+    const wrap = document.getElementById('ct_more_sections');
+    if (!wrap) return;
+    wrap.insertAdjacentHTML('beforeend', `
+        <div class="field" id="ct_s${count}_wrap">
+            <label>Seção ${count}</label>
+            <textarea id="ct_s${count}_title" rows="1" placeholder="Título da seção" style="margin-bottom:6px;"></textarea>
+            <textarea id="ct_s${count}_content" rows="4" placeholder="Conteúdo…"></textarea>
+        </div>`);
+}
+
+function saveCustomTraining(existingId) {
+    const name    = (document.getElementById('ct_name')?.value || '').trim();
+    const icon    = (document.getElementById('ct_icon')?.value || '📚').trim();
+    const desc    = (document.getElementById('ct_desc')?.value || '').trim();
+    const errEl   = document.getElementById('ct_err');
+    if (!name) { if (errEl) errEl.textContent = 'Título é obrigatório.'; return; }
+    const sections = [];
+    const total = window._ctSectionCount || 1;
+    for (let i = 1; i <= total; i++) {
+        const title   = (document.getElementById(`ct_s${i}_title`)?.value || '').trim() || `Seção ${i}`;
+        const content = (document.getElementById(`ct_s${i}_content`)?.value || '').trim();
+        if (content) sections.push({ title, content });
+    }
+    if (!sections.length) { if (errEl) errEl.textContent = 'Adicione pelo menos uma seção com conteúdo.'; return; }
+    if (!app.state.customTrainings) app.state.customTrainings = [];
+    if (existingId) {
+        const idx = app.state.customTrainings.findIndex(t => t.id === existingId);
+        if (idx >= 0) app.state.customTrainings[idx] = { ...app.state.customTrainings[idx], name, icon, desc, sections };
+    } else {
+        app.state.customTrainings.push({ id: `ct_${Date.now()}`, name, icon, desc, sections, createdAt: todayISO(), createdBy: app.currentUser?.id });
+    }
+    saveState(); closeModal();
+    showToast(`Treinamento "${name}" salvo!`, 'success');
+    renderGestorCustomTrainings();
+}
+
+function openEditTrainingModal(id) {
+    const t = (app.state.customTrainings || []).find(x => x.id === id);
+    if (!t) return;
+    showModal('Editar treinamento', `
+        <div class="field"><label>Título *</label><input id="ct_name" type="text" value="${esc(t.name)}"></div>
+        <div class="field"><label>Ícone</label><input id="ct_icon" type="text" value="${esc(t.icon||'📚')}" maxlength="2"></div>
+        <div class="field"><label>Descrição</label><input id="ct_desc" type="text" value="${esc(t.desc||'')}"></div>
+        ${(t.sections||[]).map((s,i) => `
+        <div class="field">
+            <label>Seção ${i+1}</label>
+            <textarea id="ct_s${i+1}_title" rows="1" style="margin-bottom:6px;">${esc(s.title)}</textarea>
+            <textarea id="ct_s${i+1}_content" rows="4">${esc(s.content)}</textarea>
+        </div>`).join('')}
+        <div id="ct_more_sections"></div>
+        <button class="secondary-btn" style="font-size:0.82rem;margin-bottom:12px;" onclick="_addTrainingSection()">+ Adicionar seção</button>
+        <div id="ct_err" class="error-text"></div>
+        <div class="actions">
+            <button class="primary-btn" onclick="saveCustomTraining('${id}')">Salvar</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+    window._ctSectionCount = (t.sections||[]).length;
+}
+
+function deleteCustomTraining(id) {
+    if (!confirm('Excluir este treinamento?')) return;
+    app.state.customTrainings = (app.state.customTrainings||[]).filter(t => t.id !== id);
+    saveState(); showToast('Treinamento excluído.', 'info'); renderGestorCustomTrainings();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ASSINATURA DIGITAL (CANVAS)
+═══════════════════════════════════════════════════════════════════ */
+
+function openSignatureModal(label, onSave) {
+    showModal(`✍️ Assinar: ${esc(label)}`, `
+        <p class="text-muted" style="margin-bottom:12px;font-size:0.88rem;">Desenhe sua assinatura abaixo com o mouse ou dedo.</p>
+        <canvas id="sigCanvas" class="sig-canvas-wrapper" width="460" height="140"></canvas>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+            <button class="secondary-btn" style="font-size:0.82rem;" onclick="clearSigCanvas()">🗑 Limpar</button>
+            <button class="primary-btn" onclick="confirmSignature('${label.replace(/'/g,"\'")}')">✅ Confirmar assinatura</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+        <div id="sig_err" class="error-text" style="margin-top:6px;"></div>
+    `);
+    setTimeout(() => _initSigCanvas(onSave), 80);
+}
+
+let _sigOnSave = null;
+
+function _initSigCanvas(onSave) {
+    _sigOnSave = onSave;
+    const canvas = document.getElementById('sigCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    let drawing = false, lastX = 0, lastY = 0;
+
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        if (e.touches) return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
+        return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+    }
+
+    canvas.addEventListener('mousedown', e => { drawing = true; const p = getPos(e); lastX = p.x; lastY = p.y; });
+    canvas.addEventListener('mousemove', e => {
+        if (!drawing) return;
+        const p = getPos(e);
+        ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(p.x, p.y); ctx.stroke();
+        lastX = p.x; lastY = p.y;
+    });
+    canvas.addEventListener('mouseup',   () => { drawing = false; });
+    canvas.addEventListener('mouseleave',() => { drawing = false; });
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; const p = getPos(e); lastX = p.x; lastY = p.y; }, { passive: false });
+    canvas.addEventListener('touchmove',  e => {
+        e.preventDefault(); if (!drawing) return;
+        const p = getPos(e);
+        ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(p.x, p.y); ctx.stroke();
+        lastX = p.x; lastY = p.y;
+    }, { passive: false });
+    canvas.addEventListener('touchend', () => { drawing = false; });
+}
+
+function clearSigCanvas() {
+    const canvas = document.getElementById('sigCanvas');
+    if (!canvas) return;
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function confirmSignature(label) {
+    const canvas = document.getElementById('sigCanvas');
+    const errEl  = document.getElementById('sig_err');
+    if (!canvas) return;
+    // Check if canvas has any drawing
+    const ctx  = canvas.getContext('2d');
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    const hasDrawing = data.some((v, i) => i % 4 === 3 && v > 10);
+    if (!hasDrawing) { if (errEl) errEl.textContent = 'Desenhe sua assinatura antes de confirmar.'; return; }
+    const imageData = canvas.toDataURL('image/png');
+    const u = app.currentUser;
+    if (!app.state.clientSignatures) app.state.clientSignatures = {};
+    const uid = u?.id || 'unknown';
+    if (!app.state.clientSignatures[uid]) app.state.clientSignatures[uid] = [];
+    const sig = { id: `sig_${Date.now()}`, label, imageData, signedAt: todayISO(), signerName: u?.name || 'Assinante' };
+    app.state.clientSignatures[uid].push(sig);
+    saveState();
+    closeModal();
+    showToast('Assinatura registrada com sucesso!', 'success');
+    if (_sigOnSave) _sigOnSave(sig);
+}
+
+function renderClienteAssinaturas() {
+    const u    = app.currentUser;
+    const el   = document.getElementById('clientePageContent');
+    if (!el) return;
+    const sigs = (app.state.clientSignatures || {})[u?.id] || [];
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:20px;">
+            <div><h2>✍️ Assinaturas Digitais</h2><p>Documentos e termos assinados por você.</p></div>
+            <button class="primary-btn" onclick="openSignatureModal('Termo de aceite de serviços Tracktiv', null)">+ Nova assinatura</button>
+        </div>
+        ${sigs.length === 0
+            ? `<div class="card" style="text-align:center;padding:40px;color:var(--text-soft);">
+                <div style="font-size:2rem;margin-bottom:10px;">✍️</div>
+                <p>Nenhuma assinatura registrada ainda.</p></div>`
+            : sigs.slice().reverse().map(s => `
+                <div class="card" style="margin-bottom:12px;">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                        <div>
+                            <div style="font-weight:700;">${esc(s.label)}</div>
+                            <div class="sig-stamp">✅ Assinado por ${esc(s.signerName)} em ${formatDate(s.signedAt)}</div>
+                        </div>
+                    </div>
+                    <img src="${s.imageData}" style="max-width:200px;margin-top:10px;border:1px solid var(--border);border-radius:8px;" alt="assinatura">
+                </div>`).join('')}
+    `;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    MÓDULOS CONFIGURÁVEIS + WHITE LABEL
 ═══════════════════════════════════════════════════════════════════ */
 
@@ -15312,6 +15891,8 @@ function openClientFormFill(sendId) {
         // Notify technician
         const nome = data['tf_name'] || app.currentUser?.name || 'cliente';
         addNotification(send.tecnicoId, 'info', `✅ ${esc(nome)} preencheu o formulário que você enviou!`, null);
+        queueEmail(send.tecnicoId, `✅ Formulário preenchido: ${nome}`,
+            `O cliente ${nome} preencheu o formulário "${send.title || 'Formulário de atendimento'}"\n\nData: ${todayISO()}\n\nAcesse o portal para ver as respostas.\n\n— Portal Tracktiv`);
 
         saveState();
         closeModal();

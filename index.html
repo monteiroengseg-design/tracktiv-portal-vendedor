@@ -130,11 +130,16 @@
                 <span id="pageRoleLabel">Portal</span>
             </div>
         </div>
+        <div class="global-search-wrapper" id="globalSearchWrapper">
+            <input type="text" id="globalSearchInput" class="global-search-input" placeholder="🔍 Buscar cliente, lead, chamado…" autocomplete="off">
+            <div id="globalSearchResults" class="global-search-results hidden"></div>
+        </div>
         <div class="user-panel">
             <div class="notif-wrapper">
                 <button id="notifBtn" class="header-icon-btn" title="Notificações" type="button">🔔<span class="header-badge hidden" id="notifBadge">0</span></button>
                 <div id="notifPanel" class="notif-panel hidden"></div>
             </div>
+            <button id="emailQueueBtn" class="header-icon-btn" title="Notificações por e-mail" type="button" onclick="openEmailQueueModal()" style="display:none;">📧<span class="header-badge hidden" id="emailQueueBadge">0</span></button>
             <button id="chatBtn" class="header-icon-btn" title="Mensagens" type="button">💬<span class="header-badge hidden" id="chatBadge">0</span></button>
             <div class="user-chip"><strong id="userNameLabel">Usuário</strong></div>
             <button id="logoutBtn" class="logout-btn">Sair</button>
