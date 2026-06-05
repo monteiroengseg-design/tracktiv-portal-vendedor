@@ -2373,6 +2373,31 @@ td strong { color: var(--text); font-weight: 600; }
 .module-toggle-label input:checked + .module-toggle-track { background: var(--success); }
 .module-toggle-label input:checked + .module-toggle-track::after { left: 23px; }
 
+/* Grids responsivos — Módulos e White Label */
+.modules-config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.wl-layout-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+.tec-link-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+}
+@media (max-width: 768px) {
+    .modules-config-grid { grid-template-columns: 1fr; }
+    .wl-layout-grid { grid-template-columns: 1fr; }
+    .tec-link-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+    .tec-link-stats-grid { grid-template-columns: 1fr 1fr; }
+}
+
 /* ═══════════════════════════════════════════════════════════
    EDITOR DE FORMULÁRIO DO TÉCNICO
 ═══════════════════════════════════════════════════════════ */

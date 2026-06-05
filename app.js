@@ -1687,7 +1687,13 @@ const cleanState = {
     recurrenceRules: { gracePeriodDays: 30, minClientsToActivate: 1, minMonthlySales: 0, history: [] },
     savedSimulations: [],
     simCustomCosts: [],
-    simCustomRevenues: []
+    simCustomRevenues: [],
+    moduleConfig: {},
+    brandConfig: { companyName: 'Tracktiv', tagline: 'Portal do Vendedor', logoData: null, primaryColor: '#1a2e4a', accentColor: '#f5820d', sidebarBg: '#0f1c2e', email: '', phone: '', website: '' },
+    tecnicoForms: {},
+    tecnicoSubmissions: {},
+    tecnicoFormSends: [],
+    tecnicoLinkStats: {}
 };
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2122,7 +2128,7 @@ function renderNavigation() {
     const role = app.currentUser.role;
     const isIndicador = role === 'instalador' && app.currentUser.partnerType === 'indicador';
     const rawTree = role === 'presidente' ? NAV_TREE_PRESIDENTE : (isIndicador ? NAV_TREE_INDICADOR : (NAV_TREE[role] || []));
-    const tree = filterNavByModules(rawTree, role);
+    const tree = filterNavByModules(rawTree, isIndicador ? 'indicador' : role);
     const expandedId = app.navState.expandedGroup;
 
     if (expandedId) {
@@ -4095,7 +4101,7 @@ function showApp() {
     // Set initial view from first nav tree item
     const role = app.currentUser.role;
     const _rawTree = role === 'presidente' ? NAV_TREE_PRESIDENTE : (_isIndicador ? NAV_TREE_INDICADOR : (NAV_TREE[role] || []));
-    const tree = filterNavByModules(_rawTree, role);
+    const tree = filterNavByModules(_rawTree, _isIndicador ? 'indicador' : role);
     const firstItem = tree[0];
     if (firstItem) {
         if (firstItem.section) {
@@ -7412,8 +7418,8 @@ function renderGestorIndicacoes() {
             <td>${esc(referrer ? referrer.name : '—')}</td>
             <td>${esc(u.requestedAt || '—')}</td>
             <td>
-                <button class="small-btn" onclick="approvePendingUser('${esc(u.id)}')">✓ Aprovar</button>
-                <button class="danger-btn" onclick="rejectPendingUser('${esc(u.id)}')">✗ Rejeitar</button>
+                <button class="small-btn" onclick="approveReferral('${esc(u.id)}')">✓ Aprovar</button>
+                <button class="danger-btn" onclick="rejectReferral('${esc(u.id)}')">✗ Rejeitar</button>
             </td>
         </tr>`;
     }).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--text-soft);">Nenhuma indicação pendente.</td></tr>`;
@@ -14312,7 +14318,7 @@ function renderMeuLinkTecnico() {
         </div>` : ''}
 
         <!-- Stats grid -->
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;">
+        <div class="tec-link-stats-grid" style="margin-bottom:20px;">
             <div class="card" style="text-align:center;padding:14px;">
                 <div class="metric" style="font-size:2rem;">${stats.accesses}</div>
                 <small style="color:var(--text-soft);">Acessos ao link</small>
@@ -14798,7 +14804,7 @@ function renderModulosConfig(callerRole) {
             <div><h2>🧩 Módulos do Sistema</h2>
             <p>Ative ou desative módulos para personalizar o portal para sua empresa.</p></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="modules-config-grid">
             ${MODULE_DEFINITIONS.map(mod => {
                 const enabled = cfg[mod.key]?.enabled !== false;
                 return `<div class="card" style="display:flex;align-items:flex-start;gap:14px;${!enabled ? 'opacity:.65;' : ''}">
@@ -14829,7 +14835,8 @@ function toggleModule(key, enabled) {
     saveState();
     const mod = MODULE_DEFINITIONS.find(m => m.key === key);
     showToast(`Módulo "${mod?.name}" ${enabled ? 'ativado' : 'desativado'}.`, enabled ? 'success' : 'info');
-    // Refresh navigation for all users on next render
+    // Refresh navigation so changes take effect immediately
+    renderNavigation();
     renderModulosConfig(app.currentUser?.role === 'presidente' ? 'presidente' : 'gestor');
 }
 
@@ -14889,7 +14896,7 @@ function renderWhiteLabel() {
             <button class="secondary-btn" onclick="resetBrandConfig()">↩ Restaurar padrão Tracktiv</button>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="wl-layout-grid">
             <!-- Coluna esquerda: configuração -->
             <div>
                 <div class="card" style="margin-bottom:16px;">
@@ -14990,7 +14997,6 @@ function previewBrand() {
     const syncPairs = [['wl_primary','wl_primary_hex'],['wl_accent','wl_accent_hex'],['wl_sidebar','wl_sidebar_hex']];
     syncPairs.forEach(([picker, hex]) => {
         const p = document.getElementById(picker), h = document.getElementById(hex);
-        if (p && h && document.activeElement !== p && document.activeElement !== h) { }
         if (p && h) { if (document.activeElement === p) h.value = p.value; else if (document.activeElement === h) p.value = h.value; }
     });
     const name = document.getElementById('wl_name')?.value || 'Tracktiv';
