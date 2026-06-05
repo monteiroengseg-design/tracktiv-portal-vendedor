@@ -97,7 +97,8 @@ const NAV_TREE = {
             { id: 'g_cfg_comis',    label: 'Tabela de Comissões',   icon: '💵', section: 'gestorConfig' },
             { id: 'g_cfg_metas',    label: 'Metas',                 icon: '🎯', render: () => renderGestorMetas() },
             { id: 'g_cfg_planos',   label: 'Planos e Preços',       icon: '💎', render: () => renderGestorPlanos() },
-            { id: 'g_cfg_forms',    label: 'Editor de Formulários', icon: '🔧', render: () => renderGestorFormEditor() }
+            { id: 'g_cfg_forms',    label: 'Editor de Formulários', icon: '🔧', render: () => renderGestorFormEditor() },
+            { id: 'g_cfg_modulos',  label: 'Módulos',               icon: '🧩', render: () => renderModulosConfig('gestor') }
         ]},
         { id: 'g_produtos_cfg', label: 'Produtos',        icon: '📦', render: () => renderGestorProdutos() },
         { id: 'g_mural',       label: 'Mural e Desafios',icon: '🏆', render: () => renderGestorMuralConfig() },
@@ -191,18 +192,44 @@ const NAV_TREE_INDICADOR = [
 ];
 
 const NAV_TREE_PRESIDENTE = [
-    { id: 'p_visao',    label: 'Visão Geral',        icon: '📊', render: () => renderPresidenteOverview() },
-    { id: 'p_fin',      label: 'Financeiro',          icon: '💰', render: () => renderPresidenteFinanceiro() },
-    { id: 'p_comis',    label: 'Comissionamento',     icon: '💵', render: () => renderPresidenteComissionamento() },
-    { id: 'p_planos',   label: 'Planos e Produtos',   icon: '📦', render: () => renderPresidentePlanos() },
-    { id: 'p_recorr',   label: 'Recorrência',         icon: '🔄', render: () => renderPresidenteRecorrencia() },
-    { id: 'p_gestores', label: 'Gestores',            icon: '👔', render: () => renderPresidenteGestores() },
-    { id: 'p_audit',    label: 'Auditoria',           icon: '🔍', render: () => renderPresidenteAuditoria() },
-    { id: 'p_config',   label: 'Configurações',       icon: '⚙️', render: () => renderPresidenteConfig() },
-    { id: 'p_sim',      label: 'Simulador de Lucro',  icon: '🧮', render: () => renderPresidenteSimulador() }
+    { id: 'p_visao',      label: 'Visão Geral',        icon: '📊', render: () => renderPresidenteOverview() },
+    { id: 'p_fin',        label: 'Financeiro',          icon: '💰', render: () => renderPresidenteFinanceiro() },
+    { id: 'p_comis',      label: 'Comissionamento',     icon: '💵', render: () => renderPresidenteComissionamento() },
+    { id: 'p_planos',     label: 'Planos e Produtos',   icon: '📦', render: () => renderPresidentePlanos() },
+    { id: 'p_recorr',     label: 'Recorrência',         icon: '🔄', render: () => renderPresidenteRecorrencia() },
+    { id: 'p_gestores',   label: 'Gestores',            icon: '👔', render: () => renderPresidenteGestores() },
+    { id: 'p_audit',      label: 'Auditoria',           icon: '🔍', render: () => renderPresidenteAuditoria() },
+    { id: 'p_modulos',    label: 'Módulos',             icon: '🧩', render: () => renderModulosConfig('presidente') },
+    { id: 'p_whitelabel', label: 'White Label',         icon: '🎨', render: () => renderWhiteLabel() },
+    { id: 'p_config',     label: 'Configurações',       icon: '⚙️', render: () => renderPresidenteConfig() },
+    { id: 'p_sim',        label: 'Simulador de Lucro',  icon: '🧮', render: () => renderPresidenteSimulador() }
 ];
 
 const stageOrder = ['Novo Lead', 'Contato Feito', 'Apresentação', 'Proposta', 'Fechado', 'Perdido'];
+
+/* ── MÓDULOS CONFIGURÁVEIS ─────────────────────────────────────── */
+const MODULE_DEFINITIONS = [
+    { key: 'crm',           name: 'CRM e Funil de Vendas',    icon: '🎯', desc: 'Funil de vendas, leads, follow-ups e score de propensão',
+      navMap: { gestor: ['g_clientes','g_vendas','g_followups'], consultor: ['c_crm','c_clientes'], instalador: ['i_clientes'], tecnico: [] } },
+    { key: 'financeiro',    name: 'Financeiro e Comissões',   icon: '💰', desc: 'Comissões, recorrências, bônus e extratos',
+      navMap: { gestor: ['g_financeiro','g_cupons'], consultor: ['c_financeiro'], instalador: ['i_financeiro'], tecnico: [] } },
+    { key: 'treinamentos',  name: 'Treinamentos',             icon: '🎓', desc: 'Módulos de treinamento e certificados da equipe',
+      navMap: { gestor: [], consultor: ['c_treinamentos'], instalador: ['i_treinamentos'], tecnico: [] } },
+    { key: 'tecnico',       name: 'Técnico',                  icon: '🛠️', desc: 'Portal de técnicos, chamados e formulários',
+      navMap: { gestor: ['g_tecnicos'], consultor: [], instalador: [], tecnico: ['*'] } },
+    { key: 'parceiros',     name: 'Parceiros',                icon: '🤝', desc: 'Instaladores, indicadores e parceiros de negócio',
+      navMap: { gestor: ['g_parceiros'], consultor: ['c_indicacoes'], instalador: ['*'], tecnico: [] } },
+    { key: 'portal_cliente',name: 'Portal do Cliente',        icon: '🌐', desc: 'Portal de autoatendimento do cliente final',
+      navMap: { gestor: [], consultor: [], instalador: [], tecnico: [], cliente: ['*'] } },
+    { key: 'mural',         name: 'Mural e Desafios',         icon: '🏆', desc: 'Ranking, metas, desafios e feed de vendas',
+      navMap: { gestor: ['g_mural'], consultor: ['c_mural'], instalador: ['i_mural'], tecnico: [] } },
+    { key: 'relatorios',    name: 'Relatórios',               icon: '📊', desc: 'Relatórios, análises e histórico de desempenho',
+      navMap: { gestor: ['g_vendas'], consultor: [], instalador: [], tecnico: [] } },
+    { key: 'comunicados',   name: 'Comunicados',              icon: '📢', desc: 'Comunicados e avisos internos para a equipe',
+      navMap: { gestor: ['g_comunicados'], consultor: ['c_comunicados'], instalador: ['i_comunicados'], tecnico: [] } },
+    { key: 'produtos',      name: 'Produtos e Catálogo',      icon: '📦', desc: 'Catálogo de produtos, preços e comissões',
+      navMap: { gestor: ['g_produtos_cfg'], consultor: ['c_produtos'], instalador: ['i_produtos'], tecnico: [] } },
+];
 
 const TECNICO_SEGMENTS = [
     { key: 'sst',          label: 'Segurança do Trabalho',  icon: '🦺' },
@@ -2033,6 +2060,14 @@ function loadState() {
             if (!app.state.savedSimulations)  app.state.savedSimulations  = [];
             if (!app.state.simCustomCosts)       app.state.simCustomCosts       = [];
             if (!app.state.simCustomRevenues)  app.state.simCustomRevenues  = [];
+            // Migração: módulos e white label
+            if (!app.state.moduleConfig) {
+                app.state.moduleConfig = {};
+                MODULE_DEFINITIONS.forEach(m => { app.state.moduleConfig[m.key] = { enabled: true }; });
+            } else {
+                MODULE_DEFINITIONS.forEach(m => { if (!app.state.moduleConfig[m.key]) app.state.moduleConfig[m.key] = { enabled: true }; });
+            }
+            if (!app.state.brandConfig) app.state.brandConfig = { companyName: 'Tracktiv', tagline: 'Portal do Vendedor', logoData: null, primaryColor: '#1a2e4a', accentColor: '#f5820d', sidebarBg: '#0f1c2e', email: '', phone: '', website: '' };
             // Migração: Qualificação, Link e Formulário do Técnico
             if (!app.state.tecnicoForms)         app.state.tecnicoForms         = {};
             if (!app.state.tecnicoSubmissions)   app.state.tecnicoSubmissions   = {};
@@ -2086,7 +2121,8 @@ function renderNavigation() {
     tabs.innerHTML = '';
     const role = app.currentUser.role;
     const isIndicador = role === 'instalador' && app.currentUser.partnerType === 'indicador';
-    const tree = role === 'presidente' ? NAV_TREE_PRESIDENTE : (isIndicador ? NAV_TREE_INDICADOR : (NAV_TREE[role] || []));
+    const rawTree = role === 'presidente' ? NAV_TREE_PRESIDENTE : (isIndicador ? NAV_TREE_INDICADOR : (NAV_TREE[role] || []));
+    const tree = filterNavByModules(rawTree, role);
     const expandedId = app.navState.expandedGroup;
 
     if (expandedId) {
@@ -4058,7 +4094,8 @@ function showApp() {
 
     // Set initial view from first nav tree item
     const role = app.currentUser.role;
-    const tree = role === 'presidente' ? NAV_TREE_PRESIDENTE : (_isIndicador ? NAV_TREE_INDICADOR : (NAV_TREE[role] || []));
+    const _rawTree = role === 'presidente' ? NAV_TREE_PRESIDENTE : (_isIndicador ? NAV_TREE_INDICADOR : (NAV_TREE[role] || []));
+    const tree = filterNavByModules(_rawTree, role);
     const firstItem = tree[0];
     if (firstItem) {
         if (firstItem.section) {
@@ -10229,6 +10266,7 @@ function renderComunicadosMural() {
 
 function init() {
     loadState();
+    applyBrandConfig();
 
     // Verificar se é acesso via link público (consultor ou técnico)
     if (checkPublicCadastroParam()) return;
@@ -14705,6 +14743,322 @@ function renderTecnicoFormSubmissions() {
             }).join('')}
     `;
     showSection('dynamicContent');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MÓDULOS CONFIGURÁVEIS + WHITE LABEL
+═══════════════════════════════════════════════════════════════════ */
+
+// ── FILTRO DE NAVEGAÇÃO POR MÓDULOS ──────────────────────────────
+
+function filterNavByModules(tree, role) {
+    if (role === 'presidente' || role === 'gestor') return tree;
+    const cfg = app.state.moduleConfig || {};
+    return tree.map(item => {
+        if (!_isNavIdEnabled(item.id, role, cfg)) return null;
+        if (item.children) {
+            const kids = item.children.filter(c => _isNavIdEnabled(c.id, role, cfg));
+            if (!kids.length) return null;
+            return { ...item, children: kids };
+        }
+        return item;
+    }).filter(Boolean);
+}
+
+function _isNavIdEnabled(navId, role, cfg) {
+    for (const mod of MODULE_DEFINITIONS) {
+        if (cfg[mod.key]?.enabled === false) {
+            const ids = mod.navMap[role] || [];
+            if (ids.includes('*') || ids.includes(navId)) return false;
+        }
+    }
+    return true;
+}
+
+function isRoleModuleBlocked(role) {
+    const cfg = app.state.moduleConfig || {};
+    for (const mod of MODULE_DEFINITIONS) {
+        if (cfg[mod.key]?.enabled === false) {
+            const ids = mod.navMap[role] || [];
+            if (ids.includes('*')) return mod.name;
+        }
+    }
+    return false;
+}
+
+// ── PAINEL DE MÓDULOS ─────────────────────────────────────────────
+
+function renderModulosConfig(callerRole) {
+    const el = callerRole === 'presidente' ? presidenteEl() : document.getElementById('dynamicContent');
+    if (!el) return;
+    const cfg = app.state.moduleConfig || {};
+
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>🧩 Módulos do Sistema</h2>
+            <p>Ative ou desative módulos para personalizar o portal para sua empresa.</p></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            ${MODULE_DEFINITIONS.map(mod => {
+                const enabled = cfg[mod.key]?.enabled !== false;
+                return `<div class="card" style="display:flex;align-items:flex-start;gap:14px;${!enabled ? 'opacity:.65;' : ''}">
+                    <div style="font-size:2rem;flex-shrink:0;">${mod.icon}</div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-weight:700;font-size:0.95rem;">${esc(mod.name)}</div>
+                        <div style="font-size:0.8rem;color:var(--text-soft);margin:3px 0 10px;">${esc(mod.desc)}</div>
+                        <label class="module-toggle-label">
+                            <input type="checkbox" class="module-toggle-cb" data-key="${mod.key}" ${enabled ? 'checked' : ''} onchange="toggleModule('${mod.key}',this.checked)">
+                            <span class="module-toggle-track"></span>
+                            <span style="font-size:0.82rem;font-weight:600;">${enabled ? 'Ativo' : 'Inativo'}</span>
+                        </label>
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>
+        <div class="card" style="margin-top:20px;background:#f0f9ff;border:1px solid #bae6fd;">
+            <p style="margin:0;font-size:0.88rem;color:#0369a1;">💡 <strong>Dica:</strong> Módulos desativados somem completamente do menu de todos os usuários. Apenas o gestor e o presidente continuam vendo tudo.</p>
+        </div>
+    `;
+    if (callerRole !== 'presidente') showSection('dynamicContent');
+}
+
+function toggleModule(key, enabled) {
+    if (!app.state.moduleConfig) app.state.moduleConfig = {};
+    if (!app.state.moduleConfig[key]) app.state.moduleConfig[key] = {};
+    app.state.moduleConfig[key].enabled = enabled;
+    saveState();
+    const mod = MODULE_DEFINITIONS.find(m => m.key === key);
+    showToast(`Módulo "${mod?.name}" ${enabled ? 'ativado' : 'desativado'}.`, enabled ? 'success' : 'info');
+    // Refresh navigation for all users on next render
+    renderModulosConfig(app.currentUser?.role === 'presidente' ? 'presidente' : 'gestor');
+}
+
+// ── WHITE LABEL ───────────────────────────────────────────────────
+
+function applyBrandConfig() {
+    const brand = app.state.brandConfig || {};
+    const root  = document.documentElement;
+
+    if (brand.primaryColor) {
+        root.style.setProperty('--primary', brand.primaryColor);
+        // Derive slightly lighter/darker variants
+        root.style.setProperty('--primary-light', brand.primaryColor + 'dd');
+        root.style.setProperty('--primary-hover',  brand.primaryColor + 'cc');
+    }
+    if (brand.accentColor) {
+        root.style.setProperty('--accent', brand.accentColor);
+        root.style.setProperty('--accent-light', brand.accentColor + 'cc');
+        root.style.setProperty('--accent-glow',  brand.accentColor + '38');
+    }
+    if (brand.sidebarBg) {
+        root.style.setProperty('--sidebar-bg',  brand.sidebarBg);
+        root.style.setProperty('--sidebar-bg2', brand.sidebarBg + 'dd');
+    }
+
+    const name = (brand.companyName || 'Tracktiv');
+
+    // Update brand text across all .brand-title strong elements
+    document.querySelectorAll('.brand-title strong').forEach(el => el.textContent = name);
+    document.querySelectorAll('.brand-crest').forEach(el => {
+        if (!el.querySelector('img')) el.textContent = name[0] || 'T';
+    });
+
+    // Update page title
+    document.title = name + ' — Portal do Vendedor';
+
+    // Apply logo if set
+    if (brand.logoData) {
+        document.querySelectorAll('.brand-crest').forEach(el => {
+            el.innerHTML = `<img src="${brand.logoData}" style="width:32px;height:32px;object-fit:contain;border-radius:6px;" alt="logo">`;
+        });
+    }
+
+    // Login aside tagline
+    const asideH1 = document.querySelector('.login-aside h1');
+    if (asideH1) asideH1.textContent = brand.tagline || `Gestão integrada de consultores e parceiros ${name}`;
+}
+
+function renderWhiteLabel() {
+    const el = presidenteEl(); if (!el) return;
+    const brand = app.state.brandConfig || {};
+
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>🎨 White Label</h2>
+            <p>Personalize a identidade visual do sistema com a marca da sua empresa.</p></div>
+            <button class="secondary-btn" onclick="resetBrandConfig()">↩ Restaurar padrão Tracktiv</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <!-- Coluna esquerda: configuração -->
+            <div>
+                <div class="card" style="margin-bottom:16px;">
+                    <h3 style="margin:0 0 16px;">🏢 Identidade da empresa</h3>
+                    <div class="field"><label>Nome da empresa *</label>
+                        <input id="wl_name" type="text" value="${esc(brand.companyName||'Tracktiv')}" placeholder="Nome da empresa" oninput="previewBrand()"></div>
+                    <div class="field"><label>Slogan / Tagline</label>
+                        <input id="wl_tag" type="text" value="${esc(brand.tagline||'')}" placeholder="Ex: Rastreamento e Segurança Veicular" oninput="previewBrand()"></div>
+                    <div class="field"><label>E-mail de contato</label>
+                        <input id="wl_email" type="email" value="${esc(brand.email||'')}" placeholder="contato@empresa.com"></div>
+                    <div class="field"><label>Telefone / WhatsApp</label>
+                        <input id="wl_phone" type="tel" value="${esc(brand.phone||'')}" placeholder="(11) 99999-9999"></div>
+                    <div class="field"><label>Site</label>
+                        <input id="wl_site" type="text" value="${esc(brand.website||'')}" placeholder="www.empresa.com.br"></div>
+                </div>
+                <div class="card" style="margin-bottom:16px;">
+                    <h3 style="margin:0 0 16px;">🎨 Cores</h3>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div class="field" style="margin:0;">
+                            <label>Cor primária</label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="color" id="wl_primary" value="${brand.primaryColor||'#1a2e4a'}" style="width:44px;height:36px;border:none;cursor:pointer;border-radius:8px;" oninput="previewBrand()">
+                                <input type="text" id="wl_primary_hex" value="${brand.primaryColor||'#1a2e4a'}" style="flex:1;" oninput="document.getElementById('wl_primary').value=this.value;previewBrand()">
+                            </div>
+                        </div>
+                        <div class="field" style="margin:0;">
+                            <label>Cor de destaque</label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="color" id="wl_accent" value="${brand.accentColor||'#f5820d'}" style="width:44px;height:36px;border:none;cursor:pointer;border-radius:8px;" oninput="previewBrand()">
+                                <input type="text" id="wl_accent_hex" value="${brand.accentColor||'#f5820d'}" style="flex:1;" oninput="document.getElementById('wl_accent').value=this.value;previewBrand()">
+                            </div>
+                        </div>
+                        <div class="field" style="margin:0;grid-column:1/-1;">
+                            <label>Cor da sidebar</label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="color" id="wl_sidebar" value="${brand.sidebarBg||'#0f1c2e'}" style="width:44px;height:36px;border:none;cursor:pointer;border-radius:8px;" oninput="previewBrand()">
+                                <input type="text" id="wl_sidebar_hex" value="${brand.sidebarBg||'#0f1c2e'}" style="flex:1;" oninput="document.getElementById('wl_sidebar').value=this.value;previewBrand()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 style="margin:0 0 16px;">🖼 Logo da empresa</h3>
+                    ${brand.logoData ? `<div style="margin-bottom:12px;"><img src="${brand.logoData}" style="max-height:60px;max-width:200px;object-fit:contain;border-radius:8px;border:1px solid var(--border);" alt="logo atual"></div>` : '<p class="text-muted" style="font-size:0.85rem;margin-bottom:12px;">Nenhum logo configurado. Upload uma imagem PNG ou SVG (máx. 200KB).</p>'}
+                    <input type="file" id="wl_logo_file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="margin-bottom:10px;">
+                    ${brand.logoData ? `<button class="danger-btn" style="font-size:0.8rem;margin-left:8px;" onclick="removeBrandLogo()">🗑 Remover logo</button>` : ''}
+                </div>
+            </div>
+
+            <!-- Coluna direita: preview -->
+            <div>
+                <div class="card" style="position:sticky;top:20px;">
+                    <h3 style="margin:0 0 14px;">👁 Preview em tempo real</h3>
+                    <div id="wl_preview" style="border:2px solid var(--border);border-radius:12px;overflow:hidden;">
+                        ${_buildBrandPreview(brand)}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
+            <button class="primary-btn" onclick="saveWhiteLabel()">💾 Salvar configurações</button>
+        </div>
+    `;
+}
+
+function _buildBrandPreview(brand) {
+    const name    = brand.companyName || 'Tracktiv';
+    const primary = brand.primaryColor || '#1a2e4a';
+    const accent  = brand.accentColor  || '#f5820d';
+    const sidebar = brand.sidebarBg    || '#0f1c2e';
+    const logoHtml = brand.logoData
+        ? `<img src="${brand.logoData}" style="width:28px;height:28px;object-fit:contain;border-radius:4px;" alt="logo">`
+        : `<div style="width:28px;height:28px;border-radius:6px;background:${accent};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.9rem;">${name[0]||'T'}</div>`;
+    return `<div style="display:flex;height:120px;">
+        <div style="width:110px;background:${sidebar};padding:10px 8px;display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">${logoHtml}<span style="color:#fff;font-size:0.75rem;font-weight:700;">${esc(name)}</span></div>
+            ${['Dashboard','Clientes','Financeiro'].map(l=>`<div style="background:rgba(255,255,255,0.08);border-radius:6px;padding:4px 8px;color:rgba(255,255,255,0.7);font-size:0.68rem;">${l}</div>`).join('')}
+        </div>
+        <div style="flex:1;background:#f8fafc;padding:10px;">
+            <div style="background:${primary};border-radius:6px;padding:6px 10px;color:#fff;font-size:0.72rem;font-weight:700;margin-bottom:8px;">${esc(name)} — Portal do Vendedor</div>
+            <div style="display:flex;gap:6px;">
+                <div style="background:${accent};border-radius:6px;padding:4px 10px;color:#fff;font-size:0.68rem;font-weight:600;">Botão</div>
+                <div style="border:1px solid ${primary};border-radius:6px;padding:4px 10px;color:${primary};font-size:0.68rem;">Secundário</div>
+            </div>
+        </div>
+    </div>`;
+}
+
+function previewBrand() {
+    const brand = _readWlForm();
+    // Apply live preview
+    const root = document.documentElement;
+    if (brand.primaryColor) { root.style.setProperty('--primary', brand.primaryColor); root.style.setProperty('--primary-light', brand.primaryColor + 'dd'); root.style.setProperty('--primary-hover', brand.primaryColor + 'cc'); }
+    if (brand.accentColor)  { root.style.setProperty('--accent', brand.accentColor);  root.style.setProperty('--accent-light', brand.accentColor + 'cc'); root.style.setProperty('--accent-glow', brand.accentColor + '38'); }
+    if (brand.sidebarBg)    { root.style.setProperty('--sidebar-bg', brand.sidebarBg); root.style.setProperty('--sidebar-bg2', brand.sidebarBg + 'dd'); }
+    // Sync hex inputs
+    const syncPairs = [['wl_primary','wl_primary_hex'],['wl_accent','wl_accent_hex'],['wl_sidebar','wl_sidebar_hex']];
+    syncPairs.forEach(([picker, hex]) => {
+        const p = document.getElementById(picker), h = document.getElementById(hex);
+        if (p && h && document.activeElement !== p && document.activeElement !== h) { }
+        if (p && h) { if (document.activeElement === p) h.value = p.value; else if (document.activeElement === h) p.value = h.value; }
+    });
+    const name = document.getElementById('wl_name')?.value || 'Tracktiv';
+    document.querySelectorAll('.brand-title strong').forEach(el => el.textContent = name);
+    document.querySelectorAll('.brand-crest').forEach(el => { if (!el.querySelector('img')) el.textContent = name[0] || 'T'; });
+    // Update preview box
+    const prev = document.getElementById('wl_preview');
+    if (prev) prev.innerHTML = _buildBrandPreview(brand);
+}
+
+function _readWlForm() {
+    return {
+        companyName:  (document.getElementById('wl_name')?.value || '').trim() || 'Tracktiv',
+        tagline:      (document.getElementById('wl_tag')?.value || '').trim(),
+        email:        (document.getElementById('wl_email')?.value || '').trim(),
+        phone:        (document.getElementById('wl_phone')?.value || '').trim(),
+        website:      (document.getElementById('wl_site')?.value || '').trim(),
+        primaryColor: document.getElementById('wl_primary')?.value || '#1a2e4a',
+        accentColor:  document.getElementById('wl_accent')?.value  || '#f5820d',
+        sidebarBg:    document.getElementById('wl_sidebar')?.value || '#0f1c2e',
+        logoData:     app.state.brandConfig?.logoData || null
+    };
+}
+
+function saveWhiteLabel() {
+    const brand = _readWlForm();
+    const fileInput = document.getElementById('wl_logo_file');
+    const file = fileInput?.files?.[0];
+
+    function _finish(logoData) {
+        if (logoData !== undefined) brand.logoData = logoData;
+        app.state.brandConfig = brand;
+        saveState();
+        applyBrandConfig();
+        showToast('Identidade visual salva e aplicada!', 'success');
+        renderWhiteLabel();
+    }
+
+    if (file) {
+        if (file.size > 204800) { showToast('Logo muito grande. Máximo 200 KB.', 'error'); return; }
+        const reader = new FileReader();
+        reader.onload = e => _finish(e.target.result);
+        reader.readAsDataURL(file);
+    } else {
+        _finish(undefined);
+    }
+}
+
+function removeBrandLogo() {
+    if (!confirm('Remover o logo?')) return;
+    if (app.state.brandConfig) app.state.brandConfig.logoData = null;
+    saveState();
+    applyBrandConfig();
+    renderWhiteLabel();
+}
+
+function resetBrandConfig() {
+    if (!confirm('Restaurar identidade visual padrão Tracktiv?')) return;
+    app.state.brandConfig = { companyName: 'Tracktiv', tagline: 'Portal do Vendedor', logoData: null, primaryColor: '#1a2e4a', accentColor: '#f5820d', sidebarBg: '#0f1c2e', email: '', phone: '', website: '' };
+    saveState();
+    // Reset CSS vars
+    const root = document.documentElement;
+    root.style.removeProperty('--primary'); root.style.removeProperty('--primary-light'); root.style.removeProperty('--primary-hover');
+    root.style.removeProperty('--accent');  root.style.removeProperty('--accent-light');  root.style.removeProperty('--accent-glow');
+    root.style.removeProperty('--sidebar-bg'); root.style.removeProperty('--sidebar-bg2');
+    applyBrandConfig();
+    showToast('Identidade visual restaurada para o padrão Tracktiv.', 'success');
+    renderWhiteLabel();
 }
 
 /* ═══════════════════════════════════════════════════════════════════

@@ -2355,6 +2355,25 @@ td strong { color: var(--text); font-weight: 600; }
 }
 
 /* ═══════════════════════════════════════════════════════════
+   MÓDULOS E WHITE LABEL
+═══════════════════════════════════════════════════════════ */
+.module-toggle-label {
+    display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;
+}
+.module-toggle-label input[type="checkbox"] { display: none; }
+.module-toggle-track {
+    width: 44px; height: 24px; border-radius: 12px; background: #cbd5e1;
+    position: relative; transition: background .2s; flex-shrink: 0;
+}
+.module-toggle-track::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; border-radius: 50%; background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: left .2s;
+}
+.module-toggle-label input:checked + .module-toggle-track { background: var(--success); }
+.module-toggle-label input:checked + .module-toggle-track::after { left: 23px; }
+
+/* ═══════════════════════════════════════════════════════════
    EDITOR DE FORMULÁRIO DO TÉCNICO
 ═══════════════════════════════════════════════════════════ */
 .tec-form-field-row {
