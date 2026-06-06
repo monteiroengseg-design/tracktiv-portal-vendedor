@@ -1486,7 +1486,9 @@ const sampleState = {
         { id: 'executivo_1', name: 'Carlos Drummond', email: 'executivo@tracktiv.com', password: 'Executivo123', role: 'executivo',
           cpf: '123.456.789-00', phone: '(11) 99876-5432', whatsapp: '(11) 99876-5432', pixKey: 'drummond@email.com',
           company: 'Drummond Soluções Empresariais', bank: 'Nubank', bankAgency: '001', bankAccount: '12345-6',
-          notes: 'Parceiro estratégico com foco em clientes corporativos da região Sul.' }
+          notes: 'Parceiro estratégico com foco em clientes corporativos da região Sul.',
+          hasConsultorRole: true, saleCommType: 'fixed', saleCommFixed: 50, saleCommPct: 0,
+          hasRecurrence: true, recurrenceType: 'fixed_pct', recurrenceCustomPct: 8 }
     ],
     clients: [
         // Laura Mendes
@@ -1673,14 +1675,17 @@ const sampleState = {
     simCustomRevenues: [],
     executivoClientConfig: {
         'executivo_1': [
-            { id: 'ecc_1', clientId: 'c1', monthlyValue: 5000, paymentDay: 10, operationalCost: 1500, commissionPct: 20, startDate: '2026-05-01', notes: 'Contrato anual renovável.' },
-            { id: 'ecc_2', clientId: 'c2', monthlyValue: 3500, paymentDay: 15, operationalCost: 900,  commissionPct: 15, startDate: '2026-04-01', notes: '' }
+            { id: 'ecc_1', clientId: 'c1', monthlyRevenue: 5000, paymentDay: 10, operationalCost: 1500, profitCommPct: 50, startDate: '2026-05-01', notes: 'Contrato anual renovável.' },
+            { id: 'ecc_2', clientId: 'c2', monthlyRevenue: 3500, paymentDay: 15, operationalCost: 900,  profitCommPct: 40, startDate: '2026-04-01', notes: '' }
         ]
     },
     executivoPayments: [
-        { id: 'epay_1', executivoId: 'executivo_1', clientId: 'c1', month: '2026-05', monthlyValue: 5000, commissionPct: 20, commissionValue: 1000, operationalCost: 1500, netProfit: 2500, clientPayStatus: 'pago', clientPaidAt: '2026-05-12', commissionStatus: 'pago', commissionPaidAt: '2026-05-15', registeredAt: '2026-05-12', notes: '' },
-        { id: 'epay_2', executivoId: 'executivo_1', clientId: 'c2', month: '2026-05', monthlyValue: 3500, commissionPct: 15, commissionValue: 525,  operationalCost: 900,  netProfit: 2075, clientPayStatus: 'pago', clientPaidAt: '2026-05-16', commissionStatus: 'pendente', commissionPaidAt: null, registeredAt: '2026-05-16', notes: '' },
-        { id: 'epay_3', executivoId: 'executivo_1', clientId: 'c1', month: '2026-06', monthlyValue: 5000, commissionPct: 20, commissionValue: 1000, operationalCost: 1500, netProfit: 2500, clientPayStatus: 'pendente', clientPaidAt: null, commissionStatus: 'pendente', commissionPaidAt: null, registeredAt: '2026-06-01', notes: '' }
+        { id: 'epay_1', executivoId: 'executivo_1', clientId: 'c1', month: '2026-05', type: 'carteira', monthlyRevenue: 5000, operationalCost: 1500, profit: 3500, profitCommPct: 50, portfolioComm: 1750, companyNet: 1750, clientPayStatus: 'pago', clientPaidAt: '2026-05-12', commissionStatus: 'pago', commissionPaidAt: '2026-05-15', registeredAt: '2026-05-12', notes: '' },
+        { id: 'epay_2', executivoId: 'executivo_1', clientId: 'c2', month: '2026-05', type: 'carteira', monthlyRevenue: 3500, operationalCost: 900,  profit: 2600, profitCommPct: 40, portfolioComm: 1040, companyNet: 1560, clientPayStatus: 'pago', clientPaidAt: '2026-05-16', commissionStatus: 'pendente', commissionPaidAt: null, registeredAt: '2026-05-16', notes: '' },
+        { id: 'epay_3', executivoId: 'executivo_1', clientId: 'c1', month: '2026-06', type: 'carteira', monthlyRevenue: 5000, operationalCost: 1500, profit: 3500, profitCommPct: 50, portfolioComm: 1750, companyNet: 1750, clientPayStatus: 'pendente', clientPaidAt: null, commissionStatus: 'pendente', commissionPaidAt: null, registeredAt: '2026-06-01', notes: '' }
+    ],
+    executivoSales: [
+        { id: 'esale_1', executivoId: 'executivo_1', clientName: 'Nova Logística Ltda', planName: 'Profissional', planValue: 54.90, commType: 'fixed', commValue: 50, saleDate: '2026-05-10', month: '2026-05', commissionStatus: 'pago', commissionPaidAt: '2026-05-15', notes: '' }
     ]
 };
 
@@ -1693,7 +1698,7 @@ const cleanState = {
     clients: [], installations: [], coupons: [], clientDocuments: [], clientReferrals: [],
     clientRedemptions: [], pointsConfig: { pointsPerRef: 100, brlPerPoint: 0.10 }, segmentForms: {},
     notifications: [], goals: { default: 10, byConsultant: {} }, followUps: [], chats: {},
-    executivoClientConfig: {}, executivoPayments: [],
+    executivoClientConfig: {}, executivoPayments: [], executivoSales: [],
     metaAlertsSent: {}, chamados: [], tecnicoClients: {}, clientTecnicoHistory: {},
     docChecklists: {}, docSlots: {}, comunicados: [], produtos_config: [], formConfigs: {},
     pendingApprovals: [], productCommissions: {}, pendingUsers: [], pendingInstallations: [],
@@ -2107,6 +2112,27 @@ function loadState() {
             // Migração: Parceiro Executivo
             if (!app.state.executivoClientConfig) app.state.executivoClientConfig = {};
             if (!app.state.executivoPayments)     app.state.executivoPayments     = [];
+            if (!app.state.executivoSales)        app.state.executivoSales        = [];
+            // Migrar modelo antigo (% de receita) para novo (% de lucro)
+            Object.values(app.state.executivoClientConfig).forEach(cfgs => {
+                cfgs.forEach(cfg => {
+                    if (cfg.monthlyValue !== undefined && !cfg.monthlyRevenue) {
+                        cfg.monthlyRevenue = cfg.monthlyValue; delete cfg.monthlyValue;
+                        cfg.profitCommPct  = cfg.commissionPct || 0; delete cfg.commissionPct;
+                    }
+                });
+            });
+            (app.state.executivoPayments || []).forEach(p => {
+                if (p.monthlyValue !== undefined && !p.monthlyRevenue) {
+                    p.monthlyRevenue = p.monthlyValue; p.type = p.type || 'carteira';
+                    p.profit = p.monthlyValue - (p.operationalCost || 0);
+                    p.profitCommPct = p.commissionPct || 0;
+                    p.portfolioComm = p.commissionValue || 0;
+                    p.companyNet    = p.netProfit || 0;
+                    delete p.monthlyValue; delete p.commissionPct;
+                    delete p.commissionValue; delete p.netProfit;
+                }
+            });
             // Migração: features novas
             if (!app.state.emailQueue)        app.state.emailQueue        = [];
             if (!app.state.customTrainings)   app.state.customTrainings   = [];
@@ -14926,27 +14952,64 @@ function getExecPayments(executivoId) {
     return (app.state.executivoPayments || []).filter(p => p.executivoId === executivoId);
 }
 
+function getExecSales(executivoId) {
+    return (app.state.executivoSales || []).filter(s => s.executivoId === executivoId);
+}
+
+// Calculates profit-based commission for a single config
+function calcPortfolioComm(cfg) {
+    const revenue = cfg.monthlyRevenue || 0;
+    const cost    = cfg.operationalCost || 0;
+    const profit  = revenue - cost;
+    const comm    = profit * (cfg.profitCommPct || 0) / 100;
+    const compNet = profit - comm;
+    return { revenue, cost, profit, pct: cfg.profitCommPct || 0, comm, compNet };
+}
+
+// Calculates sales commission for a sale record
+function calcSaleComm(u, planValue) {
+    if (!u.hasConsultorRole) return 0;
+    if (u.saleCommType === 'fixed') return u.saleCommFixed || 0;
+    if (u.saleCommType === 'percentage') return planValue * (u.saleCommPct || 0) / 100;
+    // 'standard': use existing commission rules
+    const rules = app.state.commissionRules || {};
+    return rules.consultorFirstSale || 50;
+}
+
 function calcExecMetrics(executivoId) {
     const month   = getCurrentMonthKey();
     const configs = getExecClientConfig(executivoId);
     const pays    = getExecPayments(executivoId);
-    const clients = app.state.clients || [];
+    const sales   = getExecSales(executivoId);
+    const u       = (app.state.users || []).find(x => x.id === executivoId);
 
-    let totalMRR = 0, totalComissaoMes = 0, totalComissaoPaga = 0, totalLucro = 0;
+    let totalRevenue = 0, totalPortfolioComm = 0, totalCompNet = 0;
     configs.forEach(cfg => {
-        const c = clients.find(x => x.id === cfg.clientId);
-        if (!c) return;
-        totalMRR += cfg.monthlyValue || 0;
-        const comm = (cfg.monthlyValue * cfg.commissionPct / 100);
-        totalComissaoMes += comm;
-        totalLucro += (cfg.monthlyValue - (cfg.operationalCost || 0) - comm);
+        const r = calcPortfolioComm(cfg);
+        totalRevenue       += r.revenue;
+        totalPortfolioComm += r.comm;
+        totalCompNet       += r.compNet;
     });
 
-    const paidComm = pays.filter(p => p.commissionStatus === 'pago').reduce((s,p) => s + (p.commissionValue||0), 0);
-    const pendComm = pays.filter(p => p.commissionStatus === 'pendente').reduce((s,p) => s + (p.commissionValue||0), 0);
-    const thisMonthComm = pays.filter(p => p.month === month).reduce((s,p) => s + (p.commissionValue||0), 0);
+    // Sales commission this month
+    const thisMoSalesComm = sales.filter(s => s.month === month).reduce((sum,s) => sum + (s.commValue||0), 0);
+    // Recurrence commission this month (if configured)
+    let recurrenceComm = 0;
+    if (u?.hasRecurrence && u?.recurrenceType !== 'none') {
+        if (u.recurrenceType === 'fixed_pct') {
+            recurrenceComm = totalRevenue * (u.recurrenceCustomPct || 0) / 100;
+        }
+    }
 
-    return { totalMRR, totalComissaoMes, totalLucro, paidComm, pendComm, thisMonthComm, clientCount: configs.length };
+    const totalComissaoMes = totalPortfolioComm + thisMoSalesComm + recurrenceComm;
+
+    const paidComm = pays.filter(p => p.commissionStatus === 'pago').reduce((s,p) => s + (p.portfolioComm||0), 0)
+                   + sales.filter(s => s.commissionStatus === 'pago').reduce((s,x) => s + (x.commValue||0), 0);
+    const pendComm = pays.filter(p => p.commissionStatus === 'pendente').reduce((s,p) => s + (p.portfolioComm||0), 0)
+                   + sales.filter(s => s.commissionStatus === 'pendente').reduce((s,x) => s + (x.commValue||0), 0);
+
+    return { totalRevenue, totalPortfolioComm, totalCompNet, totalComissaoMes,
+             paidComm, pendComm, thisMoSalesComm, recurrenceComm, clientCount: configs.length };
 }
 
 // ── LISTA DE PARCEIROS EXECUTIVOS (PRESIDENTE) ────────────────────
@@ -14982,24 +15045,27 @@ function renderPresidenteExecutivos() {
                                     <div style="font-size:0.72rem;color:var(--text-soft);">Clientes</div>
                                 </div>
                                 <div style="text-align:center;">
-                                    <div style="font-size:1.2rem;font-weight:800;color:var(--primary);">R$ ${formatCurrency(m.totalMRR)}</div>
-                                    <div style="font-size:0.72rem;color:var(--text-soft);">MRR carteira</div>
+                                    <div style="font-size:1.2rem;font-weight:800;color:var(--primary);">R$ ${formatCurrency(m.totalRevenue)}</div>
+                                    <div style="font-size:0.72rem;color:var(--text-soft);">Receita carteira</div>
                                 </div>
                                 <div style="text-align:center;">
                                     <div style="font-size:1.2rem;font-weight:800;color:var(--accent);">R$ ${formatCurrency(m.totalComissaoMes)}</div>
                                     <div style="font-size:0.72rem;color:var(--text-soft);">Comissão/mês</div>
                                 </div>
                                 <div style="text-align:center;">
-                                    <div style="font-size:1.2rem;font-weight:800;color:var(--success);">R$ ${formatCurrency(m.totalLucro)}</div>
-                                    <div style="font-size:0.72rem;color:var(--text-soft);">Lucro líquido</div>
+                                    <div style="font-size:1.2rem;font-weight:800;color:var(--success);">R$ ${formatCurrency(m.totalCompNet)}</div>
+                                    <div style="font-size:0.72rem;color:var(--text-soft);">Empresa (líquido)</div>
                                 </div>
                             </div>
                         </div>
                         <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
                             <button class="primary-btn" style="font-size:0.82rem;" onclick="openGerenciarCarteira('${u.id}')">💼 Gerenciar carteira</button>
                             <button class="secondary-btn" style="font-size:0.82rem;" onclick="openRegistrarPagamento('${u.id}')">💳 Registrar pagamento</button>
+                            ${u.hasConsultorRole ? `<button class="secondary-btn" style="font-size:0.82rem;" onclick="openRegistrarVendaExec('${u.id}')">🏷️ Registrar venda</button>` : ''}
+                            <button class="secondary-btn" style="font-size:0.82rem;" onclick="openLiberarComissoesExec('${u.id}')">💰 Liberar comissões</button>
+                            <button class="secondary-btn" style="font-size:0.82rem;" onclick="openExecSimulador('${u.id}')">🧮 Simulador</button>
                             <button class="secondary-btn" style="font-size:0.82rem;" onclick="openExecutivoModal('${u.id}')">✏️ Editar</button>
-                            <button class="secondary-btn" style="font-size:0.82rem;" onclick="exportExtratoExec('${u.id}')">📥 Extrato CSV</button>
+                            <button class="secondary-btn" style="font-size:0.82rem;" onclick="exportExtratoExec('${u.id}')">📥 CSV</button>
                             <button class="danger-btn"    style="font-size:0.82rem;" onclick="deleteExecutivo('${u.id}')">🗑</button>
                         </div>
                     </div>`;
@@ -15030,6 +15096,43 @@ function openExecutivoModal(id) {
                 ${u?.contractData ? `<div class="sig-stamp" style="margin-top:6px;">📎 Contrato já anexado (${formatDate(u.contractUploadedAt||'')})</div>` : ''}
             </div>
         </div>
+
+        <hr style="margin:16px 0;border-color:var(--border);">
+        <h4 style="margin:0 0 12px;">🏷️ Função de Consultor (opcional)</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="field" style="grid-column:1/-1;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" id="ex_hasConsultor" ${u?.hasConsultorRole?'checked':''} style="width:15px;height:15px;" onchange="toggleExConsultorFields()">
+                    Ativar função de consultor (parceiro pode fazer vendas)
+                </label>
+            </div>
+            <div id="ex_consultor_fields" style="${u?.hasConsultorRole?'':'display:none;'}grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="field" style="grid-column:1/-1;"><label>Comissão por venda</label>
+                    <select id="ex_saleCommType" onchange="toggleExSaleCommFields()">
+                        <option value="standard" ${(u?.saleCommType||'standard')==='standard'?'selected':''}>Usar tabela padrão de consultores</option>
+                        <option value="fixed"    ${u?.saleCommType==='fixed'?'selected':''}>Valor fixo por venda (R$)</option>
+                        <option value="percentage" ${u?.saleCommType==='percentage'?'selected':''}>Percentual sobre o plano vendido (%)</option>
+                    </select>
+                </div>
+                <div class="field" id="ex_saleFixed_wrap" style="${u?.saleCommType==='fixed'?'':'display:none;'}">
+                    <label>Valor fixo por venda (R$)</label><input id="ex_saleFixed" type="number" min="0" step="0.01" value="${u?.saleCommFixed||50}">
+                </div>
+                <div class="field" id="ex_salePct_wrap" style="${u?.saleCommType==='percentage'?'':'display:none;'}">
+                    <label>% sobre o plano</label><input id="ex_salePct" type="number" min="0" max="100" step="0.1" value="${u?.saleCommPct||10}">
+                </div>
+                <div class="field" style="grid-column:1/-1;"><label>Recorrência sobre vendas feitas</label>
+                    <select id="ex_recurrenceType">
+                        <option value="none"       ${(u?.recurrenceType||'none')==='none'?'selected':''}>Sem recorrência</option>
+                        <option value="standard"   ${u?.recurrenceType==='standard'?'selected':''}>Seguir regras padrão de recorrência</option>
+                        <option value="fixed_pct"  ${u?.recurrenceType==='fixed_pct'?'selected':''}>Percentual fixo da carteira (%/mês)</option>
+                    </select>
+                </div>
+                <div class="field" id="ex_recPct_wrap" style="${u?.recurrenceType==='fixed_pct'?'':'display:none;'}">
+                    <label>% fixo da carteira por mês</label><input id="ex_recPct" type="number" min="0" max="100" step="0.1" value="${u?.recurrenceCustomPct||5}">
+                </div>
+            </div>
+        </div>
+
         <div id="ex_err" class="error-text" style="margin-top:6px;"></div>
         <div class="actions" style="margin-top:16px;">
             <button class="primary-btn" onclick="saveExecutivoUser('${id||''}')">💾 Salvar</button>
@@ -15047,6 +15150,9 @@ function saveExecutivoUser(id) {
     if (!id && !senha)   { if (errEl) errEl.textContent = 'Senha obrigatória para novo usuário.'; return; }
     if ((app.state.users||[]).some(u => u.email === email && u.id !== id)) { if (errEl) errEl.textContent = 'E-mail já cadastrado.'; return; }
 
+    const hasConsultor = document.getElementById('ex_hasConsultor')?.checked || false;
+    const saleCommType = document.getElementById('ex_saleCommType')?.value || 'standard';
+    const recType      = document.getElementById('ex_recurrenceType')?.value || 'none';
     const extra = {
         name: nome, email,
         cpf:         document.getElementById('ex_cpf')?.value.trim(),
@@ -15056,7 +15162,14 @@ function saveExecutivoUser(id) {
         company:     document.getElementById('ex_empresa')?.value.trim(),
         bank:        document.getElementById('ex_banco')?.value.trim(),
         bankAccount: document.getElementById('ex_conta')?.value.trim(),
-        notes:       document.getElementById('ex_obs')?.value.trim()
+        notes:       document.getElementById('ex_obs')?.value.trim(),
+        hasConsultorRole:    hasConsultor,
+        saleCommType,
+        saleCommFixed:       parseFloat(document.getElementById('ex_saleFixed')?.value) || 0,
+        saleCommPct:         parseFloat(document.getElementById('ex_salePct')?.value)   || 0,
+        hasRecurrence:       hasConsultor && recType !== 'none',
+        recurrenceType:      recType,
+        recurrenceCustomPct: parseFloat(document.getElementById('ex_recPct')?.value)    || 0
     };
     if (senha) extra.password = senha;
 
@@ -15101,16 +15214,18 @@ function openGerenciarCarteira(executivoId) {
     showModal(`💼 Carteira de ${esc(u.name)}`, `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
             <span class="text-muted" style="font-size:0.88rem;">${configs.length} cliente${configs.length!==1?'s':''} na carteira</span>
-            <button class="primary-btn" style="font-size:0.82rem;" onclick="openVincularClienteModal('${executivoId}')">+ Vincular cliente</button>
+            <div style="display:flex;gap:8px;">
+                <button class="secondary-btn" style="font-size:0.82rem;" onclick="openExecSimulador('${executivoId}')">🧮 Simulador</button>
+                <button class="primary-btn"   style="font-size:0.82rem;" onclick="openVincularClienteModal('${executivoId}')">+ Vincular cliente</button>
+            </div>
         </div>
         ${configs.length === 0
             ? '<p class="text-muted">Nenhum cliente vinculado ainda.</p>'
             : configs.map(cfg => {
                 const c = allClients.find(x => x.id === cfg.clientId);
-                const comm = (cfg.monthlyValue * cfg.commissionPct / 100);
-                const lucro = cfg.monthlyValue - (cfg.operationalCost||0) - comm;
+                const r = calcPortfolioComm(cfg);
                 return `<div class="card" style="margin-bottom:10px;padding:12px 16px;">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
                         <div>
                             <strong>${c ? esc(c.name) : '— cliente removido —'}</strong>
                             <div style="font-size:0.78rem;color:var(--text-soft);">${c ? esc(c.product||'—') : ''} · Desde ${formatDate(cfg.startDate)}</div>
@@ -15120,11 +15235,12 @@ function openGerenciarCarteira(executivoId) {
                             <button class="icon-btn icon-btn-danger" onclick="desvincularCliente('${executivoId}','${cfg.id}')">🗑</button>
                         </div>
                     </div>
-                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:0.82rem;">
-                        <div><span style="color:var(--text-soft);">Contrato</span><br><strong>R$ ${formatCurrency(cfg.monthlyValue)}</strong></div>
-                        <div><span style="color:var(--text-soft);">Custo</span><br><strong>R$ ${formatCurrency(cfg.operationalCost||0)}</strong></div>
-                        <div><span style="color:var(--text-soft);">Comissão ${cfg.commissionPct}%</span><br><strong style="color:var(--accent);">R$ ${formatCurrency(comm)}</strong></div>
-                        <div><span style="color:var(--text-soft);">Lucro líquido</span><br><strong style="color:var(--success);">R$ ${formatCurrency(lucro)}</strong></div>
+                    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;font-size:0.8rem;">
+                        <div><span style="color:var(--text-soft);">Receita</span><br><strong>R$ ${formatCurrency(r.revenue)}</strong></div>
+                        <div><span style="color:var(--text-soft);">Custo</span><br><strong>R$ ${formatCurrency(r.cost)}</strong></div>
+                        <div><span style="color:var(--text-soft);">Lucro</span><br><strong>R$ ${formatCurrency(r.profit)}</strong></div>
+                        <div><span style="color:var(--text-soft);">Parceiro ${r.pct}% lucro</span><br><strong style="color:var(--accent);">R$ ${formatCurrency(r.comm)}</strong></div>
+                        <div><span style="color:var(--text-soft);">Empresa</span><br><strong style="color:var(--success);">R$ ${formatCurrency(r.compNet)}</strong></div>
                     </div>
                 </div>`;
             }).join('')}
@@ -15138,6 +15254,7 @@ function openVincularClienteModal(executivoId, configId) {
     const allClients = (app.state.clients || []).filter(c => !linked.includes(c.id) || c.id === existing?.clientId);
 
     showModal(existing ? 'Editar configuração do cliente' : 'Vincular cliente à carteira', `
+        <p class="text-muted" style="font-size:0.85rem;margin-bottom:14px;">💡 Modelo: comissão calculada sobre o <strong>lucro</strong> (receita − custo), não sobre a receita bruta.</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="field" style="grid-column:1/-1;"><label>Cliente *</label>
                 <select id="vc_clientId" ${existing ? 'disabled' : ''}>
@@ -15145,17 +15262,22 @@ function openVincularClienteModal(executivoId, configId) {
                     ${allClients.map(c => `<option value="${c.id}" ${existing?.clientId===c.id?'selected':''}>${esc(c.name)} — ${esc(c.product||'—')}</option>`).join('')}
                 </select>
             </div>
-            <div class="field"><label>Valor do contrato mensal (R$) *</label><input id="vc_valor" type="number" min="0" step="0.01" value="${existing?.monthlyValue||''}"></div>
+            <div class="field"><label>Receita mensal do cliente (R$) *</label><input id="vc_receita" type="number" min="0" step="0.01" value="${existing?.monthlyRevenue||''}" oninput="updateVincCalc()"></div>
             <div class="field"><label>Dia de vencimento</label><input id="vc_dia" type="number" min="1" max="31" value="${existing?.paymentDay||10}"></div>
-            <div class="field"><label>Custo operacional (R$)</label><input id="vc_custo" type="number" min="0" step="0.01" value="${existing?.operationalCost||0}"></div>
-            <div class="field"><label>Comissão do parceiro (%)</label><input id="vc_pct" type="number" min="0" max="100" step="0.1" value="${existing?.commissionPct||10}" oninput="updateVincCalc()"></div>
+            <div class="field"><label>Custo operacional (R$)</label><input id="vc_custo" type="number" min="0" step="0.01" value="${existing?.operationalCost||0}" oninput="updateVincCalc()"></div>
+            <div class="field"><label>Comissão do parceiro (% do lucro)</label><input id="vc_pct" type="number" min="0" max="100" step="0.1" value="${existing?.profitCommPct||50}" oninput="updateVincCalc()"></div>
             <div class="field"><label>Data de início da parceria</label><input id="vc_inicio" type="date" value="${existing?.startDate||todayISO()}"></div>
             <div class="field" style="grid-column:1/-1;"><label>Observações</label><textarea id="vc_obs" rows="2">${esc(existing?.notes||'')}</textarea></div>
         </div>
-        <div id="vc_calc" style="background:var(--bg);border-radius:10px;padding:12px 14px;margin:10px 0;font-size:0.85rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-            <div>Comissão: <strong id="vc_calc_comm">—</strong></div>
-            <div>Lucro líquido: <strong id="vc_calc_lucro">—</strong></div>
-            <div>Margem: <strong id="vc_calc_margem">—</strong></div>
+        <div id="vc_calc" style="background:var(--bg);border-radius:10px;padding:14px;margin:12px 0;font-size:0.85rem;">
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;text-align:center;">
+                <div><div style="font-size:0.7rem;color:var(--text-soft);">RECEITA</div><strong id="vc_c_rec">—</strong></div>
+                <div><div style="font-size:0.7rem;color:var(--text-soft);">CUSTO</div><strong id="vc_c_custo" style="color:var(--danger);">—</strong></div>
+                <div><div style="font-size:0.7rem;color:var(--text-soft);">LUCRO</div><strong id="vc_c_profit">—</strong></div>
+                <div><div style="font-size:0.7rem;color:var(--text-soft);">PARCEIRO</div><strong id="vc_calc_comm" style="color:var(--accent);">—</strong></div>
+                <div><div style="font-size:0.7rem;color:var(--text-soft);">EMPRESA</div><strong id="vc_calc_lucro" style="color:var(--success);">—</strong></div>
+            </div>
+            <div style="margin-top:8px;text-align:center;font-size:0.78rem;color:var(--text-soft);">Margem da empresa: <strong id="vc_calc_margem">—</strong></div>
         </div>
         <div id="vc_err" class="error-text" style="margin-bottom:8px;"></div>
         <div class="actions">
@@ -15167,35 +15289,37 @@ function openVincularClienteModal(executivoId, configId) {
 }
 
 function updateVincCalc() {
-    const val  = parseFloat(document.getElementById('vc_valor')?.value) || 0;
-    const custo= parseFloat(document.getElementById('vc_custo')?.value) || 0;
-    const pct  = parseFloat(document.getElementById('vc_pct')?.value)   || 0;
-    const comm = val * pct / 100;
-    const lucro= val - custo - comm;
-    const margem = val > 0 ? ((lucro / val) * 100).toFixed(1) : 0;
-    const commEl = document.getElementById('vc_calc_comm');
-    const lucroEl= document.getElementById('vc_calc_lucro');
-    const mEl    = document.getElementById('vc_calc_margem');
-    if (commEl) commEl.textContent  = `R$ ${formatCurrency(comm)}`;
-    if (lucroEl) lucroEl.textContent = `R$ ${formatCurrency(lucro)}`;
-    if (mEl) mEl.textContent         = `${margem}%`;
+    const revenue = parseFloat(document.getElementById('vc_receita')?.value) || 0;
+    const cost    = parseFloat(document.getElementById('vc_custo')?.value)   || 0;
+    const pct     = parseFloat(document.getElementById('vc_pct')?.value)     || 0;
+    const profit  = revenue - cost;
+    const comm    = profit * pct / 100;
+    const compNet = profit - comm;
+    const margem  = revenue > 0 ? ((compNet / revenue) * 100).toFixed(1) : 0;
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('vc_c_rec',     `R$ ${formatCurrency(revenue)}`);
+    set('vc_c_custo',   `R$ ${formatCurrency(cost)}`);
+    set('vc_c_profit',  `R$ ${formatCurrency(profit)}`);
+    set('vc_calc_comm', `R$ ${formatCurrency(comm)} (${pct}%)`);
+    set('vc_calc_lucro',`R$ ${formatCurrency(compNet)}`);
+    set('vc_calc_margem', `${margem}% da receita`);
 }
 
 function saveVinculoCliente(executivoId, configId) {
     const clientId = document.getElementById('vc_clientId')?.value;
-    const valor    = parseFloat(document.getElementById('vc_valor')?.value);
+    const receita  = parseFloat(document.getElementById('vc_receita')?.value);
     const errEl    = document.getElementById('vc_err');
     if (!clientId) { if (errEl) errEl.textContent = 'Selecione um cliente.'; return; }
-    if (!valor || valor <= 0) { if (errEl) errEl.textContent = 'Informe o valor do contrato.'; return; }
+    if (!receita || receita <= 0) { if (errEl) errEl.textContent = 'Informe a receita mensal.'; return; }
     if (!app.state.executivoClientConfig) app.state.executivoClientConfig = {};
     if (!app.state.executivoClientConfig[executivoId]) app.state.executivoClientConfig[executivoId] = [];
     const cfg = {
         id:              configId || `ecc_${Date.now()}`,
         clientId,
-        monthlyValue:    valor,
+        monthlyRevenue:  receita,
         paymentDay:      parseInt(document.getElementById('vc_dia')?.value) || 10,
         operationalCost: parseFloat(document.getElementById('vc_custo')?.value) || 0,
-        commissionPct:   parseFloat(document.getElementById('vc_pct')?.value) || 0,
+        profitCommPct:   parseFloat(document.getElementById('vc_pct')?.value) || 0,
         startDate:       document.getElementById('vc_inicio')?.value || todayISO(),
         notes:           document.getElementById('vc_obs')?.value.trim() || ''
     };
@@ -15266,56 +15390,65 @@ function updateRpValues(executivoId) {
     const cfg = getExecClientConfig(executivoId).find(c => c.clientId === clientId);
     if (cfg) {
         const v = document.getElementById('rp_valor');
-        if (v && !v.value) v.value = cfg.monthlyValue;
+        if (v && !v.value) v.value = cfg.monthlyRevenue;
         updateRpCommCalc(executivoId);
     }
 }
 
 function updateRpCommCalc(executivoId) {
     const clientId = document.getElementById('rp_clientId')?.value;
-    const valor    = parseFloat(document.getElementById('rp_valor')?.value) || 0;
+    const revenue  = parseFloat(document.getElementById('rp_valor')?.value) || 0;
     const cfg = getExecClientConfig(executivoId).find(c => c.clientId === clientId);
-    const comm = cfg ? valor * cfg.commissionPct / 100 : 0;
-    const commEl = document.getElementById('rp_comm_val');
-    if (commEl) commEl.textContent = `R$ ${formatCurrency(comm)} (${cfg?.commissionPct||0}%)`;
+    if (!cfg) return;
+    const cost   = cfg.operationalCost || 0;
+    const profit = revenue - cost;
+    const comm   = profit * (cfg.profitCommPct || 0) / 100;
+    const compNet= profit - comm;
+    const wrap   = document.getElementById('rp_comm_wrap');
+    if (wrap) wrap.innerHTML = `<div style="background:var(--bg);border-radius:10px;padding:12px;font-size:0.85rem;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;">
+        <div><div style="font-size:0.7rem;color:var(--text-soft);">LUCRO</div><strong>R$ ${formatCurrency(profit)}</strong></div>
+        <div><div style="font-size:0.7rem;color:var(--text-soft);">PARCEIRO ${cfg.profitCommPct}%</div><strong style="color:var(--accent);">R$ ${formatCurrency(comm)}</strong></div>
+        <div><div style="font-size:0.7rem;color:var(--text-soft);">EMPRESA</div><strong style="color:var(--success);">R$ ${formatCurrency(compNet)}</strong></div>
+        <div><div style="font-size:0.7rem;color:var(--text-soft);">CUSTO OP.</div><strong>R$ ${formatCurrency(cost)}</strong></div>
+    </div>`;
 }
 
 function saveRegistrarPagamento(executivoId) {
     const clientId = document.getElementById('rp_clientId')?.value;
     const mes      = document.getElementById('rp_mes')?.value;
-    const valor    = parseFloat(document.getElementById('rp_valor')?.value);
+    const revenue  = parseFloat(document.getElementById('rp_valor')?.value);
     const data     = document.getElementById('rp_data')?.value;
     const obs      = document.getElementById('rp_obs')?.value.trim();
     const errEl    = document.getElementById('rp_err');
     if (!clientId) { if (errEl) errEl.textContent = 'Selecione o cliente.'; return; }
-    if (!valor || valor <= 0) { if (errEl) errEl.textContent = 'Informe o valor recebido.'; return; }
+    if (!revenue || revenue <= 0) { if (errEl) errEl.textContent = 'Informe o valor recebido.'; return; }
     if (!data) { if (errEl) errEl.textContent = 'Informe a data de recebimento.'; return; }
     const cfg = getExecClientConfig(executivoId).find(c => c.clientId === clientId);
     if (!cfg) return;
-    const commValue  = valor * cfg.commissionPct / 100;
-    const netProfit  = valor - (cfg.operationalCost || 0) - commValue;
+    const cost         = cfg.operationalCost || 0;
+    const profit       = revenue - cost;
+    const portfolioComm= profit * (cfg.profitCommPct || 0) / 100;
+    const companyNet   = profit - portfolioComm;
     if (!app.state.executivoPayments) app.state.executivoPayments = [];
-    // Check if there's already a payment for this month/client
     const existing = app.state.executivoPayments.find(p => p.executivoId === executivoId && p.clientId === clientId && p.month === mes);
     if (existing) {
-        existing.monthlyValue = valor; existing.commissionValue = commValue; existing.netProfit = netProfit;
-        existing.clientPayStatus = 'pago'; existing.clientPaidAt = data; existing.notes = obs;
+        Object.assign(existing, { monthlyRevenue: revenue, operationalCost: cost, profit, profitCommPct: cfg.profitCommPct,
+            portfolioComm, companyNet, clientPayStatus: 'pago', clientPaidAt: data, notes: obs, type: 'carteira' });
         showToast('Pagamento atualizado.', 'success');
     } else {
         app.state.executivoPayments.push({
-            id: `epay_${Date.now()}`, executivoId, clientId, month: mes,
-            monthlyValue: valor, commissionPct: cfg.commissionPct, commissionValue: commValue,
-            operationalCost: cfg.operationalCost || 0, netProfit,
+            id: `epay_${Date.now()}`, executivoId, clientId, month: mes, type: 'carteira',
+            monthlyRevenue: revenue, operationalCost: cost, profit, profitCommPct: cfg.profitCommPct,
+            portfolioComm, companyNet,
             clientPayStatus: 'pago', clientPaidAt: data,
             commissionStatus: 'pendente', commissionPaidAt: null,
             registeredAt: todayISO(), notes: obs
         });
         showToast('Pagamento registrado!', 'success');
     }
-    // Notify executivo
-    addNotification(executivoId, 'info', `💳 Pagamento registrado para ${getCurrentMonthLabel()}. Comissão gerada: R$ ${formatCurrency(commValue)}`, null);
+    addNotification(executivoId, 'info', `💳 Pagamento de ${getCurrentMonthLabel()} registrado. Sua comissão: R$ ${formatCurrency(portfolioComm)}`, null);
     queueEmail(executivoId, `💳 Pagamento registrado — ${getCurrentMonthLabel()}`,
-        `Olá! Um pagamento foi registrado na sua carteira.\n\nMês: ${mes}\nValor recebido: R$ ${formatCurrency(valor)}\nSua comissão (${cfg.commissionPct}%): R$ ${formatCurrency(commValue)}\n\nAcesse o portal para mais detalhes.\n\n— Portal Tracktiv`);
+        `Olá! Pagamento registrado.\n\nReceita: R$ ${formatCurrency(revenue)}\nCusto operacional: R$ ${formatCurrency(cost)}\nLucro: R$ ${formatCurrency(profit)}\nSua comissão (${cfg.profitCommPct}% do lucro): R$ ${formatCurrency(portfolioComm)}\n\n— Portal Tracktiv`);
     saveState(); closeModal(); renderPresidenteExecutivos();
 }
 
@@ -15323,21 +15456,103 @@ function marcarComissaoPaga(paymentId) {
     const p = (app.state.executivoPayments || []).find(x => x.id === paymentId);
     if (!p) return;
     p.commissionStatus = 'pago'; p.commissionPaidAt = todayISO();
-    addNotification(p.executivoId, 'info', `✅ Sua comissão de R$ ${formatCurrency(p.commissionValue)} foi liberada!`, null);
-    queueEmail(p.executivoId, `✅ Comissão liberada — R$ ${formatCurrency(p.commissionValue)}`,
-        `Sua comissão foi liberada!\n\nMês: ${p.month}\nValor: R$ ${formatCurrency(p.commissionValue)}\nData: ${todayISO()}\n\n— Portal Tracktiv`);
-    saveState(); showToast(`Comissão de R$ ${formatCurrency(p.commissionValue)} marcada como paga.`, 'success');
-    renderPresidenteExecutivos();
+    const commVal = p.portfolioComm || 0;
+    addNotification(p.executivoId, 'info', `✅ Comissão de carteira R$ ${formatCurrency(commVal)} liberada!`, null);
+    queueEmail(p.executivoId, `✅ Comissão liberada — R$ ${formatCurrency(commVal)}`,
+        `Comissão de carteira liberada!\n\nMês: ${p.month}\nLucro do cliente: R$ ${formatCurrency(p.profit||0)}\nSua comissão (${p.profitCommPct||0}%): R$ ${formatCurrency(commVal)}\nData: ${todayISO()}\n\n— Portal Tracktiv`);
+    saveState(); showToast(`Comissão de R$ ${formatCurrency(commVal)} marcada como paga.`, 'success');
+    openLiberarComissoesExec(p.executivoId);
+}
+
+function marcarSaleCommPaga(saleId) {
+    const s = (app.state.executivoSales || []).find(x => x.id === saleId);
+    if (!s) return;
+    s.commissionStatus = 'pago'; s.commissionPaidAt = todayISO();
+    const commVal = s.commValue || 0;
+    addNotification(s.executivoId, 'info', `✅ Comissão de venda R$ ${formatCurrency(commVal)} liberada!`, null);
+    queueEmail(s.executivoId, `✅ Comissão de venda liberada — R$ ${formatCurrency(commVal)}`,
+        `Comissão de venda liberada!\n\nCliente: ${s.clientName}\nPlano: ${s.planName}\nSua comissão: R$ ${formatCurrency(commVal)}\nData: ${todayISO()}\n\n— Portal Tracktiv`);
+    saveState(); showToast(`Comissão de venda R$ ${formatCurrency(commVal)} liberada.`, 'success');
+    openLiberarComissoesExec(s.executivoId);
+}
+
+function openLiberarComissoesExec(executivoId) {
+    const u      = (app.state.users||[]).find(x => x.id === executivoId);
+    if (!u) return;
+    const clients = app.state.clients || [];
+    const pays    = getExecPayments(executivoId).sort((a,b) => b.month.localeCompare(a.month));
+    const sales   = getExecSales(executivoId).sort((a,b) => b.month.localeCompare(a.month));
+    const pendPays  = pays.filter(p => p.commissionStatus === 'pendente');
+    const pendSales = sales.filter(s => s.commissionStatus === 'pendente');
+    const pagPays   = pays.filter(p => p.commissionStatus === 'pago').slice(0, 5);
+    const pagSales  = sales.filter(s => s.commissionStatus === 'pago').slice(0, 5);
+    const totalPend = pendPays.reduce((s,p)=>s+(p.portfolioComm||0),0) + pendSales.reduce((s,x)=>s+(x.commValue||0),0);
+
+    const rowPend = (list) => list.map(e => {
+        if (e.clientId !== undefined) {
+            const c = clients.find(x => x.id === e.clientId);
+            return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:0.85rem;flex-wrap:wrap;">
+                <span class="badge badge-info" style="font-size:0.68rem;flex-shrink:0;">📊 Carteira</span>
+                <div style="flex:1;min-width:100px;"><strong>${c ? esc(c.name) : '—'}</strong><span style="color:var(--text-soft);margin-left:6px;font-size:0.78rem;">${e.month}</span></div>
+                <span style="color:var(--text-soft);font-size:0.78rem;">Lucro R$ ${formatCurrency(e.profit||0)} × ${e.profitCommPct||0}%</span>
+                <strong style="color:var(--accent);">R$ ${formatCurrency(e.portfolioComm||0)}</strong>
+                <button class="primary-btn" style="font-size:0.78rem;padding:4px 10px;" onclick="marcarComissaoPaga('${e.id}')">✅ Liberar</button>
+            </div>`;
+        } else {
+            const typeLabel = e.commType === 'fixed' ? 'fixo' : e.commType === 'percentage' ? `${e.commPct||0}%` : 'padrão';
+            return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:0.85rem;flex-wrap:wrap;">
+                <span class="badge" style="font-size:0.68rem;background:#f0fdf4;color:#15803d;flex-shrink:0;">🏷️ Venda</span>
+                <div style="flex:1;min-width:100px;"><strong>${esc(e.clientName||'—')}</strong><span style="color:var(--text-soft);margin-left:6px;font-size:0.78rem;">${e.month}</span></div>
+                <span style="color:var(--text-soft);font-size:0.78rem;">${esc(e.planName||'—')} · ${typeLabel}</span>
+                <strong style="color:var(--accent);">R$ ${formatCurrency(e.commValue||0)}</strong>
+                <button class="primary-btn" style="font-size:0.78rem;padding:4px 10px;" onclick="marcarSaleCommPaga('${e.id}')">✅ Liberar</button>
+            </div>`;
+        }
+    }).join('');
+
+    const rowPago = (list) => list.map(e => {
+        const isPay = e.clientId !== undefined;
+        const val   = isPay ? (e.portfolioComm||0) : (e.commValue||0);
+        const desc  = isPay ? (clients.find(x=>x.id===e.clientId)?.name||'—') : esc(e.clientName||'—');
+        const tag   = isPay ? `<span class="badge badge-info" style="font-size:0.65rem;">📊 Carteira</span>` : `<span class="badge" style="font-size:0.65rem;background:#f0fdf4;color:#15803d;">🏷️ Venda</span>`;
+        return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.83rem;opacity:0.75;">
+            ${tag} <div style="flex:1;">${desc} <span style="color:var(--text-soft);">${e.month}</span></div>
+            <strong style="color:var(--success);">R$ ${formatCurrency(val)} ✅</strong>
+        </div>`;
+    }).join('');
+
+    const allPend = [...pendPays, ...pendSales];
+    showModal(`💰 Liberar comissões — ${esc(u.name)}`, `
+        ${totalPend > 0
+            ? `<div style="background:#fef3c7;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:0.88rem;">
+                <strong>⏳ Total pendente: R$ ${formatCurrency(totalPend)}</strong>
+               </div>`
+            : `<div style="background:#f0fdf4;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:0.88rem;color:var(--success);">
+                <strong>✅ Nenhuma comissão pendente.</strong>
+               </div>`}
+        ${allPend.length ? `<h4 style="margin:0 0 8px;font-size:0.88rem;">Pendentes</h4>${rowPend(allPend)}` : ''}
+        ${(pagPays.length || pagSales.length)
+            ? `<h4 style="margin:14px 0 8px;font-size:0.88rem;color:var(--text-soft);">Liberadas recentemente</h4>${rowPago([...pagPays,...pagSales].sort((a,b)=>b.month.localeCompare(a.month)).slice(0,5))}` : ''}
+        <div class="actions" style="margin-top:14px;">
+            <button class="secondary-btn" onclick="closeModal();renderPresidenteExecutivos()">Fechar</button>
+        </div>
+    `);
 }
 
 function exportExtratoExec(executivoId) {
     const u = (app.state.users||[]).find(x => x.id === executivoId);
-    const pays = getExecPayments(executivoId);
+    const pays  = getExecPayments(executivoId);
+    const sales = getExecSales(executivoId);
     const clients = app.state.clients || [];
-    const rows = [['Mês','Cliente','Valor Contrato','Custo Op.','Comissão %','Comissão R$','Lucro','Status Pagto','Status Comissão']];
+    const rows = [['Mês','Tipo','Descrição','Receita','Custo','Lucro','% Parceiro','Comissão R$','Empresa','Status Pagto','Status Comissão']];
     pays.forEach(p => {
         const c = clients.find(x => x.id === p.clientId);
-        rows.push([p.month, c?.name||'—', p.monthlyValue, p.operationalCost, p.commissionPct+'%', p.commissionValue, p.netProfit, p.clientPayStatus, p.commissionStatus]);
+        rows.push([p.month, 'Carteira', c?.name||'—', p.monthlyRevenue||0, p.operationalCost||0, p.profit||0,
+                   (p.profitCommPct||0)+'%', p.portfolioComm||0, p.companyNet||0, p.clientPayStatus, p.commissionStatus]);
+    });
+    sales.forEach(s => {
+        rows.push([s.month, 'Venda', s.clientName+' — '+s.planName, s.planValue||0, 0, s.planValue||0,
+                   s.commType, s.commValue||0, (s.planValue||0)-(s.commValue||0), '—', s.commissionStatus]);
     });
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
     const blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8;' });
@@ -15355,72 +15570,94 @@ function renderExecutivoDashboard() {
     if (!u || u.role !== 'executivo') return;
     const el = document.getElementById('dynamicContent');
     if (!el) return;
-    const m = calcExecMetrics(u.id);
-    const pays = getExecPayments(u.id);
-    const month = getCurrentMonthKey();
-    const thisMes = pays.filter(p => p.month === month);
-    const pendComm = pays.filter(p => p.commissionStatus === 'pendente').reduce((s,p)=>s+p.commissionValue,0);
-    const anoKey = new Date().getFullYear().toString();
-    const anoComm = pays.filter(p => p.month.startsWith(anoKey)).reduce((s,p)=>s+p.commissionValue,0);
-
-    // Next 3 payment forecast
+    const m       = calcExecMetrics(u.id);
+    const pays    = getExecPayments(u.id);
+    const sales   = getExecSales(u.id);
+    const month   = getCurrentMonthKey();
+    const anoKey  = new Date().getFullYear().toString();
+    const anoComm = pays.filter(p => p.month.startsWith(anoKey)).reduce((s,p)=>s+(p.portfolioComm||0),0)
+                  + sales.filter(s => s.month.startsWith(anoKey)).reduce((s,x)=>s+(x.commValue||0),0);
     const configs = getExecClientConfig(u.id);
     const clients = app.state.clients || [];
+    const thisMes = pays.filter(p => p.month === month);
 
     el.innerHTML = `
         <div class="section-header" style="margin-bottom:24px;">
-            <div><h2>📊 Dashboard</h2><p>Bem-vindo, ${esc(u.name)}! Aqui está o resumo da sua carteira.</p></div>
+            <div><h2>📊 Dashboard</h2><p>Bem-vindo, ${esc(u.name)}! Resumo completo da sua comissão.</p></div>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:24px;">
-            <div class="card" style="text-align:center;padding:16px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:14px;margin-bottom:24px;">
+            <div class="card" style="text-align:center;padding:14px;">
                 <div style="font-size:2rem;font-weight:800;color:var(--primary);">${m.clientCount}</div>
-                <div style="font-size:0.78rem;color:var(--text-soft);">Clientes na carteira</div>
+                <div style="font-size:0.76rem;color:var(--text-soft);">Clientes na carteira</div>
             </div>
-            <div class="card" style="text-align:center;padding:16px;">
-                <div style="font-size:1.6rem;font-weight:800;color:var(--primary);">R$ ${formatCurrency(m.totalMRR)}</div>
-                <div style="font-size:0.78rem;color:var(--text-soft);">Receita total da carteira</div>
+            <div class="card" style="text-align:center;padding:14px;">
+                <div style="font-size:1.4rem;font-weight:800;color:var(--primary);">R$ ${formatCurrency(m.totalRevenue)}</div>
+                <div style="font-size:0.76rem;color:var(--text-soft);">Receita total da carteira</div>
             </div>
-            <div class="card" style="text-align:center;padding:16px;">
-                <div style="font-size:1.6rem;font-weight:800;color:var(--accent);">R$ ${formatCurrency(m.totalComissaoMes)}</div>
-                <div style="font-size:0.78rem;color:var(--text-soft);">Comissão prevista/mês</div>
+            <div class="card" style="text-align:center;padding:14px;">
+                <div style="font-size:1.4rem;font-weight:800;color:var(--accent);">R$ ${formatCurrency(m.totalComissaoMes)}</div>
+                <div style="font-size:0.76rem;color:var(--text-soft);">Comissão prevista/mês</div>
             </div>
-            <div class="card" style="text-align:center;padding:16px;">
-                <div style="font-size:1.6rem;font-weight:800;color:${pendComm > 0 ? 'var(--warning)' : 'var(--success)'};">R$ ${formatCurrency(pendComm)}</div>
-                <div style="font-size:0.78rem;color:var(--text-soft);">Comissão pendente</div>
+            <div class="card" style="text-align:center;padding:14px;">
+                <div style="font-size:1.4rem;font-weight:800;color:${m.pendComm > 0 ? 'var(--warning)' : 'var(--success)'};">R$ ${formatCurrency(m.pendComm)}</div>
+                <div style="font-size:0.76rem;color:var(--text-soft);">Comissão pendente</div>
             </div>
-            <div class="card" style="text-align:center;padding:16px;">
-                <div style="font-size:1.6rem;font-weight:800;color:var(--success);">R$ ${formatCurrency(anoComm)}</div>
-                <div style="font-size:0.78rem;color:var(--text-soft);">Comissão acumulada ${new Date().getFullYear()}</div>
+            <div class="card" style="text-align:center;padding:14px;">
+                <div style="font-size:1.4rem;font-weight:800;color:var(--success);">R$ ${formatCurrency(anoComm)}</div>
+                <div style="font-size:0.76rem;color:var(--text-soft);">Acumulado ${new Date().getFullYear()}</div>
+            </div>
+        </div>
+
+        <!-- Breakdown por tipo de comissão -->
+        <div class="card" style="margin-bottom:20px;">
+            <h3 style="margin:0 0 14px;">💡 Composição da comissão prevista</h3>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:0.85rem;">
+                <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center;">
+                    <div style="font-size:0.72rem;color:var(--text-soft);margin-bottom:4px;">📊 CARTEIRA</div>
+                    <strong style="color:var(--accent);">R$ ${formatCurrency(m.totalPortfolioComm)}</strong>
+                    <div style="font-size:0.72rem;color:var(--text-soft);margin-top:2px;">% do lucro por cliente</div>
+                </div>
+                <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center;">
+                    <div style="font-size:0.72rem;color:var(--text-soft);margin-bottom:4px;">🏷️ VENDAS</div>
+                    <strong style="color:var(--accent);">${u.hasConsultorRole ? `R$ ${formatCurrency(m.thisMoSalesComm)}` : '—'}</strong>
+                    <div style="font-size:0.72rem;color:var(--text-soft);margin-top:2px;">${u.hasConsultorRole ? 'comissão por venda' : 'função inativa'}</div>
+                </div>
+                <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center;">
+                    <div style="font-size:0.72rem;color:var(--text-soft);margin-bottom:4px;">🔄 RECORRÊNCIA</div>
+                    <strong style="color:var(--accent);">${u.hasRecurrence ? `R$ ${formatCurrency(m.recurrenceComm)}` : '—'}</strong>
+                    <div style="font-size:0.72rem;color:var(--text-soft);margin-top:2px;">${u.hasRecurrence ? (u.recurrenceType === 'fixed_pct' ? `${u.recurrenceCustomPct}% da carteira` : 'regra padrão') : 'sem recorrência'}</div>
+                </div>
             </div>
         </div>
 
         ${thisMes.length ? `
         <div class="card" style="margin-bottom:20px;">
-            <h3 style="margin:0 0 14px;">📅 Situação de ${getCurrentMonthLabel()}</h3>
+            <h3 style="margin:0 0 14px;">📅 Carteira — ${getCurrentMonthLabel()}</h3>
             ${thisMes.map(p => {
                 const c = clients.find(x => x.id === p.clientId);
-                const pBadge = p.clientPayStatus === 'pago' ? '<span class="badge badge-active">✅ Pago</span>' : '<span class="badge badge-warn">⏳ Pendente</span>';
-                const cBadge = p.commissionStatus === 'pago' ? '<span class="badge badge-active">✅ Liberada</span>' : '<span class="badge badge-warn">⏳ Aguardando</span>';
-                return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
-                    <div style="flex:1;min-width:140px;"><strong>${c ? esc(c.name) : '—'}</strong></div>
-                    <div style="font-size:0.82rem;">Recebido: ${pBadge}</div>
-                    <div style="font-size:0.82rem;">Comissão: ${cBadge}</div>
-                    <div style="font-weight:700;color:var(--accent);">R$ ${formatCurrency(p.commissionValue)}</div>
+                const pBadge = p.clientPayStatus === 'pago' ? '<span class="badge badge-active" style="font-size:0.72rem;">✅ Recebido</span>' : '<span class="badge badge-warn" style="font-size:0.72rem;">⏳ Pendente</span>';
+                const cBadge = p.commissionStatus === 'pago' ? '<span class="badge badge-active" style="font-size:0.72rem;">✅ Liberada</span>' : '<span class="badge badge-warn" style="font-size:0.72rem;">⏳ Aguardando</span>';
+                return `<div style="display:grid;grid-template-columns:1fr auto auto auto auto;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.85rem;flex-wrap:wrap;">
+                    <strong>${c ? esc(c.name) : '—'}</strong>
+                    <span style="color:var(--text-soft);">Lucro R$ ${formatCurrency(p.profit||0)}</span>
+                    <strong style="color:var(--accent);">R$ ${formatCurrency(p.portfolioComm||0)} (${p.profitCommPct||0}%)</strong>
+                    ${pBadge} ${cBadge}
                 </div>`;
             }).join('')}
         </div>` : ''}
 
         <div class="card">
-            <h3 style="margin:0 0 14px;">💼 Previsão próximos pagamentos</h3>
+            <h3 style="margin:0 0 14px;">💼 Previsão de comissão — próximos pagamentos</h3>
             ${configs.length === 0
                 ? '<p class="text-muted">Aguardando vinculação de clientes pelo administrador.</p>'
                 : configs.map(cfg => {
                     const c = clients.find(x => x.id === cfg.clientId);
-                    return `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
-                        <div style="flex:1;"><strong>${c ? esc(c.name) : '—'}</strong></div>
-                        <div style="font-size:0.82rem;color:var(--text-soft);">Vence dia ${cfg.paymentDay}</div>
-                        <div style="font-weight:700;color:var(--accent);">R$ ${formatCurrency(cfg.monthlyValue * cfg.commissionPct / 100)}</div>
+                    const r = calcPortfolioComm(cfg);
+                    return `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.85rem;flex-wrap:wrap;">
+                        <div style="flex:1;"><strong>${c ? esc(c.name) : '—'}</strong><span style="color:var(--text-soft);margin-left:8px;font-size:0.78rem;">Vence dia ${cfg.paymentDay}</span></div>
+                        <div style="color:var(--text-soft);">Receita R$ ${formatCurrency(r.revenue)} · Lucro R$ ${formatCurrency(r.profit)}</div>
+                        <strong style="color:var(--accent);">R$ ${formatCurrency(r.comm)} (${r.pct}%)</strong>
                     </div>`;
                 }).join('')}
         </div>
@@ -15448,11 +15685,11 @@ function renderExecutivoCarteira() {
                 <p>Aguardando o administrador vincular clientes à sua carteira.</p></div>`
             : configs.map(cfg => {
                 const c = clients.find(x => x.id === cfg.clientId);
+                const r = calcPortfolioComm(cfg);
                 const thisPay = pays.find(p => p.clientId === cfg.clientId && p.month === month);
                 const hist    = pays.filter(p => p.clientId === cfg.clientId).sort((a,b) => b.month.localeCompare(a.month)).slice(0,6);
-                const comm    = cfg.monthlyValue * cfg.commissionPct / 100;
                 const payStatus = thisPay
-                    ? (thisPay.clientPayStatus === 'pago' ? '<span class="badge badge-active">✅ Pago</span>' : '<span class="badge badge-warn">⏳ Pendente</span>')
+                    ? (thisPay.clientPayStatus === 'pago' ? '<span class="badge badge-active">✅ Recebido</span>' : '<span class="badge badge-warn">⏳ Pendente</span>')
                     : '<span class="badge" style="background:#f1f5f9;color:#64748b;">Não registrado</span>';
                 const commStatus = thisPay
                     ? (thisPay.commissionStatus === 'pago' ? '<span class="badge badge-active">✅ Liberada</span>' : '<span class="badge badge-warn">⏳ Aguardando</span>')
@@ -15461,28 +15698,37 @@ function renderExecutivoCarteira() {
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
                         <div>
                             <div style="font-weight:800;font-size:1rem;">${c ? esc(c.name) : '— cliente não encontrado —'}</div>
-                            <div style="font-size:0.82rem;color:var(--text-soft);">${c ? esc(c.product||'—') + ' · ' + esc(c.phone||'') : ''} · Parceria desde ${formatDate(cfg.startDate)}</div>
-                        </div>
-                        <div style="text-align:right;">
-                            <div style="font-size:0.78rem;color:var(--text-soft);">Vence dia ${cfg.paymentDay}</div>
+                            <div style="font-size:0.82rem;color:var(--text-soft);">${c ? esc(c.product||'—') + ' · ' + esc(c.phone||'') : ''} · Parceria desde ${formatDate(cfg.startDate)} · Vence dia ${cfg.paymentDay}</div>
                         </div>
                     </div>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;font-size:0.85rem;">
-                        <div><span style="color:var(--text-soft);">Contrato mensal</span><br><strong>R$ ${formatCurrency(cfg.monthlyValue)}</strong></div>
-                        <div><span style="color:var(--text-soft);">Minha comissão (${cfg.commissionPct}%)</span><br><strong style="color:var(--accent);">R$ ${formatCurrency(comm)}</strong></div>
+                    <!-- Breakdown transparente da comissão -->
+                    <div style="background:#f8fafc;border-radius:10px;padding:12px 16px;margin-bottom:12px;">
+                        <div style="font-size:0.72rem;color:var(--text-soft);font-weight:700;margin-bottom:8px;letter-spacing:.05em;">COMPOSIÇÃO DA COMISSÃO</div>
+                        <div style="display:flex;gap:8px;align-items:center;font-size:0.85rem;flex-wrap:wrap;">
+                            <span>Receita <strong>R$ ${formatCurrency(r.revenue)}</strong></span>
+                            <span style="color:var(--text-soft);">−</span>
+                            <span>Custo <strong style="color:var(--danger);">R$ ${formatCurrency(r.cost)}</strong></span>
+                            <span style="color:var(--text-soft);">=</span>
+                            <span>Lucro <strong>R$ ${formatCurrency(r.profit)}</strong></span>
+                            <span style="color:var(--text-soft);">×</span>
+                            <span style="color:var(--accent);font-weight:700;">${r.pct}%</span>
+                            <span style="color:var(--text-soft);">=</span>
+                            <strong style="color:var(--accent);font-size:1rem;">R$ ${formatCurrency(r.comm)}</strong>
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:0.85rem;margin-bottom:10px;">
                         <div><span style="color:var(--text-soft);">Status ${getCurrentMonthLabel()}</span><br>${payStatus}</div>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;margin-bottom:12px;">
-                        <span style="color:var(--text-soft);">Comissão ${getCurrentMonthLabel()}:</span> ${commStatus}
+                        <div><span style="color:var(--text-soft);">Comissão ${getCurrentMonthLabel()}</span><br>${commStatus}</div>
+                        <div><span style="color:var(--text-soft);">Minha comissão</span><br><strong style="color:var(--accent);">R$ ${formatCurrency(r.comm)}</strong></div>
                     </div>
                     ${hist.length ? `
                     <div style="background:var(--bg);border-radius:8px;padding:10px 12px;">
-                        <div style="font-size:0.78rem;font-weight:700;color:var(--text-soft);margin-bottom:8px;">HISTÓRICO (últimos ${hist.length} meses)</div>
-                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                            ${hist.map(h => `<div style="text-align:center;min-width:60px;">
-                                <div style="font-size:0.7rem;color:var(--text-soft);">${h.month.slice(5)} /${h.month.slice(2,4)}</div>
-                                <div style="font-size:0.82rem;font-weight:700;">${h.commissionStatus === 'pago' ? '<span style="color:var(--success);">✅</span>' : '<span style="color:var(--warning);">⏳</span>'}</div>
-                                <div style="font-size:0.72rem;">R$ ${formatCurrency(h.commissionValue)}</div>
+                        <div style="font-size:0.72rem;font-weight:700;color:var(--text-soft);margin-bottom:8px;">HISTÓRICO (últimos ${hist.length} meses)</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            ${hist.map(h => `<div style="text-align:center;min-width:60px;background:#fff;border-radius:8px;padding:6px 4px;border:1px solid var(--border);">
+                                <div style="font-size:0.68rem;color:var(--text-soft);">${h.month.slice(5)}/${h.month.slice(2,4)}</div>
+                                <div>${h.commissionStatus === 'pago' ? '✅' : '⏳'}</div>
+                                <div style="font-size:0.72rem;font-weight:700;">R$ ${formatCurrency(h.portfolioComm||0)}</div>
                             </div>`).join('')}
                         </div>
                     </div>` : ''}
@@ -15498,74 +15744,88 @@ function renderExecutivoFinanceiro() {
     const el = document.getElementById('dynamicContent');
     if (!el) return;
     const pays    = getExecPayments(u.id).sort((a,b) => b.month.localeCompare(a.month));
-    const configs = getExecClientConfig(u.id);
+    const sales   = getExecSales(u.id).sort((a,b) => b.month.localeCompare(a.month));
     const clients = app.state.clients || [];
     const month   = getCurrentMonthKey();
 
-    const totalPend = pays.filter(p => p.commissionStatus === 'pendente').reduce((s,p)=>s+p.commissionValue,0);
-    const totalPago = pays.filter(p => p.commissionStatus === 'pago').reduce((s,p)=>s+p.commissionValue,0);
-    const mesPago   = pays.filter(p => p.month === month).reduce((s,p)=>s+p.commissionValue,0);
+    const totalPortfolioPend = pays.filter(p => p.commissionStatus === 'pendente').reduce((s,p)=>s+(p.portfolioComm||0),0);
+    const totalSalesPend     = sales.filter(s => s.commissionStatus === 'pendente').reduce((s,x)=>s+(x.commValue||0),0);
+    const totalPend          = totalPortfolioPend + totalSalesPend;
+    const totalPortfolioPago = pays.filter(p => p.commissionStatus === 'pago').reduce((s,p)=>s+(p.portfolioComm||0),0);
+    const totalSalesPago     = sales.filter(s => s.commissionStatus === 'pago').reduce((s,x)=>s+(x.commValue||0),0);
+    const totalPago          = totalPortfolioPago + totalSalesPago;
+    const mesPago            = pays.filter(p => p.month === month).reduce((s,p)=>s+(p.portfolioComm||0),0)
+                             + sales.filter(s => s.month === month).reduce((s,x)=>s+(x.commValue||0),0);
 
-    // Monthly chart data (last 6 months)
     const months6 = Array.from({length:6}, (_,i) => {
         const d = new Date(); d.setMonth(d.getMonth() - (5 - i));
         const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-        const val = pays.filter(p => p.month === key).reduce((s,p) => s+p.commissionValue, 0);
+        const val = pays.filter(p => p.month === key).reduce((s,p) => s+(p.portfolioComm||0), 0)
+                  + sales.filter(s => s.month === key).reduce((s,x) => s+(x.commValue||0), 0);
         return { label: d.toLocaleDateString('pt-BR',{month:'short'}).replace('.',''), value: parseFloat(val.toFixed(2)), key, color: 'var(--accent)' };
     });
 
-    // Group by month for table
-    const byMonth = {};
-    pays.forEach(p => {
-        if (!byMonth[p.month]) byMonth[p.month] = [];
-        byMonth[p.month].push(p);
-    });
+    // Group all entries by month
+    const allByMonth = {};
+    pays.forEach(p  => { if (!allByMonth[p.month]) allByMonth[p.month] = []; allByMonth[p.month].push({ ...p, _kind: 'carteira' }); });
+    sales.forEach(s => { if (!allByMonth[s.month]) allByMonth[s.month] = []; allByMonth[s.month].push({ ...s, _kind: 'venda' }); });
 
     el.innerHTML = `
         <div class="section-header" style="margin-bottom:24px;">
-            <div><h2>💰 Financeiro</h2><p>Extrato detalhado de comissões.</p></div>
+            <div><h2>💰 Financeiro</h2><p>Extrato detalhado — todas as fontes de comissão.</p></div>
             <button class="secondary-btn" onclick="exportExtratoExec('${u.id}')">📥 Exportar CSV</button>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
-            <div class="card" style="text-align:center;padding:16px;">
-                <div style="font-size:1.4rem;font-weight:800;color:var(--accent);">R$ ${formatCurrency(mesPago)}</div>
-                <div style="font-size:0.78rem;color:var(--text-soft);">A receber — ${getCurrentMonthLabel()}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;">
+            <div class="card" style="text-align:center;padding:14px;">
+                <div style="font-size:1.3rem;font-weight:800;color:var(--accent);">R$ ${formatCurrency(mesPago)}</div>
+                <div style="font-size:0.76rem;color:var(--text-soft);">Previsto — ${getCurrentMonthLabel()}</div>
             </div>
-            <div class="card" style="text-align:center;padding:16px;">
-                <div style="font-size:1.4rem;font-weight:800;color:var(--warning);">R$ ${formatCurrency(totalPend)}</div>
-                <div style="font-size:0.78rem;color:var(--text-soft);">Pendente de liberação</div>
+            <div class="card" style="text-align:center;padding:14px;">
+                <div style="font-size:1.3rem;font-weight:800;color:var(--warning);">R$ ${formatCurrency(totalPend)}</div>
+                <div style="font-size:0.76rem;color:var(--text-soft);">Pendente de liberação</div>
             </div>
-            <div class="card" style="text-align:center;padding:16px;">
-                <div style="font-size:1.4rem;font-weight:800;color:var(--success);">R$ ${formatCurrency(totalPago)}</div>
-                <div style="font-size:0.78rem;color:var(--text-soft);">Total recebido (histórico)</div>
+            <div class="card" style="text-align:center;padding:14px;">
+                <div style="font-size:1.3rem;font-weight:800;color:var(--success);">R$ ${formatCurrency(totalPago)}</div>
+                <div style="font-size:0.76rem;color:var(--text-soft);">Total já recebido</div>
             </div>
         </div>
 
         <div class="report-chart-card" style="margin-bottom:24px;">
-            <div class="report-chart-title">📈 Evolução de comissões — últimos 6 meses</div>
+            <div class="report-chart-title">📈 Evolução total de comissões — últimos 6 meses</div>
             ${_svgBarChart(months6, 520, 180)}
         </div>
 
-        ${Object.keys(byMonth).sort((a,b) => b.localeCompare(a)).map(mes => {
-            const mPays = byMonth[mes];
-            const totalMes = mPays.reduce((s,p) => s+p.commissionValue, 0);
+        ${Object.keys(allByMonth).sort((a,b) => b.localeCompare(a)).map(mes => {
+            const entries = allByMonth[mes];
+            const totalMes = entries.reduce((s,e) => s + (e._kind === 'carteira' ? (e.portfolioComm||0) : (e.commValue||0)), 0);
             return `<div class="card" style="margin-bottom:12px;padding:0;overflow:hidden;">
-                <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg);display:flex;justify-content:space-between;align-items:center;">
+                <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg);display:flex;justify-content:space-between;align-items:center;">
                     <strong>${mes}</strong>
                     <strong style="color:var(--accent);">R$ ${formatCurrency(totalMes)}</strong>
                 </div>
-                ${mPays.map(p => {
-                    const c = clients.find(x => x.id === p.clientId);
-                    const cBadge = p.commissionStatus === 'pago'
-                        ? '<span class="badge badge-active" style="font-size:0.7rem;">✅ Pago</span>'
-                        : '<span class="badge badge-warn" style="font-size:0.7rem;">⏳ Pendente</span>';
-                    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:0.88rem;flex-wrap:wrap;">
-                        <div style="flex:1;"><strong>${c ? esc(c.name) : '—'}</strong></div>
-                        <div style="color:var(--text-soft);">R$ ${formatCurrency(p.monthlyValue)} · ${p.commissionPct}%</div>
-                        <div style="font-weight:700;color:var(--accent);">R$ ${formatCurrency(p.commissionValue)}</div>
-                        ${cBadge}
-                    </div>`;
+                ${entries.map(e => {
+                    if (e._kind === 'carteira') {
+                        const c = clients.find(x => x.id === e.clientId);
+                        const cBadge = e.commissionStatus === 'pago' ? '<span class="badge badge-active" style="font-size:0.7rem;">✅</span>' : '<span class="badge badge-warn" style="font-size:0.7rem;">⏳</span>';
+                        return `<div style="display:flex;align-items:center;gap:12px;padding:9px 16px;border-bottom:1px solid var(--border);font-size:0.85rem;flex-wrap:wrap;">
+                            <span class="badge badge-info" style="font-size:0.68rem;flex-shrink:0;">📊 Carteira</span>
+                            <div style="flex:1;min-width:100px;"><strong>${c ? esc(c.name) : '—'}</strong></div>
+                            <span style="color:var(--text-soft);font-size:0.78rem;">Receita R$ ${formatCurrency(e.monthlyRevenue||0)} − Custo R$ ${formatCurrency(e.operationalCost||0)} = Lucro R$ ${formatCurrency(e.profit||0)} × ${e.profitCommPct||0}%</span>
+                            <strong style="color:var(--accent);">R$ ${formatCurrency(e.portfolioComm||0)}</strong>
+                            ${cBadge}
+                        </div>`;
+                    } else {
+                        const cBadge = e.commissionStatus === 'pago' ? '<span class="badge badge-active" style="font-size:0.7rem;">✅</span>' : '<span class="badge badge-warn" style="font-size:0.7rem;">⏳</span>';
+                        const typeLabel = e.commType === 'fixed' ? 'fixo' : e.commType === 'percentage' ? `${e.commPct||0}%` : 'padrão';
+                        return `<div style="display:flex;align-items:center;gap:12px;padding:9px 16px;border-bottom:1px solid var(--border);font-size:0.85rem;flex-wrap:wrap;">
+                            <span class="badge" style="font-size:0.68rem;background:#f0fdf4;color:#15803d;flex-shrink:0;">🏷️ Venda</span>
+                            <div style="flex:1;min-width:100px;"><strong>${esc(e.clientName||'—')}</strong></div>
+                            <span style="color:var(--text-soft);font-size:0.78rem;">${esc(e.planName||'—')} · R$ ${formatCurrency(e.planValue||0)} · comissão ${typeLabel}</span>
+                            <strong style="color:var(--accent);">R$ ${formatCurrency(e.commValue||0)}</strong>
+                            ${cBadge}
+                        </div>`;
+                    }
                 }).join('')}
             </div>`;
         }).join('') || '<div class="card"><p class="text-muted">Nenhum pagamento registrado ainda.</p></div>'}
@@ -15591,21 +15851,20 @@ function renderExecutivoClientes() {
                 <p>Aguardando vinculação de clientes pelo administrador.</p></div>`
             : `<div class="card" style="overflow-x:auto;">
                 <table>
-                    <thead><tr><th>Cliente</th><th>Produto</th><th>Telefone</th><th>Contrato</th><th>Comissão</th><th>Vencimento</th></tr></thead>
+                    <thead><tr><th>Cliente</th><th>Produto</th><th>Telefone</th><th>Receita</th><th>Lucro</th><th>Minha comissão</th><th>Vencimento</th></tr></thead>
                     <tbody>
                         ${configs.map(cfg => {
                             const c = clients.find(x => x.id === cfg.clientId);
                             if (!c) return '';
                             const ph = (c.phone||'').replace(/\D/g,'');
+                            const r  = calcPortfolioComm(cfg);
                             return `<tr>
-                                <td>
-                                    <strong>${esc(c.name)}</strong><br>
-                                    <small class="text-muted">${esc(c.email||'')}</small>
-                                </td>
+                                <td><strong>${esc(c.name)}</strong><br><small class="text-muted">${esc(c.email||'')}</small></td>
                                 <td>${esc(c.product||'—')}</td>
                                 <td>${ph ? `<a href="https://wa.me/55${ph}" target="_blank" style="color:var(--success);">💬 ${esc(c.phone)}</a>` : '—'}</td>
-                                <td>R$ ${formatCurrency(cfg.monthlyValue)}</td>
-                                <td><span class="badge badge-info">${cfg.commissionPct}% · R$ ${formatCurrency(cfg.monthlyValue * cfg.commissionPct / 100)}</span></td>
+                                <td>R$ ${formatCurrency(r.revenue)}</td>
+                                <td>R$ ${formatCurrency(r.profit)}</td>
+                                <td><span class="badge badge-info" style="font-size:0.78rem;">${r.pct}% = R$ ${formatCurrency(r.comm)}</span></td>
                                 <td>Dia ${cfg.paymentDay}</td>
                             </tr>`;
                         }).join('')}
@@ -15614,6 +15873,202 @@ function renderExecutivoClientes() {
             </div>`}
     `;
     showSection('dynamicContent');
+}
+
+// ── REGISTRAR VENDA DO EXECUTIVO (PRESIDENTE) ────────────────────
+
+function openRegistrarVendaExec(executivoId) {
+    const u = (app.state.users||[]).find(x => x.id === executivoId);
+    if (!u || !u.hasConsultorRole) return;
+    const planList_ = app.state.produtos_config?.length
+        ? app.state.produtos_config.filter(p => p.status === 'ativo').map(p => p.name)
+        : ['Essencial','Profissional','Controle Total','Empresas'];
+
+    const commLabel = u.saleCommType === 'fixed' ? `Fixo: R$ ${formatCurrency(u.saleCommFixed||0)}`
+        : u.saleCommType === 'percentage' ? `${u.saleCommPct||0}% do plano`
+        : 'Tabela padrão de consultores';
+
+    showModal(`🏷️ Registrar venda — ${esc(u.name)}`, `
+        <p class="text-muted" style="font-size:0.85rem;margin-bottom:14px;">Modelo de comissão de venda: <strong>${commLabel}</strong></p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="field" style="grid-column:1/-1;"><label>Nome do cliente *</label><input id="rv_clientName" type="text" placeholder="Nome do novo cliente fechado"></div>
+            <div class="field"><label>Plano / Produto *</label>
+                <select id="rv_planName" onchange="updateRvComm('${executivoId}')">
+                    ${planList_.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('')}
+                </select>
+            </div>
+            <div class="field"><label>Valor do plano (R$/mês) *</label><input id="rv_planValue" type="number" min="0" step="0.01" placeholder="Ex: 54.90" oninput="updateRvComm('${executivoId}')"></div>
+            <div class="field"><label>Data da venda *</label><input id="rv_date" type="date" value="${todayISO()}"></div>
+            <div class="field"><label>Mês de referência</label><input id="rv_mes" type="month" value="${getCurrentMonthKey()}"></div>
+            <div class="field" style="grid-column:1/-1;"><label>Observações</label><input id="rv_obs" type="text" placeholder="Ex: Cliente captado por indicação"></div>
+        </div>
+        <div id="rv_comm_wrap" style="background:var(--bg);border-radius:10px;padding:12px;margin:10px 0;font-size:0.88rem;">
+            Comissão calculada: <strong id="rv_comm_val" style="color:var(--accent);">—</strong>
+        </div>
+        <div id="rv_err" class="error-text" style="margin-bottom:8px;"></div>
+        <div class="actions">
+            <button class="primary-btn" onclick="saveRegistrarVendaExec('${executivoId}')">💾 Registrar venda</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+}
+
+function updateRvComm(executivoId) {
+    const u = (app.state.users||[]).find(x => x.id === executivoId);
+    if (!u) return;
+    const planValue = parseFloat(document.getElementById('rv_planValue')?.value) || 0;
+    const comm = calcSaleComm(u, planValue);
+    const commEl = document.getElementById('rv_comm_val');
+    if (commEl) {
+        const typeLabel = u.saleCommType === 'fixed' ? `fixo R$ ${formatCurrency(u.saleCommFixed||0)}`
+            : u.saleCommType === 'percentage' ? `${u.saleCommPct||0}% = R$ ${formatCurrency(comm)}`
+            : `padrão = R$ ${formatCurrency(comm)}`;
+        commEl.textContent = `R$ ${formatCurrency(comm)} (${typeLabel})`;
+    }
+}
+
+function saveRegistrarVendaExec(executivoId) {
+    const clientName = document.getElementById('rv_clientName')?.value.trim();
+    const planName   = document.getElementById('rv_planName')?.value;
+    const planValue  = parseFloat(document.getElementById('rv_planValue')?.value);
+    const saleDate   = document.getElementById('rv_date')?.value;
+    const mes        = document.getElementById('rv_mes')?.value;
+    const obs        = document.getElementById('rv_obs')?.value.trim();
+    const errEl      = document.getElementById('rv_err');
+    if (!clientName) { if (errEl) errEl.textContent = 'Informe o nome do cliente.'; return; }
+    if (!planValue || planValue <= 0) { if (errEl) errEl.textContent = 'Informe o valor do plano.'; return; }
+    if (!saleDate) { if (errEl) errEl.textContent = 'Informe a data da venda.'; return; }
+    const u = (app.state.users||[]).find(x => x.id === executivoId);
+    if (!u) return;
+    const commValue = calcSaleComm(u, planValue);
+    if (!app.state.executivoSales) app.state.executivoSales = [];
+    app.state.executivoSales.push({
+        id: `esale_${Date.now()}`, executivoId,
+        clientName, planName, planValue,
+        commType:    u.saleCommType || 'standard',
+        commFixed:   u.saleCommFixed || 0,
+        commPct:     u.saleCommPct || 0,
+        commValue,
+        saleDate, month: mes,
+        commissionStatus: 'pendente', commissionPaidAt: null,
+        notes: obs
+    });
+    addNotification(executivoId, 'info', `🏷️ Venda registrada: ${clientName} — comissão R$ ${formatCurrency(commValue)}`, null);
+    queueEmail(executivoId, `🏷️ Venda registrada — ${clientName}`,
+        `Venda registrada!\n\nCliente: ${clientName}\nPlano: ${planName}\nValor: R$ ${formatCurrency(planValue)}\nSua comissão: R$ ${formatCurrency(commValue)}\n\n— Portal Tracktiv`);
+    saveState(); closeModal();
+    showToast(`Venda registrada! Comissão: R$ ${formatCurrency(commValue)}`, 'success');
+    renderPresidenteExecutivos();
+}
+
+// ── SIMULADOR (PRESIDENTE) ───────────────────────────────────────
+
+function openExecSimulador(executivoId) {
+    const u = (app.state.users||[]).find(x => x.id === executivoId);
+    if (!u) return;
+    const configs = getExecClientConfig(executivoId);
+    const clients = app.state.clients || [];
+    if (!configs.length) { showToast('Adicione clientes à carteira primeiro.', 'warning'); return; }
+
+    const rows = configs.map(cfg => {
+        const c = clients.find(x => x.id === cfg.clientId);
+        const r = calcPortfolioComm(cfg);
+        return `<tr>
+            <td style="padding:8px 10px;">${c ? esc(c.name) : '—'}</td>
+            <td style="padding:8px 10px;text-align:right;">R$ ${formatCurrency(r.revenue)}</td>
+            <td style="padding:8px 10px;text-align:right;">R$ ${formatCurrency(r.cost)}</td>
+            <td style="padding:8px 10px;text-align:right;font-weight:600;">R$ ${formatCurrency(r.profit)}</td>
+            <td style="padding:8px 10px;text-align:center;"><input type="number" class="sim-pct-input" data-cfg="${cfg.id}" min="0" max="100" step="1" value="${r.pct}" style="width:60px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;text-align:center;" oninput="updateExecSimulator('${executivoId}')"></td>
+            <td style="padding:8px 10px;text-align:right;color:var(--accent);font-weight:700;" id="sim_comm_${cfg.id}">R$ ${formatCurrency(r.comm)}</td>
+            <td style="padding:8px 10px;text-align:right;color:var(--success);font-weight:700;" id="sim_net_${cfg.id}">R$ ${formatCurrency(r.compNet)}</td>
+        </tr>`;
+    }).join('');
+
+    showModal(`🧮 Simulador — ${esc(u.name)}`, `
+        <p class="text-muted" style="font-size:0.85rem;margin-bottom:14px;">Ajuste os percentuais e veja o impacto antes de definir as configurações reais.</p>
+        <div style="overflow-x:auto;">
+            <table style="width:100%;font-size:0.85rem;border-collapse:collapse;">
+                <thead style="background:var(--bg);">
+                    <tr>
+                        <th style="padding:8px 10px;text-align:left;">Cliente</th>
+                        <th style="padding:8px 10px;text-align:right;">Receita</th>
+                        <th style="padding:8px 10px;text-align:right;">Custo</th>
+                        <th style="padding:8px 10px;text-align:right;">Lucro</th>
+                        <th style="padding:8px 10px;text-align:center;">% Parceiro</th>
+                        <th style="padding:8px 10px;text-align:right;">Comissão</th>
+                        <th style="padding:8px 10px;text-align:right;">Empresa</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+                <tfoot style="border-top:2px solid var(--border);font-weight:800;">
+                    <tr>
+                        <td colspan="5" style="padding:10px;">TOTAL</td>
+                        <td style="padding:10px;text-align:right;color:var(--accent);" id="sim_total_comm">—</td>
+                        <td style="padding:10px;text-align:right;color:var(--success);" id="sim_total_net">—</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div style="background:var(--bg);border-radius:10px;padding:12px 16px;margin-top:12px;font-size:0.85rem;" id="sim_summary"></div>
+        <div class="actions" style="margin-top:14px;">
+            <button class="secondary-btn" onclick="closeModal()">Fechar</button>
+        </div>
+    `);
+    updateExecSimulator(executivoId);
+}
+
+function updateExecSimulator(executivoId) {
+    const configs = getExecClientConfig(executivoId);
+    const clients = app.state.clients || [];
+    let totalComm = 0, totalNet = 0, totalRev = 0;
+    document.querySelectorAll('.sim-pct-input').forEach(inp => {
+        const cfgId = inp.dataset.cfg;
+        const cfg = configs.find(c => c.id === cfgId);
+        if (!cfg) return;
+        const pct  = parseFloat(inp.value) || 0;
+        const rev  = cfg.monthlyRevenue || 0;
+        const cost = cfg.operationalCost || 0;
+        const profit= rev - cost;
+        const comm = profit * pct / 100;
+        const net  = profit - comm;
+        totalComm += comm; totalNet += net; totalRev += rev;
+        const commEl = document.getElementById(`sim_comm_${cfgId}`);
+        const netEl  = document.getElementById(`sim_net_${cfgId}`);
+        if (commEl) commEl.textContent = `R$ ${formatCurrency(comm)}`;
+        if (netEl)  netEl.textContent  = `R$ ${formatCurrency(net)}`;
+    });
+    const tComm = document.getElementById('sim_total_comm');
+    const tNet  = document.getElementById('sim_total_net');
+    const tSum  = document.getElementById('sim_summary');
+    if (tComm) tComm.textContent = `R$ ${formatCurrency(totalComm)}`;
+    if (tNet)  tNet.textContent  = `R$ ${formatCurrency(totalNet)}`;
+    const margem = totalRev > 0 ? ((totalNet / totalRev) * 100).toFixed(1) : 0;
+    if (tSum) tSum.innerHTML = `
+        <strong>Resumo:</strong>
+        Receita total R$ ${formatCurrency(totalRev)} |
+        Comissão do parceiro R$ ${formatCurrency(totalComm)} |
+        Empresa R$ ${formatCurrency(totalNet)} |
+        <strong>Margem da empresa: ${margem}% da receita</strong>
+    `;
+}
+
+// ── JS helpers visíveis ao modal (deve estar no escopo global) ───
+
+function toggleExConsultorFields() {
+    const checked = document.getElementById('ex_hasConsultor')?.checked;
+    const wrap = document.getElementById('ex_consultor_fields');
+    if (wrap) wrap.style.display = checked ? 'grid' : 'none';
+}
+
+function toggleExSaleCommFields() {
+    const type = document.getElementById('ex_saleCommType')?.value;
+    const fixWrap = document.getElementById('ex_saleFixed_wrap');
+    const pctWrap = document.getElementById('ex_salePct_wrap');
+    if (fixWrap) fixWrap.style.display = type === 'fixed' ? '' : 'none';
+    if (pctWrap) pctWrap.style.display = type === 'percentage' ? '' : 'none';
+    const recWrap = document.getElementById('ex_recPct_wrap');
+    const recType = document.getElementById('ex_recurrenceType')?.value;
+    if (recWrap) recWrap.style.display = recType === 'fixed_pct' ? '' : 'none';
 }
 
 /* ═══════════════════════════════════════════════════════════════════
