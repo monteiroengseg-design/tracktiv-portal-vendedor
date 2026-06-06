@@ -2067,6 +2067,11 @@ function loadState() {
                 const pres = cleanState.users.find(u => u.role === 'presidente');
                 if (pres) app.state.users = [JSON.parse(JSON.stringify(pres)), ...(app.state.users || [])];
             }
+            // Migração: garante que gestor_master (gestor@tracktiv.com.br) existe
+            if (!(app.state.users || []).some(u => u.email === 'gestor@tracktiv.com.br')) {
+                const gm = cleanState.users.find(u => u.email === 'gestor@tracktiv.com.br');
+                if (gm) app.state.users = [...(app.state.users || []), JSON.parse(JSON.stringify(gm))];
+            }
             // Migração: garante campos chamados e tecnicoClients
             if (!app.state.chamados) app.state.chamados = JSON.parse(JSON.stringify(sampleState.chamados || []));
             if (!app.state.tecnicoClients) app.state.tecnicoClients = JSON.parse(JSON.stringify(sampleState.tecnicoClients || {}));
