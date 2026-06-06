@@ -117,7 +117,8 @@ const NAV_TREE = {
             { id: 'c_crm_reativar', label: 'Leads p/ Reativar', icon: '🔄', render: () => renderLeadsReativar() },
             { id: 'c_crm_risco',    label: 'Clientes em Risco', icon: '⚠️', render: () => renderClientesEmRisco() },
             { id: 'c_crm_upsell',   label: 'Oport. de Upsell',  icon: '📈', render: () => renderUpsellCentral() },
-            { id: 'c_crm_proposta', label: 'Gerar Proposta',    icon: '📄', render: () => renderPropostaLista() }
+            { id: 'c_crm_proposta', label: 'Propostas',         icon: '📄', render: () => renderPropostaLista() },
+            { id: 'c_crm_assinat', label: 'Assinaturas',       icon: '✍️', render: () => renderConsultorAssinaturas() }
         ]},
         { id: 'c_clientes',    label: 'Clientes',       icon: '🌐', children: [
             { id: 'c_cli_lista',    label: 'Lista de Clientes', icon: '📋', section: 'consultorClientes' },
@@ -139,6 +140,7 @@ const NAV_TREE = {
             { id: 'c_ind_indicar',  label: 'Indicar Consultor', icon: '➕', render: () => renderIndicarConsultor() },
             { id: 'c_ind_minha',    label: 'Minha Indicação',   icon: '📋', render: () => renderMinhaIndicacao() }
         ]},
+        { id: 'c_metas',       label: 'Minhas Metas',   icon: '🎯', render: () => renderConsultorMetas() },
         { id: 'c_mural',       label: 'Mural',          icon: '🏆', render: () => renderMural() },
         { id: 'c_link',        label: 'Meu Link',        icon: '🔗', render: () => renderMeuLink() },
         { id: 'c_comunicados', label: 'Comunicados',     icon: '📢', render: () => renderComunicadosMural() },
@@ -200,6 +202,8 @@ const NAV_TREE_PRESIDENTE = [
     { id: 'p_recorr',     label: 'Recorrência',              icon: '🔄', render: () => renderPresidenteRecorrencia() },
     { id: 'p_gestores',   label: 'Gestores',                 icon: '👔', render: () => renderPresidenteGestores() },
     { id: 'p_executivos', label: 'Parceiros Executivos',     icon: '🤝', render: () => renderPresidenteExecutivos() },
+    { id: 'p_empresas',   label: 'Multi-empresa',            icon: '🏢', render: () => renderPresidenteEmpresas() },
+    { id: 'p_relatorios', label: 'Relatórios',               icon: '📊', render: () => renderPresidenteRelatorios() },
     { id: 'p_audit',      label: 'Auditoria',                icon: '🔍', render: () => renderPresidenteAuditoria() },
     { id: 'p_modulos',    label: 'Módulos',                  icon: '🧩', render: () => renderModulosConfig('presidente') },
     { id: 'p_whitelabel', label: 'White Label',              icon: '🎨', render: () => renderWhiteLabel() },
@@ -1725,7 +1729,13 @@ const cleanState = {
     tecnicoForms: {},
     tecnicoSubmissions: {},
     tecnicoFormSends: [],
-    tecnicoLinkStats: {}
+    tecnicoLinkStats: {},
+    proposalSignatures: [],
+    goalsHistory: [],
+    goalsConfig: [],
+    empresas: [{ id: 'main', name: 'Tracktiv', plan: 'enterprise', status: 'ativa', createdAt: '2026-01-01', modules: [] }],
+    activeEmpresaId: 'main',
+    empresaData: {}
 };
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2142,6 +2152,12 @@ function loadState() {
             if (!app.state.emailQueue)        app.state.emailQueue        = [];
             if (!app.state.customTrainings)   app.state.customTrainings   = [];
             if (!app.state.clientSignatures)  app.state.clientSignatures  = {};
+            if (!app.state.proposalSignatures) app.state.proposalSignatures = [];
+            if (!app.state.goalsHistory)      app.state.goalsHistory      = [];
+            if (!app.state.goalsConfig)       app.state.goalsConfig       = [];
+            if (!app.state.empresas)          app.state.empresas          = [{ id: 'main', name: app.state.brandConfig?.companyName || 'Tracktiv', plan: 'enterprise', status: 'ativa', createdAt: '2026-01-01', modules: [] }];
+            if (!app.state.activeEmpresaId)   app.state.activeEmpresaId   = 'main';
+            if (!app.state.empresaData)       app.state.empresaData       = {};
             // Migração: Qualificação, Link e Formulário do Técnico
             if (!app.state.tecnicoForms)         app.state.tecnicoForms         = {};
             if (!app.state.tecnicoSubmissions)   app.state.tecnicoSubmissions   = {};
@@ -4190,6 +4206,9 @@ function showApp() {
     const appScreenEl = document.getElementById('appScreen');
     if (appScreenEl) appScreenEl.dataset.role = role;
 
+    // Inject empresa switcher for presidente
+    setTimeout(() => _injectEmpresaSwitcher(), 100);
+
     // Limpa todos os active antes de qualquer render
     document.querySelectorAll('#appScreen .section').forEach(s => s.classList.remove('active'));
 
@@ -5655,11 +5674,14 @@ function renderClienteHome() {
     const hasPendingForms = pendingForms.length > 0;
     const hasAnyAlert = hasIncomplete || hasPendingDocs || hasPendingForms;
 
+    const sigCardsHtml = renderAssinaturaCards(u.id);
+
     el.innerHTML = `
         <div class="section-header">
             <div><h2>Bem-vindo, ${esc(u.name)}!</h2>
             <p>Seu portal de documentos, serviços e indicações Tracktiv.</p></div>
         </div>
+        ${sigCardsHtml}
         ${hasAnyAlert ? `<div style="background:#fff3cd;border:1.5px solid #ffc107;border-radius:14px;padding:14px 18px;margin-bottom:16px;font-size:0.9rem;">🔴 <strong>Ação necessária:</strong>${hasIncomplete ? ' Formulários incompletos.' : ''}${hasPendingDocs ? ` ${chkTotal - chkDone} documento${chkTotal - chkDone > 1 ? 's' : ''} pendente${chkTotal - chkDone > 1 ? 's' : ''} no checklist.` : ''}${hasPendingForms ? ` <strong>${pendingForms.length} formulário${pendingForms.length > 1 ? 's' : ''}</strong> enviado${pendingForms.length > 1 ? 's' : ''} pelo técnico aguardando seu preenchimento.` : ''}</div>` : ''}
         <div class="cards-grid" style="margin-bottom:16px;">
             <div class="card"><h3>Plano atual</h3><div class="metric" style="font-size:1.4rem;">${esc(crm?.plan || '—')}</div><small>${crm ? `R$ ${formatCurrency(crm.monthlyFee)}/mês` : ''}</small></div>
@@ -7728,6 +7750,13 @@ function renderGestorRelatorios() {
     el.innerHTML = `
         <div class="section-header">
             <div><h2>📊 Relatórios</h2><p>Análise completa de desempenho — ${getCurrentMonthLabel()}</p></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="secondary-btn" onclick="openPrintRelatorio('vendas')" style="font-size:0.82rem;">🖨️ PDF Vendas</button>
+                <button class="secondary-btn" onclick="openPrintRelatorio('comissoes')" style="font-size:0.82rem;">🖨️ PDF Comissões</button>
+                <button class="secondary-btn" onclick="openPrintRelatorio('clientes')" style="font-size:0.82rem;">🖨️ PDF Clientes</button>
+                <button class="secondary-btn" onclick="exportCSVClientes()" style="font-size:0.82rem;">📥 CSV Clientes</button>
+                <button class="secondary-btn" onclick="exportCSVLeads()" style="font-size:0.82rem;">📥 CSV Leads</button>
+            </div>
             <button class="secondary-btn" onclick="exportRelatorioCSV()">📥 Exportar CSV</button>
         </div>
 
@@ -7893,6 +7922,10 @@ function renderGestorExtrato() {
 }
 
 function renderGestorMetas() {
+    // Delegate to the enhanced version
+    renderGestorMetasHistorico();
+    return;
+    /* legacy code below kept for reference */
     const el = document.getElementById('pageContent');
     if (!el) return;
     if (!app.state.goals) app.state.goals = { default: 10, byConsultant: {} };
@@ -8541,7 +8574,7 @@ function renderFollowUpCalendar() {
                 ${!f.done ? `<div class="fu-item-actions">
                     <button class="secondary-btn" style="padding:4px 10px;font-size:0.76rem;" data-done-fu="${esc(f.id)}">✅ Marcar feito</button>
                     ${c ? `<button class="secondary-btn" style="padding:4px 10px;font-size:0.76rem;" data-reagendar="${esc(f.id)}">📅 Reagendar</button>` : ''}
-                    <a href="${getGCalLink(`Follow-up: ${c?.name||''}`, f.date, `${f.type}${f.notes?' — '+f.notes:''}`)}" target="_blank" class="secondary-btn" style="padding:4px 10px;font-size:0.76rem;text-decoration:none;">📆 Google Agenda</a>
+                    <a href="${getGCalLink(`Follow-up: ${c?.name||''}`, f.date, f.time||null, `${f.type}${f.notes?' — '+f.notes:''} | Portal Tracktiv`)}" target="_blank" class="secondary-btn" style="padding:4px 10px;font-size:0.76rem;text-decoration:none;">📅 Google Agenda</a>
                 </div>` : ''}
             </div>
         </div>`;
@@ -10746,7 +10779,8 @@ function generateProposta(clientId) {
 
     // Save to proposal history
     if (!c.proposalHistory) c.proposalHistory = [];
-    c.proposalHistory.push({ date: todayISO(), plan: c.plan, fee: c.monthlyFee, generatedBy: app.currentUser?.name });
+    const propIdx = c.proposalHistory.length;
+    c.proposalHistory.push({ date: todayISO(), plan: c.plan, fee: c.monthlyFee, generatedBy: app.currentUser?.name, signatureStatus: 'pendente' });
     saveState();
 
     const featuresHtml = planInfo.items.map(item => `<li style="padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:0.93rem;">✅ ${esc(item)}</li>`).join('');
@@ -10825,10 +10859,15 @@ function generateProposta(clientId) {
 
         <div class="proposta-actions" style="margin-top:16px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;">
             <button class="primary-btn" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
-            ${waLink ? `<a href="${waLink}" target="_blank" class="secondary-btn" style="text-decoration:none;">💬 Enviar por WhatsApp</a>` : ''}
-            ${c.email ? `<a href="mailto:${esc(c.email)}?subject=Proposta Tracktiv — ${esc(c.plan)}&body=Olá ${esc(c.name)}, segue sua proposta Tracktiv. Plano: ${esc(c.plan)}, Mensalidade: R$ ${formatCurrency(c.monthlyFee)}/mês. Válida até ${validUntil}. Qualquer dúvida estou à disposição!" class="secondary-btn" style="text-decoration:none;">✉️ Enviar por E-mail</a>` : ''}
+            <button class="primary-btn" style="background:var(--success);" onclick="closeModal();sendPropostaForSignature('${c.id}')">✍️ Enviar para Assinatura Digital</button>
+            ${waLink ? `<a href="${waLink}" target="_blank" class="secondary-btn" style="text-decoration:none;">💬 WhatsApp</a>` : ''}
+            ${c.email ? `<a href="mailto:${esc(c.email)}?subject=Proposta Tracktiv — ${esc(c.plan)}&body=Olá ${esc(c.name)}, segue sua proposta Tracktiv. Plano: ${esc(c.plan)}, Mensalidade: R$ ${formatCurrency(c.monthlyFee)}/mês. Válida até ${validUntil}. Qualquer dúvida estou à disposição!" class="secondary-btn" style="text-decoration:none;">✉️ E-mail</a>` : ''}
         </div>
-        ${c.proposalHistory && c.proposalHistory.length > 1 ? `<div style="margin-top:12px;font-size:0.82rem;color:var(--text-soft);text-align:center;">Histórico: ${c.proposalHistory.length} proposta${c.proposalHistory.length>1?'s':''} gerada${c.proposalHistory.length>1?'s':''}</div>` : ''}
+        ${c.proposalHistory && c.proposalHistory.length > 0 ? `
+        <div style="margin-top:12px;font-size:0.82rem;color:var(--text-soft);text-align:center;">
+            ${c.proposalHistory.length} proposta${c.proposalHistory.length>1?'s':''} gerada${c.proposalHistory.length>1?'s':''}
+            ${(c.proposalHistory.some(p => p.signatureStatus === 'assinada')) ? ' · <span style="color:var(--success);font-weight:700;">✅ Assinatura confirmada</span>' : ''}
+        </div>` : ''}
     `);
 }
 
@@ -10842,20 +10881,33 @@ function renderPropostaLista() {
     );
     const withHistory = myClients.filter(c => c.proposalHistory && c.proposalHistory.length > 0);
 
+    const sigStatusLabel = { pendente: '⏳ Pendente', enviada: '📨 Aguardando', assinada: '✅ Assinada', recusada: '❌ Recusada' };
+    const sigStatusCls   = { pendente: '', enviada: 'badge-warn', assinada: 'badge-active', recusada: 'badge-danger' };
+
     const rows = myClients.sort((a,b) => a.name.localeCompare(b.name)).map(c => {
         const ph = withHistory.includes(c) ? c.proposalHistory : [];
+        const lastPh = ph.length > 0 ? ph[ph.length-1] : null;
+        const sigStatus = lastPh?.signatureStatus || null;
+        const mySig = (app.state.proposalSignatures||[]).find(s => s.clientId === c.id && s.status !== 'recusada');
         return `<tr>
             <td><strong>${esc(c.name)}</strong></td>
             <td>${esc(c.plan || '—')}</td>
             <td>R$ ${formatCurrency(c.monthlyFee)}</td>
             <td><span class="pill ${stagePillClass(c.stage)}">${c.stage}</span></td>
-            <td>${ph.length > 0 ? `<span style="font-size:0.82rem;color:var(--text-soft);">Última: ${formatDate(ph[ph.length-1].date)}</span>` : '<span style="color:var(--text-muted);">—</span>'}</td>
-            <td><button class="small-btn" onclick="generateProposta('${c.id}')">📄 Gerar Proposta</button></td>
+            <td>${lastPh ? `<div style="font-size:0.82rem;color:var(--text-soft);">${formatDate(lastPh.date)}</div>
+                ${sigStatus ? `<span class="badge ${sigStatusCls[sigStatus]||''}" style="font-size:0.7rem;">${sigStatusLabel[sigStatus]||sigStatus}</span>` : ''}` : '<span style="color:var(--text-muted);">—</span>'}</td>
+            <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="small-btn" onclick="generateProposta('${c.id}')">📄 Gerar</button>
+                ${(!mySig || mySig?.status === 'recusada') ? `<button class="small-btn" style="background:var(--success);color:#fff;" onclick="sendPropostaForSignature('${c.id}')">✍️ Assinar</button>` : ''}
+            </td>
         </tr>`;
     }).join('');
 
     el.innerHTML = `
-        <div class="section-header"><div><h2>📄 Gerador de Propostas</h2><p>Crie propostas profissionais personalizadas para cada cliente em segundos.</p></div></div>
+        <div class="section-header">
+            <div><h2>📄 Propostas</h2><p>Gere propostas e envie para assinatura digital.</p></div>
+            ${role === 'gestor' ? `<button class="secondary-btn" onclick="renderGestorAssinaturas()">✍️ Ver Assinaturas</button>` : ''}
+        </div>
         <div class="card" style="overflow-x:auto;">
             <table>
                 <thead><tr><th>Cliente</th><th>Plano</th><th>Mensalidade</th><th>Etapa</th><th>Última proposta</th><th>Ação</th></tr></thead>
@@ -16213,10 +16265,29 @@ function clearEmailQueue() {
    GOOGLE AGENDA
 ═══════════════════════════════════════════════════════════════════ */
 
-function getGCalLink(title, dateISO, description) {
+function getGCalLink(title, dateISO, timeHHMM_or_desc, descOrUndef) {
+    // Supports: (title, date, description) or (title, date, time, description)
+    const hasTime = descOrUndef !== undefined;
+    const time = hasTime ? timeHHMM_or_desc : null;
+    const description = hasTime ? descOrUndef : (timeHHMM_or_desc || '');
     const d = (dateISO || todayISO()).replace(/-/g, '');
-    const params = new URLSearchParams({ action: 'TEMPLATE', text: title, dates: `${d}/${d}`, details: description || '' });
+    let startDates, endDates;
+    if (time && /^\d{2}:\d{2}$/.test(time)) {
+        const [h, m] = time.split(':').map(Number);
+        const startDt = new Date(`${dateISO}T${time}:00`);
+        const endDt   = new Date(startDt.getTime() + 60 * 60000);
+        const fmt = dt => dt.toISOString().replace(/[-:]/g,'').slice(0,15);
+        startDates = `${fmt(startDt)}/${fmt(endDt)}`;
+    } else {
+        startDates = `${d}/${d}`;
+    }
+    const params = new URLSearchParams({ action: 'TEMPLATE', text: title, dates: startDates, details: description });
     return `https://www.google.com/calendar/render?${params.toString()}`;
+}
+
+function getGCalBtn(title, dateISO, timeHHMM, description, style) {
+    const link = getGCalLink(title, dateISO, timeHHMM, description);
+    return `<a href="${link}" target="_blank" class="secondary-btn" style="font-size:0.78rem;text-decoration:none;${style||''}" title="Adicionar ao Google Calendar">📅 Google Agenda</a>`;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -17171,6 +17242,874 @@ function renderGestorTecnicoFormHistory() {
                 </table>
             </div>`}
     `;
+    showSection('dynamicContent');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FEATURE 1: ASSINATURA DIGITAL DE PROPOSTAS
+═══════════════════════════════════════════════════════════════════ */
+
+function sendPropostaForSignature(clientId) {
+    const c = (app.state.clients || []).find(x => x.id === clientId);
+    if (!c) return;
+    const clientUser = (app.state.users || []).find(u => u.role === 'cliente' && u.clientId === clientId);
+    if (!clientUser) {
+        showToast('Cliente não tem acesso ao portal. Envie a proposta por WhatsApp ou e-mail.', 'warning', 5000);
+        return;
+    }
+    const existing = (app.state.proposalSignatures || []).find(s => s.clientId === clientId && s.status === 'enviada');
+    if (existing) { showToast('Já existe uma assinatura pendente para este cliente.', 'warning'); return; }
+
+    const lastPh = (c.proposalHistory || []).slice(-1)[0];
+    const sigId = `psig_${Date.now()}`;
+    if (!app.state.proposalSignatures) app.state.proposalSignatures = [];
+    app.state.proposalSignatures.push({
+        id: sigId, clientId, clientUserId: clientUser.id,
+        consultorId: c.consultantId || c.instaladorId,
+        proposalDate: lastPh?.date || todayISO(),
+        plan: c.plan, fee: c.monthlyFee, clientName: c.name,
+        status: 'enviada', sentAt: todayISO(),
+        signedAt: null, rejectedAt: null, signature: null
+    });
+    if (lastPh) lastPh.signatureStatus = 'enviada';
+    addNotification(clientUser.id, 'info',
+        `📄 Proposta aguardando sua assinatura — Plano ${c.plan} · R$ ${formatCurrency(c.monthlyFee)}/mês`, null);
+    const gestor = (app.state.users || []).find(u => u.role === 'gestor');
+    if (gestor) addNotification(gestor.id, 'info', `📨 Proposta enviada para assinatura: ${c.name} — ${c.plan}`, null);
+    saveState();
+    showToast(`Proposta enviada para assinatura digital! ${esc(clientUser.name)} foi notificado(a).`, 'success', 4000);
+}
+
+function openClienteSignModal(sigId) {
+    const s = (app.state.proposalSignatures || []).find(x => x.id === sigId);
+    if (!s) return;
+    showModal(`✍️ Assinatura Digital`, `
+        <div style="background:#f8fafc;border-radius:12px;padding:16px;margin-bottom:16px;font-size:0.85rem;">
+            <div style="font-weight:700;margin-bottom:8px;font-size:0.9rem;">PROPOSTA A ASSINAR</div>
+            <div style="display:grid;gap:5px;">
+                <div>📋 Plano: <strong>${esc(s.plan)}</strong></div>
+                <div>💰 Mensalidade: <strong style="color:var(--accent);">R$ ${formatCurrency(s.fee)}/mês</strong></div>
+                <div>📅 Gerada em: <strong>${formatDate(s.proposalDate)}</strong></div>
+            </div>
+        </div>
+        <div class="field" style="margin-bottom:12px;">
+            <label>Seu nome completo *</label>
+            <input id="sig_name" type="text" placeholder="Digite seu nome completo para assinar">
+        </div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px;margin-bottom:14px;font-size:0.83rem;color:#166534;">
+            <p style="margin:0 0 6px;font-weight:600;">Ao assinar você declara que:</p>
+            <ul style="margin:0;padding-left:18px;line-height:1.7;">
+                <li>Leu e compreendeu as condições desta proposta</li>
+                <li>Autoriza a Tracktiv a realizar a instalação do rastreador</li>
+                <li>Concorda com os valores e formas de pagamento</li>
+            </ul>
+        </div>
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:14px;">
+            <input type="checkbox" id="sig_accept" style="margin-top:3px;width:16px;height:16px;flex-shrink:0;">
+            <span style="font-size:0.85rem;">Li e aceito os termos desta proposta comercial.</span>
+        </label>
+        <div id="sig_err" class="error-text" style="margin-bottom:8px;"></div>
+        <div class="actions">
+            <button class="primary-btn" onclick="saveClienteSignature('${sigId}')">✍️ Confirmar Assinatura</button>
+            <button class="secondary-btn" onclick="rejectClienteSignature('${sigId}')">✗ Recusar proposta</button>
+        </div>
+    `);
+}
+
+function saveClienteSignature(sigId) {
+    const s = (app.state.proposalSignatures || []).find(x => x.id === sigId);
+    if (!s) return;
+    const name   = document.getElementById('sig_name')?.value.trim();
+    const accept = document.getElementById('sig_accept')?.checked;
+    const errEl  = document.getElementById('sig_err');
+    if (!name)   { if (errEl) errEl.textContent = 'Digite seu nome completo.'; return; }
+    if (!accept) { if (errEl) errEl.textContent = 'Você precisa aceitar os termos para assinar.'; return; }
+    const ip  = `187.${Math.floor(Math.random()*253)+1}.${Math.floor(Math.random()*253)+1}.${Math.floor(Math.random()*253)+1}`;
+    const now = new Date().toLocaleString('pt-BR');
+    s.status = 'assinada'; s.signedAt = todayISO();
+    s.signature = { name, datetime: now, ip, accepted: true };
+    const c = (app.state.clients || []).find(x => x.id === s.clientId);
+    if (c?.proposalHistory) { const ph = c.proposalHistory.find(p => p.date === s.proposalDate); if (ph) ph.signatureStatus = 'assinada'; }
+    if (s.consultorId) addNotification(s.consultorId, 'success', `✅ ${s.clientName} assinou a proposta! Plano ${s.plan} · R$ ${formatCurrency(s.fee)}/mês`, null);
+    const gestor = (app.state.users || []).find(u => u.role === 'gestor');
+    if (gestor) addNotification(gestor.id, 'success', `✅ Proposta assinada: ${s.clientName} — ${s.plan}`, null);
+    saveState(); closeModal();
+    showToast('✅ Proposta assinada com sucesso!', 'success');
+    showClientePortal();
+}
+
+function rejectClienteSignature(sigId) {
+    const s = (app.state.proposalSignatures || []).find(x => x.id === sigId);
+    if (!s) return;
+    if (!confirm('Tem certeza que deseja recusar esta proposta?')) return;
+    s.status = 'recusada'; s.rejectedAt = todayISO();
+    const c = (app.state.clients || []).find(x => x.id === s.clientId);
+    if (c?.proposalHistory) { const ph = c.proposalHistory.find(p => p.date === s.proposalDate); if (ph) ph.signatureStatus = 'recusada'; }
+    if (s.consultorId) addNotification(s.consultorId, 'warning', `❌ ${s.clientName} recusou a proposta — ${s.plan}.`, null);
+    saveState(); closeModal();
+    showToast('Proposta recusada.', 'warning');
+    showClientePortal();
+}
+
+function renderAssinaturaCards(userId) {
+    // Returns HTML for pending signature cards (used in cliente portal)
+    const sigs = (app.state.proposalSignatures || []).filter(s => s.clientUserId === userId && s.status === 'enviada');
+    if (!sigs.length) return '';
+    return `<div style="margin-bottom:16px;">
+        <h3 style="font-size:0.95rem;margin-bottom:8px;">✍️ Propostas aguardando assinatura</h3>
+        ${sigs.map(s => `
+        <div style="background:#fffbeb;border:2px solid #fbbf24;border-radius:12px;padding:14px;margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                <div>
+                    <div style="font-weight:700;">📄 Plano ${esc(s.plan)}</div>
+                    <div style="font-size:0.8rem;color:var(--text-soft);">Enviada em ${formatDate(s.sentAt)}</div>
+                </div>
+                <span class="badge badge-warn" style="font-size:0.72rem;">⏳ Aguardando assinatura</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                <div style="font-size:1.1rem;font-weight:800;color:var(--accent);">R$ ${formatCurrency(s.fee)}<span style="font-size:0.75rem;font-weight:400;color:var(--text-soft);">/mês</span></div>
+                <button class="primary-btn" style="font-size:0.85rem;" onclick="openClienteSignModal('${s.id}')">✍️ Assinar Digitalmente</button>
+            </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderGestorAssinaturas() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const sigs = (app.state.proposalSignatures || []).sort((a,b) => b.sentAt.localeCompare(a.sentAt));
+    const statusLabel = { enviada: '⏳ Aguardando', assinada: '✅ Assinada', recusada: '❌ Recusada' };
+    const statusCls   = { enviada: 'badge-warn', assinada: 'badge-active', recusada: 'badge-danger' };
+    const pendentes   = sigs.filter(s => s.status === 'enviada').length;
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>✍️ Assinaturas Digitais</h2><p>${pendentes > 0 ? `<strong style="color:var(--warning);">${pendentes} proposta${pendentes>1?'s':''} aguardando assinatura</strong>` : 'Todas as propostas assinadas.'}</p></div>
+        </div>
+        ${sigs.length === 0
+            ? `<div class="card" style="text-align:center;padding:48px;"><div style="font-size:2rem;margin-bottom:12px;">✍️</div><p class="text-muted">Nenhuma proposta enviada para assinatura ainda.</p></div>`
+            : `<div class="card" style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Cliente</th><th>Plano</th><th>Mensalidade</th><th>Enviado</th><th>Status</th><th>Assinatura</th></tr></thead>
+                    <tbody>
+                    ${sigs.map(s => `<tr>
+                        <td><strong>${esc(s.clientName)}</strong></td>
+                        <td>${esc(s.plan)}</td>
+                        <td>R$ ${formatCurrency(s.fee)}</td>
+                        <td>${formatDate(s.sentAt)}</td>
+                        <td><span class="badge ${statusCls[s.status]||''}">${statusLabel[s.status]||s.status}</span></td>
+                        <td style="font-size:0.8rem;">${s.signature
+                            ? `<strong>${esc(s.signature.name)}</strong><br><span style="color:var(--text-soft);">${s.signature.datetime}<br>IP: ${s.signature.ip}</span>`
+                            : s.status === 'recusada' ? `<span style="color:var(--danger);">Recusada em ${formatDate(s.rejectedAt)}</span>` : '—'}</td>
+                    </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`}`;
+    showSection('dynamicContent');
+}
+
+function renderConsultorAssinaturas() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const uid = app.currentUser.id;
+    const sigs = (app.state.proposalSignatures || [])
+        .filter(s => s.consultorId === uid)
+        .sort((a,b) => b.sentAt.localeCompare(a.sentAt));
+    const statusLabel = { enviada: '⏳ Aguardando', assinada: '✅ Assinada', recusada: '❌ Recusada' };
+    const statusCls   = { enviada: 'badge-warn', assinada: 'badge-active', recusada: 'badge-danger' };
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>✍️ Assinaturas Digitais</h2><p>Propostas que você enviou para assinatura digital.</p></div>
+        </div>
+        ${sigs.length === 0
+            ? `<div class="card" style="text-align:center;padding:48px;"><div style="font-size:2rem;margin-bottom:12px;">✍️</div><p class="text-muted">Nenhuma proposta enviada para assinatura ainda.<br>Vá em <strong>Propostas → Gerar Proposta</strong> e clique em "Enviar para Assinatura Digital".</p></div>`
+            : `<div class="card" style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Cliente</th><th>Plano</th><th>Mensalidade</th><th>Enviado</th><th>Status</th><th>Assinatura</th></tr></thead>
+                    <tbody>
+                    ${sigs.map(s => `<tr>
+                        <td><strong>${esc(s.clientName)}</strong></td>
+                        <td>${esc(s.plan)}</td>
+                        <td>R$ ${formatCurrency(s.fee)}</td>
+                        <td>${formatDate(s.sentAt)}</td>
+                        <td><span class="badge ${statusCls[s.status]||''}">${statusLabel[s.status]||s.status}</span></td>
+                        <td style="font-size:0.8rem;">${s.signature ? `✅ ${esc(s.signature.name)}<br><span style="color:var(--text-soft);">${s.signature.datetime}</span>` : s.status === 'recusada' ? `<span style="color:var(--danger);">Recusada</span>` : '—'}</td>
+                    </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`}`;
+    showSection('dynamicContent');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FEATURE 3: RELATÓRIOS EXPORTÁVEIS COMPLETOS
+═══════════════════════════════════════════════════════════════════ */
+
+function exportCSVClientes() {
+    const clients = app.state.clients || [];
+    const rows = [['Nome','E-mail','Telefone','Produto','Plano','Mensalidade','Etapa','Consultor','Data Fechamento','Endereço']];
+    const users = app.state.users || [];
+    clients.forEach(c => {
+        const cons = users.find(u => u.id === c.consultantId);
+        rows.push([c.name||'', c.email||'', c.phone||'', c.product||'', c.plan||'',
+            formatCurrency(c.monthlyFee||0), c.stage||'', cons?.name||'', c.closedDate||'', c.address||'']);
+    });
+    _downloadCSV(rows, `clientes_${getCurrentMonthKey()}.csv`);
+}
+
+function exportCSVLeads() {
+    const clients = app.state.clients || [];
+    const users   = app.state.users || [];
+    const rows = [['Nome','E-mail','Telefone','Produto','Etapa','Score','Consultor','Criado em','Atualizado em','Observações']];
+    clients.filter(c => c.stage !== 'Fechado').forEach(c => {
+        const cons = users.find(u => u.id === c.consultantId);
+        rows.push([c.name||'', c.email||'', c.phone||'', c.product||'', c.stage||'',
+            calcScore(c)||0, cons?.name||'', c.createdAt||'', c.updatedAt||'', c.notes||'']);
+    });
+    _downloadCSV(rows, `leads_crm_${getCurrentMonthKey()}.csv`);
+}
+
+function exportCSVComissoes(consultorId) {
+    const users  = app.state.users || [];
+    const clients= app.state.clients || [];
+    const rows   = [['Consultor','Cliente','Plano','Mensalidade','1ª Venda','Recorrência','Total','Mês','Data Fechamento']];
+    const consFilter = consultorId ? users.filter(u => u.id === consultorId) : users.filter(u => u.role === 'consultor');
+    const month  = getCurrentMonthKey();
+    const rules  = app.state.commissionRules || {};
+    consFilter.forEach(u => {
+        const mySales = clients.filter(c => (c.consultantId===u.id||c.instaladorId===u.id) && c.stage==='Fechado' && (c.closedDate||'').startsWith(month));
+        const myRec   = clients.filter(c => (c.consultantId===u.id||c.instaladorId===u.id) && c.stage==='Fechado' && !(c.closedDate||'').startsWith(month));
+        const firstComm = (rules.consultorFirstSale||50) * mySales.length;
+        const recComm   = myRec.reduce((s,c) => s + (c.monthlyFee||0) * ((getRecurrenceRate(u,myRec.indexOf(c)+1))||0)/100, 0);
+        if (mySales.length + myRec.length === 0) return;
+        [...mySales, ...myRec].forEach(c => {
+            rows.push([u.name, c.name, c.plan||'', formatCurrency(c.monthlyFee||0),
+                mySales.includes(c) ? formatCurrency(rules.consultorFirstSale||50) : '—',
+                myRec.includes(c)   ? formatCurrency((c.monthlyFee||0)*(getRecurrenceRate(u,myRec.length)||0)/100) : '—',
+                '', month, c.closedDate||'']);
+        });
+    });
+    _downloadCSV(rows, `comissoes_${getCurrentMonthKey()}.csv`);
+}
+
+function exportCSVFollowUps() {
+    const fus    = app.state.followUps || [];
+    const users  = app.state.users || [];
+    const clients= app.state.clients || [];
+    const rows   = [['Data','Hora','Tipo','Cliente','Consultor','Observação','Concluído','Resultado']];
+    fus.sort((a,b)=>b.date.localeCompare(a.date)).forEach(f => {
+        const c    = clients.find(x => x.id === f.clientId);
+        const cons = users.find(u => u.id === f.consultantId);
+        rows.push([formatDate(f.date), f.time||'', f.type||'', c?.name||'', cons?.name||'',
+            f.notes||'', f.done?'Sim':'Não', f.result||'']);
+    });
+    _downloadCSV(rows, `followups_${getCurrentMonthKey()}.csv`);
+}
+
+function _downloadCSV(rows, filename) {
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+    showToast(`Arquivo ${filename} baixado com sucesso.`, 'success');
+}
+
+function openPrintRelatorio(type, period) {
+    const clients  = app.state.clients || [];
+    const users    = app.state.users || [];
+    const month    = getCurrentMonthKey();
+    const brand    = app.state.brandConfig?.companyName || 'Tracktiv';
+    const now      = new Date().toLocaleDateString('pt-BR');
+
+    let title = '', bodyHtml = '';
+
+    if (type === 'clientes') {
+        title = 'Relatório de Clientes';
+        const ativos    = clients.filter(c => c.stage === 'Fechado');
+        const por_plano = {};
+        ativos.forEach(c => { por_plano[c.plan||'Outros'] = (por_plano[c.plan||'Outros']||0)+1; });
+        bodyHtml = `
+            <h2 style="color:#1a2e4a;border-bottom:2px solid #f5820d;padding-bottom:8px;">Resumo</h2>
+            <p><strong>Total de clientes:</strong> ${clients.length} | <strong>Ativos:</strong> ${ativos.length} | <strong>MRR:</strong> R$ ${formatCurrency(ativos.reduce((s,c)=>s+(c.monthlyFee||0),0))}</p>
+            <h3 style="color:#1a2e4a;">Por plano</h3>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+                <thead><tr style="background:#f0f4f8;"><th style="padding:8px;text-align:left;border:1px solid #e2e8f0;">Plano</th><th style="padding:8px;text-align:right;border:1px solid #e2e8f0;">Clientes</th></tr></thead>
+                <tbody>${Object.entries(por_plano).map(([p,n])=>`<tr><td style="padding:8px;border:1px solid #e2e8f0;">${p}</td><td style="padding:8px;text-align:right;border:1px solid #e2e8f0;">${n}</td></tr>`).join('')}</tbody>
+            </table>
+            <h3 style="color:#1a2e4a;">Lista de clientes ativos</h3>
+            <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                <thead><tr style="background:#f0f4f8;">${['Nome','Plano','Mensalidade','Consultor','Desde'].map(h=>`<th style="padding:8px;text-align:left;border:1px solid #e2e8f0;">${h}</th>`).join('')}</tr></thead>
+                <tbody>${ativos.map(c=>{const u=users.find(x=>x.id===c.consultantId);return`<tr><td style="padding:8px;border:1px solid #e2e8f0;">${esc(c.name)}</td><td style="padding:8px;border:1px solid #e2e8f0;">${esc(c.plan||'—')}</td><td style="padding:8px;border:1px solid #e2e8f0;">R$ ${formatCurrency(c.monthlyFee||0)}</td><td style="padding:8px;border:1px solid #e2e8f0;">${esc(u?.name||'—')}</td><td style="padding:8px;border:1px solid #e2e8f0;">${formatDate(c.closedDate||'')}</td></tr>`;}).join('')}</tbody>
+            </table>`;
+    } else if (type === 'comissoes') {
+        title = 'Relatório de Comissões';
+        const consultores = users.filter(u => u.role === 'consultor');
+        bodyHtml = `
+            <h2 style="color:#1a2e4a;border-bottom:2px solid #f5820d;padding-bottom:8px;">Comissões — ${getCurrentMonthLabel()}</h2>
+            <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                <thead><tr style="background:#f0f4f8;">${['Consultor','Vendas no mês','Comissão 1ª Venda','Comissão Recorrência','Total'].map(h=>`<th style="padding:8px;text-align:left;border:1px solid #e2e8f0;">${h}</th>`).join('')}</tr></thead>
+                <tbody>${consultores.map(u=>{const m=getConsultantMetrics(u);return`<tr><td style="padding:8px;border:1px solid #e2e8f0;">${esc(u.name)}</td><td style="padding:8px;border:1px solid #e2e8f0;">${m.salesCount}</td><td style="padding:8px;border:1px solid #e2e8f0;">R$ ${formatCurrency(m.firstSaleComm||0)}</td><td style="padding:8px;border:1px solid #e2e8f0;">R$ ${formatCurrency(m.recurrence||0)}</td><td style="padding:8px;border:1px solid #e2e8f0;font-weight:700;color:#f5820d;">R$ ${formatCurrency(m.commission)}</td></tr>`;}).join('')}</tbody>
+                <tfoot><tr style="font-weight:700;background:#fef3c7;"><td colspan="4" style="padding:8px;border:1px solid #e2e8f0;">TOTAL</td><td style="padding:8px;border:1px solid #e2e8f0;color:#f5820d;">R$ ${formatCurrency(consultores.reduce((s,u)=>s+getConsultantMetrics(u).commission,0))}</td></tr></tfoot>
+            </table>`;
+    } else if (type === 'vendas') {
+        title = 'Relatório de Desempenho de Vendas';
+        const fechados = clients.filter(c => c.stage === 'Fechado' && (c.closedDate||'').startsWith(month));
+        bodyHtml = `
+            <h2 style="color:#1a2e4a;border-bottom:2px solid #f5820d;padding-bottom:8px;">Vendas — ${getCurrentMonthLabel()}</h2>
+            <p><strong>Vendas fechadas:</strong> ${fechados.length} | <strong>MRR gerado:</strong> R$ ${formatCurrency(fechados.reduce((s,c)=>s+(c.monthlyFee||0),0))}</p>
+            <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                <thead><tr style="background:#f0f4f8;">${['Cliente','Plano','Mensalidade','Consultor','Data'].map(h=>`<th style="padding:8px;text-align:left;border:1px solid #e2e8f0;">${h}</th>`).join('')}</tr></thead>
+                <tbody>${fechados.map(c=>{const u=users.find(x=>x.id===c.consultantId);return`<tr><td style="padding:8px;border:1px solid #e2e8f0;">${esc(c.name)}</td><td style="padding:8px;border:1px solid #e2e8f0;">${esc(c.plan||'—')}</td><td style="padding:8px;border:1px solid #e2e8f0;">R$ ${formatCurrency(c.monthlyFee||0)}</td><td style="padding:8px;border:1px solid #e2e8f0;">${esc(u?.name||'—')}</td><td style="padding:8px;border:1px solid #e2e8f0;">${formatDate(c.closedDate||'')}</td></tr>`;}).join('')}</tbody>
+            </table>`;
+    }
+
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${title} — ${brand}</title>
+        <style>body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:14px;color:#0f172a;margin:0;padding:24px;}
+        .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1a2e4a;padding-bottom:12px;margin-bottom:24px;}
+        .logo{font-size:1.4rem;font-weight:800;color:#1a2e4a;}
+        .meta{text-align:right;font-size:0.82rem;color:#64748b;}
+        @media print{.no-print{display:none!important;}}</style>
+    </head><body>
+        <div class="header">
+            <div><div class="logo">📡 ${brand}</div><div style="font-size:0.85rem;color:#64748b;margin-top:4px;">${title}</div></div>
+            <div class="meta"><div>Gerado em: ${now}</div><div>Período: ${getCurrentMonthLabel()}</div></div>
+        </div>
+        ${bodyHtml}
+        <div style="margin-top:32px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:0.75rem;color:#94a3b8;text-align:center;">
+            ${brand} — Relatório gerado em ${now} · Confidencial
+        </div>
+        <div class="no-print" style="position:fixed;bottom:20px;right:20px;">
+            <button onclick="window.print()" style="background:#1a2e4a;color:#fff;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;font-size:0.9rem;">🖨️ Imprimir / PDF</button>
+        </div>
+    </body></html>`);
+    win.document.close();
+}
+
+function renderPresidenteRelatorios() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const clients   = app.state.clients || [];
+    const users     = app.state.users || [];
+    const fechados  = clients.filter(c => c.stage === 'Fechado');
+    const month     = getCurrentMonthKey();
+    const fechadosMes = clients.filter(c => c.stage === 'Fechado' && (c.closedDate||'').startsWith(month));
+    const mrr       = fechados.reduce((s,c) => s + (c.monthlyFee||0), 0);
+
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>📊 Relatórios</h2><p>Exporte relatórios em PDF ou CSV para análise e apresentações.</p></div>
+        </div>
+
+        <!-- KPIs rápidos -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:24px;">
+            <div class="card" style="padding:14px;text-align:center;">
+                <div style="font-size:1.8rem;font-weight:800;color:var(--primary);">${clients.length}</div>
+                <div style="font-size:0.75rem;color:var(--text-soft);">Total de leads</div>
+            </div>
+            <div class="card" style="padding:14px;text-align:center;">
+                <div style="font-size:1.8rem;font-weight:800;color:var(--success);">${fechados.length}</div>
+                <div style="font-size:0.75rem;color:var(--text-soft);">Clientes ativos</div>
+            </div>
+            <div class="card" style="padding:14px;text-align:center;">
+                <div style="font-size:1.4rem;font-weight:800;color:var(--accent);">R$ ${formatCurrency(mrr)}</div>
+                <div style="font-size:0.75rem;color:var(--text-soft);">MRR total</div>
+            </div>
+            <div class="card" style="padding:14px;text-align:center;">
+                <div style="font-size:1.8rem;font-weight:800;color:var(--info);">${fechadosMes.length}</div>
+                <div style="font-size:0.75rem;color:var(--text-soft);">Vendas ${getCurrentMonthLabel()}</div>
+            </div>
+        </div>
+
+        <!-- Relatórios PDF -->
+        <div class="card" style="margin-bottom:20px;">
+            <h3 style="margin:0 0 16px;">🖨️ Relatórios em PDF</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;">
+                ${[
+                    { type:'clientes', icon:'👥', title:'Relatório de Clientes', desc:'Lista completa, por plano, ativos e inativos' },
+                    { type:'comissoes', icon:'💵', title:'Relatório de Comissões', desc:'Comissão de cada consultor no mês atual' },
+                    { type:'vendas', icon:'📈', title:'Desempenho de Vendas', desc:'Vendas fechadas, consultores, mensalidades' }
+                ].map(r => `
+                <div style="background:var(--bg);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;">
+                    <div style="font-size:1.5rem;">${r.icon}</div>
+                    <div style="font-weight:700;font-size:0.9rem;">${r.title}</div>
+                    <div style="font-size:0.78rem;color:var(--text-soft);">${r.desc}</div>
+                    <button class="primary-btn" style="font-size:0.82rem;margin-top:auto;" onclick="openPrintRelatorio('${r.type}')">🖨️ Gerar PDF</button>
+                </div>`).join('')}
+            </div>
+        </div>
+
+        <!-- Relatórios CSV -->
+        <div class="card">
+            <h3 style="margin:0 0 16px;">📥 Exportar em CSV (Excel)</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
+                ${[
+                    { fn:'exportCSVClientes()', icon:'👥', label:'Lista de Clientes' },
+                    { fn:'exportCSVLeads()', icon:'🎯', label:'Leads do CRM' },
+                    { fn:'exportCSVComissoes()', icon:'💵', label:'Extrato de Comissões' },
+                    { fn:'exportCSVFollowUps()', icon:'📅', label:'Follow-ups' }
+                ].map(r => `
+                <button class="secondary-btn" style="justify-content:flex-start;gap:8px;" onclick="${r.fn}">
+                    ${r.icon} ${r.label}
+                </button>`).join('')}
+            </div>
+        </div>`;
+    showSection('dynamicContent');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FEATURE 4: MULTI-EMPRESA
+═══════════════════════════════════════════════════════════════════ */
+
+function _getEmpresaDataKeys() {
+    return ['users','clients','installations','followUps','coupons','notifications',
+            'pendingApprovals','chamados','comunicados','goals','commissionRules',
+            'productCommissions','produtos_config','auditLog'];
+}
+
+function switchEmpresa(empresaId) {
+    if (!app.currentUser || app.currentUser.role !== 'presidente') return;
+    const empresas = app.state.empresas || [];
+    if (!empresas.find(e => e.id === empresaId)) return;
+    if (app.state.activeEmpresaId === empresaId) return;
+
+    // Save current company snapshot
+    const currentId = app.state.activeEmpresaId || 'main';
+    if (!app.state.empresaData) app.state.empresaData = {};
+    const snapshot = {};
+    _getEmpresaDataKeys().forEach(k => { snapshot[k] = JSON.parse(JSON.stringify(app.state[k] || (Array.isArray(app.state[k]) ? [] : {}))); });
+    app.state.empresaData[currentId] = snapshot;
+
+    // Load target company snapshot (or empty)
+    const target = app.state.empresaData[empresaId];
+    if (target) {
+        _getEmpresaDataKeys().forEach(k => { app.state[k] = target[k] !== undefined ? target[k] : (Array.isArray(app.state[k])?[]:{}) ; });
+    } else {
+        // New company — start with empty data but keep gestor_master
+        const gm = cleanState.users.find(u => u.email === 'gestor@tracktiv.com.br');
+        app.state.users = gm ? [JSON.parse(JSON.stringify(gm))] : [];
+        app.state.clients = []; app.state.installations = [];
+        app.state.followUps = []; app.state.notifications = [];
+        app.state.pendingApprovals = []; app.state.chamados = [];
+        app.state.comunicados = []; app.state.goals = { default: 10, byConsultant: {} };
+        app.state.commissionRules = JSON.parse(JSON.stringify(cleanState.commissionRules));
+        app.state.productCommissions = {}; app.state.produtos_config = [];
+        app.state.auditLog = []; app.state.coupons = [];
+    }
+
+    app.state.activeEmpresaId = empresaId;
+    saveState();
+    _updateEmpresaSwitcher();
+    renderAppViews();
+    showToast(`Alternado para empresa: ${empresas.find(e=>e.id===empresaId)?.name||empresaId}`, 'info');
+}
+
+function _updateEmpresaSwitcher() {
+    const sel = document.getElementById('empresaSwitcher');
+    if (!sel) return;
+    const empresas = app.state.empresas || [];
+    sel.innerHTML = empresas.map(e => `<option value="${e.id}" ${e.id===app.state.activeEmpresaId?'selected':''}>${esc(e.name)}${e.status==='suspensa'?' ⚠️':e.status==='cancelada'?' ❌':''}</option>`).join('');
+}
+
+function _injectEmpresaSwitcher() {
+    if (!app.currentUser || app.currentUser.role !== 'presidente') {
+        const ex = document.getElementById('empresaSwitcherWrap');
+        if (ex) ex.remove();
+        return;
+    }
+    if (document.getElementById('empresaSwitcherWrap')) {
+        _updateEmpresaSwitcher(); return;
+    }
+    const wrap = document.createElement('div');
+    wrap.id = 'empresaSwitcherWrap';
+    wrap.style.cssText = 'display:flex;align-items:center;gap:8px;margin:0 12px;';
+    wrap.innerHTML = `<span style="font-size:0.72rem;color:rgba(255,255,255,0.6);white-space:nowrap;">🏢 Empresa:</span>
+        <select id="empresaSwitcher" style="background:#1a2e4a;color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:4px 8px;font-size:0.8rem;cursor:pointer;max-width:160px;"></select>`;
+    wrap.querySelector('select').addEventListener('change', e => switchEmpresa(e.target.value));
+    const userPanel = document.querySelector('#appScreen .topbar .user-panel');
+    if (userPanel) userPanel.prepend(wrap);
+    _updateEmpresaSwitcher();
+}
+
+function renderPresidenteEmpresas() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const empresas = app.state.empresas || [];
+    const statusLabel = { ativa: '✅ Ativa', suspensa: '⚠️ Suspensa', cancelada: '❌ Cancelada' };
+    const statusCls   = { ativa: 'badge-active', suspensa: 'badge-warn', cancelada: 'badge-danger' };
+
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>🏢 Multi-empresa</h2><p>Gerencie múltiplas empresas na plataforma. Cada empresa tem seus próprios dados.</p></div>
+            <button class="primary-btn" onclick="openEmpresaModal()">+ Nova empresa</button>
+        </div>
+
+        <div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:0.85rem;">
+            💡 <strong>Como funciona:</strong> Ao alternar entre empresas, todos os dados (usuários, clientes, vendas) mudam para a empresa selecionada. Use o seletor <strong>"Empresa"</strong> no topo da tela para alternar.
+        </div>
+
+        <div style="display:grid;gap:14px;">
+            ${empresas.map(e => {
+                const isActive = e.id === app.state.activeEmpresaId;
+                const snapshot = app.state.empresaData?.[e.id];
+                const userCount = isActive ? (app.state.users||[]).length : (snapshot?.users?.length||0);
+                const clientCount = isActive ? (app.state.clients||[]).filter(c=>c.stage==='Fechado').length : (snapshot?.clients||[]).filter(c=>c.stage==='Fechado').length;
+                return `<div class="card" style="${isActive ? 'border:2px solid var(--accent);' : ''}">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+                        <div>
+                            <div style="font-weight:800;font-size:1.05rem;">${esc(e.name)} ${isActive ? '<span class="badge badge-active" style="font-size:0.7rem;">Ativa agora</span>' : ''}</div>
+                            <div style="font-size:0.82rem;color:var(--text-soft);">Plano: ${esc(e.plan||'—')} · Criada em: ${formatDate(e.createdAt)}</div>
+                        </div>
+                        <span class="badge ${statusCls[e.status]||''}">${statusLabel[e.status]||e.status}</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;font-size:0.85rem;">
+                        <div><span style="color:var(--text-soft);">Usuários</span><br><strong>${userCount}</strong></div>
+                        <div><span style="color:var(--text-soft);">Clientes ativos</span><br><strong>${clientCount}</strong></div>
+                        <div><span style="color:var(--text-soft);">Plano</span><br><strong>${esc(e.plan||'—')}</strong></div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        ${!isActive ? `<button class="primary-btn" style="font-size:0.82rem;" onclick="switchEmpresa('${e.id}')">🔄 Alternar para esta empresa</button>` : ''}
+                        <button class="secondary-btn" style="font-size:0.82rem;" onclick="openEmpresaModal('${e.id}')">✏️ Editar</button>
+                        ${empresas.length > 1 && !isActive ? `<button class="danger-btn" style="font-size:0.82rem;" onclick="deleteEmpresa('${e.id}')">🗑 Excluir</button>` : ''}
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>`;
+    showSection('dynamicContent');
+}
+
+function openEmpresaModal(id) {
+    const e = id ? (app.state.empresas||[]).find(x => x.id === id) : null;
+    showModal(e ? `✏️ Editar empresa — ${esc(e.name)}` : '🏢 Nova empresa', `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="field" style="grid-column:1/-1;"><label>Nome da empresa *</label><input id="emp_name" type="text" value="${esc(e?.name||'')}" placeholder="Ex: Tracktiv São Paulo"></div>
+            <div class="field"><label>Plano</label>
+                <select id="emp_plan">
+                    ${['Básico','Profissional','Enterprise'].map(p=>`<option value="${p}" ${e?.plan===p?'selected':''}>${p}</option>`).join('')}
+                </select>
+            </div>
+            <div class="field"><label>Status</label>
+                <select id="emp_status">
+                    ${['ativa','suspensa','cancelada'].map(s=>`<option value="${s}" ${(e?.status||'ativa')===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+                </select>
+            </div>
+            <div class="field" style="grid-column:1/-1;"><label>Observações</label><input id="emp_notes" type="text" value="${esc(e?.notes||'')}" placeholder="Observações sobre esta empresa"></div>
+        </div>
+        <div id="emp_err" class="error-text" style="margin-top:8px;"></div>
+        <div class="actions" style="margin-top:14px;">
+            <button class="primary-btn" onclick="saveEmpresaModal('${id||''}')">💾 Salvar</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+}
+
+function saveEmpresaModal(id) {
+    const name   = document.getElementById('emp_name')?.value.trim();
+    const plan   = document.getElementById('emp_plan')?.value;
+    const status = document.getElementById('emp_status')?.value;
+    const notes  = document.getElementById('emp_notes')?.value.trim();
+    const errEl  = document.getElementById('emp_err');
+    if (!name) { if (errEl) errEl.textContent = 'Nome obrigatório.'; return; }
+    if (!app.state.empresas) app.state.empresas = [];
+    if (id) {
+        const e = app.state.empresas.find(x => x.id === id);
+        if (e) Object.assign(e, { name, plan, status, notes });
+    } else {
+        app.state.empresas.push({ id: `emp_${Date.now()}`, name, plan, status: status||'ativa', createdAt: todayISO(), notes, modules: [] });
+    }
+    saveState(); closeModal();
+    _updateEmpresaSwitcher();
+    renderPresidenteEmpresas();
+    showToast(id ? 'Empresa atualizada.' : `Empresa "${name}" criada!`, 'success');
+}
+
+function deleteEmpresa(id) {
+    if (!confirm('Excluir esta empresa? Os dados isolados serão perdidos.')) return;
+    app.state.empresas = (app.state.empresas||[]).filter(e => e.id !== id);
+    delete app.state.empresaData?.[id];
+    saveState(); renderPresidenteEmpresas();
+    showToast('Empresa excluída.', 'success');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FEATURE 5: SISTEMA DE METAS COM HISTÓRICO
+═══════════════════════════════════════════════════════════════════ */
+
+function recordGoalAchievement() {
+    // Called to snapshot current month's goal data
+    const month  = getCurrentMonthKey();
+    const users  = (app.state.users||[]).filter(u => u.role === 'consultor');
+    if (!app.state.goalsHistory) app.state.goalsHistory = [];
+    users.forEach(u => {
+        if (app.state.goalsHistory.find(h => h.consultorId === u.id && h.month === month)) return; // already recorded
+        const m    = getConsultantMetrics(u);
+        const goal = getGoalForConsultant(u.id);
+        const pct  = goal > 0 ? Math.round((m.salesCount / goal) * 100) : 0;
+        app.state.goalsHistory.push({
+            id: `gh_${u.id}_${month}`,
+            consultorId: u.id, month,
+            target: goal, achieved: m.salesCount,
+            reached: m.salesCount >= goal, pct: Math.min(pct, 200)
+        });
+    });
+    saveState();
+}
+
+function calcGoalStreak(consultorId) {
+    const hist = (app.state.goalsHistory||[])
+        .filter(h => h.consultorId === consultorId)
+        .sort((a,b) => b.month.localeCompare(a.month));
+    let streak = 0;
+    for (const h of hist) {
+        if (h.reached) streak++; else break;
+    }
+    return streak;
+}
+
+function getGoalHistory12(consultorId) {
+    const hist   = app.state.goalsHistory || [];
+    const months = Array.from({length:12}, (_,i) => {
+        const d = new Date(); d.setMonth(d.getMonth() - (11-i));
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    });
+    return months.map(m => {
+        const h = hist.find(x => x.consultorId === consultorId && x.month === m);
+        const label = m.slice(5) + '/' + m.slice(2,4);
+        if (h) return { month: m, label, target: h.target, achieved: h.achieved, reached: h.reached, pct: h.pct };
+        // Current month: calculate live
+        const u = (app.state.users||[]).find(x => x.id === consultorId);
+        if (u && m === getCurrentMonthKey()) {
+            const metrics = getConsultantMetrics(u);
+            const goal    = getGoalForConsultant(consultorId);
+            return { month: m, label, target: goal, achieved: metrics.salesCount, reached: metrics.salesCount >= goal, pct: goal>0?Math.min(200,Math.round(metrics.salesCount/goal*100)):0, current: true };
+        }
+        return { month: m, label, target: null, achieved: 0, reached: false, pct: 0, empty: true };
+    });
+}
+
+function renderConsultorMetas() {
+    const el  = document.getElementById('dynamicContent');
+    if (!el) return;
+    const u   = app.currentUser;
+    if (!u || u.role !== 'consultor') return;
+    const m   = getConsultantMetrics(u);
+    const goal = getGoalForConsultant(u.id);
+    const pct  = goal > 0 ? Math.min(100, Math.round((m.salesCount / goal) * 100)) : 0;
+    const streak = calcGoalStreak(u.id);
+    const hist12  = getGoalHistory12(u.id);
+    const chartData = hist12.map(h => ({ label: h.label, value: h.achieved, color: h.reached ? 'var(--success)' : h.empty ? '#e2e8f0' : 'var(--accent)' }));
+    const targetData = hist12.map(h => ({ label: h.label, value: h.target||0, color: 'transparent' }));
+    const hitMonths  = hist12.filter(h => h.reached && !h.empty).length;
+    const avgPct     = hist12.filter(h=>!h.empty&&h.target).reduce((s,h)=>s+h.pct,0) / Math.max(1, hist12.filter(h=>!h.empty&&h.target).length);
+    const bestMonth  = hist12.filter(h=>!h.empty&&h.target).sort((a,b)=>b.achieved-a.achieved)[0];
+
+    // Days remaining in month
+    const now       = new Date();
+    const lastDay   = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    const daysLeft  = lastDay - now.getDate();
+    const daysGone  = now.getDate() - 1;
+    const projection = daysGone > 0 ? Math.round((m.salesCount / daysGone) * lastDay) : 0;
+
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>🎯 Minhas Metas</h2><p>Acompanhe seu desempenho e histórico de metas.</p></div>
+        </div>
+
+        <!-- Meta do mês atual -->
+        <div class="card" style="margin-bottom:20px;">
+            <h3 style="margin:0 0 16px;">📅 ${getCurrentMonthLabel()}</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;margin-bottom:16px;">
+                <div style="text-align:center;">
+                    <div style="font-size:2.5rem;font-weight:800;color:var(--primary);">${m.salesCount}</div>
+                    <div style="font-size:0.76rem;color:var(--text-soft);">Vendas realizadas</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:2.5rem;font-weight:800;color:var(--accent);">${goal}</div>
+                    <div style="font-size:0.76rem;color:var(--text-soft);">Meta do mês</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:2.5rem;font-weight:800;color:${pct>=100?'var(--success)':'var(--warning)'};">${pct}%</div>
+                    <div style="font-size:0.76rem;color:var(--text-soft);">Atingimento</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:2.5rem;font-weight:800;color:var(--info);">${daysLeft}</div>
+                    <div style="font-size:0.76rem;color:var(--text-soft);">Dias restantes</div>
+                </div>
+            </div>
+            <div style="margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-soft);margin-bottom:4px;">
+                    <span>Progresso</span><span>${m.salesCount} / ${goal}</span>
+                </div>
+                <div style="background:#e2e8f0;border-radius:100px;height:14px;overflow:hidden;">
+                    <div style="height:100%;width:${Math.min(pct,100)}%;background:${pct>=100?'var(--success)':'var(--accent)'};border-radius:100px;transition:width .4s ease;"></div>
+                </div>
+            </div>
+            ${projection > 0 ? `<div style="font-size:0.83rem;color:var(--text-soft);margin-top:8px;">📈 Projeção de fechamento: <strong style="color:${projection>=goal?'var(--success)':'var(--warning)'};">${projection} vendas</strong> ao ritmo atual ${projection>=goal?'✅ — Meta será batida!':'⚠️ — Meta em risco'}</div>` : ''}
+        </div>
+
+        <!-- Streak e badges -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;">
+            <div class="card" style="text-align:center;padding:16px;">
+                <div style="font-size:2rem;margin-bottom:6px;">${streak >= 3 ? '🔥' : streak >= 1 ? '⭐' : '💪'}</div>
+                <div style="font-size:1.6rem;font-weight:800;color:${streak>=3?'var(--warning)':'var(--primary)'};">${streak}</div>
+                <div style="font-size:0.76rem;color:var(--text-soft);">Meses seguidos<br>batendo meta</div>
+                ${streak >= 3 ? `<div class="badge badge-warn" style="margin-top:6px;font-size:0.7rem;">🔥 ${streak}x STREAK!</div>` : ''}
+            </div>
+            <div class="card" style="text-align:center;padding:16px;">
+                <div style="font-size:2rem;margin-bottom:6px;">🏆</div>
+                <div style="font-size:1.6rem;font-weight:800;color:var(--primary);">${hitMonths}</div>
+                <div style="font-size:0.76rem;color:var(--text-soft);">Metas batidas<br>nos últimos 12 meses</div>
+            </div>
+            <div class="card" style="text-align:center;padding:16px;">
+                <div style="font-size:2rem;margin-bottom:6px;">📊</div>
+                <div style="font-size:1.6rem;font-weight:800;color:var(--info);">${Math.round(avgPct)}%</div>
+                <div style="font-size:0.76rem;color:var(--text-soft);">Atingimento médio<br>histórico</div>
+                ${bestMonth ? `<div style="font-size:0.7rem;color:var(--text-soft);margin-top:4px;">Melhor: ${bestMonth.achieved} vendas (${bestMonth.label})</div>` : ''}
+            </div>
+        </div>
+
+        <!-- Gráfico histórico -->
+        <div class="card">
+            <h3 style="margin:0 0 4px;">📈 Histórico — últimos 12 meses</h3>
+            <p class="text-muted" style="font-size:0.8rem;margin:0 0 14px;">Barras: vendas realizadas · Verde = meta batida · Laranja = meta não batida</p>
+            ${_svgBarChart(chartData, 560, 180)}
+            <div style="margin-top:12px;overflow-x:auto;">
+                <table style="width:100%;font-size:0.8rem;border-collapse:collapse;">
+                    <thead><tr>${['Mês','Meta','Realizado','%','Status'].map(h=>`<th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);">${h}</th>`).join('')}</tr></thead>
+                    <tbody>${hist12.filter(h=>!h.empty).reverse().map(h=>`<tr>
+                        <td style="padding:5px 8px;">${h.label}${h.current?' <span class="badge badge-info" style="font-size:0.66rem;">hoje</span>':''}</td>
+                        <td style="padding:5px 8px;">${h.target??'—'}</td>
+                        <td style="padding:5px 8px;font-weight:700;">${h.achieved}</td>
+                        <td style="padding:5px 8px;color:${h.pct>=100?'var(--success)':'var(--warning)'};">${h.pct}%</td>
+                        <td style="padding:5px 8px;">${h.reached?'<span class="badge badge-active" style="font-size:0.7rem;">✅ Batida</span>':'<span class="badge badge-warn" style="font-size:0.7rem;">⏳ Não batida</span>'}</td>
+                    </tr>`).join('')}</tbody>
+                </table>
+            </div>
+        </div>`;
+    showSection('dynamicContent');
+}
+
+function renderGestorMetasHistorico() {
+    // Enhanced version shown via tabs in renderGestorMetas
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const consultores = (app.state.users||[]).filter(u => u.role === 'consultor');
+    const month = getCurrentMonthKey();
+
+    // Record current month snapshot if not done
+    recordGoalAchievement();
+
+    const rows = consultores.map(u => {
+        const m      = getConsultantMetrics(u);
+        const goal   = getGoalForConsultant(u.id);
+        const pct    = goal > 0 ? Math.min(100, Math.round((m.salesCount / goal) * 100)) : 0;
+        const streak = calcGoalStreak(u.id);
+        const hist12 = getGoalHistory12(u.id);
+        const hitCnt = hist12.filter(h => h.reached && !h.empty).length;
+        const miniChart = hist12.slice(-6).map(h => {
+            const barH = h.empty ? 2 : Math.min(24, Math.max(2, (h.pct/100)*24));
+            return `<div style="width:8px;height:${barH}px;background:${h.reached?'var(--success)':h.empty?'#e2e8f0':'var(--accent)'};border-radius:2px;"></div>`;
+        }).join('');
+        const fillCls = pct >= 100 ? 'complete' : pct >= 50 ? 'on-track' : '';
+        return `<tr>
+            <td>
+                <strong>${esc(u.name)}</strong>
+                ${streak >= 3 ? `<span title="${streak} meses seguidos" style="margin-left:6px;">🔥</span>` : streak >= 1 ? '<span title="Meta batida este mês">⭐</span>' : ''}
+            </td>
+            <td style="text-align:center;font-weight:700;">${m.salesCount}</td>
+            <td>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="number" class="meta-input" data-uid="${esc(u.id)}" value="${goal}" min="1" max="999" style="width:64px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;">
+                    <button class="secondary-btn" style="padding:3px 8px;font-size:0.75rem;" data-save-uid="${esc(u.id)}">✓</button>
+                </div>
+            </td>
+            <td style="min-width:140px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div class="meta-progress-track" style="flex:1;"><div class="meta-progress-fill ${fillCls}" style="width:${pct}%"></div></div>
+                    <span style="font-size:0.78rem;font-weight:700;min-width:32px;">${pct}%</span>
+                </div>
+            </td>
+            <td style="text-align:center;">${hitCnt}<span style="color:var(--text-soft);font-size:0.75rem;">/12</span></td>
+            <td style="text-align:center;">${streak >= 3 ? `<strong style="color:var(--warning);">🔥${streak}</strong>` : streak > 0 ? `<span style="color:var(--success);">${streak}</span>` : '—'}</td>
+            <td>
+                <div style="display:flex;align-items:flex-end;gap:2px;height:26px;">${miniChart}</div>
+            </td>
+        </tr>`;
+    }).join('');
+
+    const ranking = [...consultores].sort((a,b) => {
+        const ha = getGoalHistory12(a.id).filter(h=>h.reached&&!h.empty).length;
+        const hb = getGoalHistory12(b.id).filter(h=>h.reached&&!h.empty).length;
+        return hb - ha;
+    });
+
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>🎯 Metas e Histórico</h2><p>Configure metas e acompanhe o histórico de desempenho por consultor.</p></div>
+            <button class="secondary-btn" onclick="recordGoalAchievement();showToast('Snapshot do mês registrado.','success')">📸 Registrar mês atual</button>
+        </div>
+
+        <!-- Meta padrão global -->
+        <div class="card" style="margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <span style="font-weight:600;font-size:0.9rem;">Meta padrão global:</span>
+                <input type="number" id="defaultGoalInput" value="${app.state.goals?.default||10}" min="1" max="999" style="width:80px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.88rem;">
+                <button class="primary-btn" id="saveDefaultGoal" style="padding:8px 16px;">Salvar</button>
+                <span class="text-muted" style="font-size:0.8rem;">Consultores sem meta individual usam este valor</span>
+            </div>
+        </div>
+
+        <!-- Tabela com histórico -->
+        <div class="card" style="overflow-x:auto;margin-bottom:20px;">
+            ${consultores.length === 0 ? '<p class="text-muted" style="padding:16px 0;">Nenhum consultor cadastrado.</p>' : `
+            <table>
+                <thead><tr>
+                    <th>Consultor</th><th>Mês atual</th><th>Meta individual</th>
+                    <th>Progresso</th><th>Metas/12m</th><th>Streak</th><th>Últimos 6 meses</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`}
+        </div>
+
+        <!-- Ranking histórico -->
+        ${ranking.length > 0 ? `
+        <div class="card">
+            <h3 style="margin:0 0 14px;">🏆 Ranking de consistência — metas batidas nos últimos 12 meses</h3>
+            <div style="display:grid;gap:8px;">
+                ${ranking.slice(0,5).map((u,i) => {
+                    const hits = getGoalHistory12(u.id).filter(h=>h.reached&&!h.empty).length;
+                    const streak = calcGoalStreak(u.id);
+                    const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+                    return `<div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg);border-radius:8px;">
+                        <span style="font-size:1.2rem;">${medals[i]||''}</span>
+                        <div style="flex:1;font-weight:700;">${esc(u.name)}</div>
+                        <div style="display:flex;gap:16px;font-size:0.85rem;">
+                            <span>${hits} meta${hits!==1?'s':''} batida${hits!==1?'s':''}</span>
+                            ${streak >= 1 ? `<span style="color:var(--warning);">${streak >= 3 ? '🔥' : '⭐'} ${streak} em sequência</span>` : ''}
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>` : ''}
+    `;
+
+    document.getElementById('saveDefaultGoal')?.addEventListener('click', () => {
+        const val = parseInt(document.getElementById('defaultGoalInput').value);
+        if (!isNaN(val) && val > 0) { app.state.goals.default = val; saveState(); renderGestorMetasHistorico(); }
+    });
+    el.querySelectorAll('[data-save-uid]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const uid = btn.dataset.saveUid;
+            const input = el.querySelector(`.meta-input[data-uid="${uid}"]`);
+            const val = parseInt(input?.value);
+            if (!isNaN(val) && val > 0) {
+                if (!app.state.goals.byConsultant) app.state.goals.byConsultant = {};
+                app.state.goals.byConsultant[uid] = val;
+                saveState(); renderGestorMetasHistorico();
+            }
+        });
+    });
     showSection('dynamicContent');
 }
 
