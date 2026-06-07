@@ -4174,7 +4174,8 @@ function renderInstaladorExtrato() {
 function showApp() {
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('appScreen').classList.remove('hidden');
-    document.getElementById('userNameLabel').textContent = app.currentUser.name;
+    const _unlEl = document.getElementById('userNameLabel');
+    if (_unlEl) _unlEl.textContent = app.currentUser.name;
     updateEmailQueueBadge();
     const _isIndicador = app.currentUser.role === 'instalador' && app.currentUser.partnerType === 'indicador';
     document.getElementById('pageRoleLabel').textContent =
@@ -4242,10 +4243,10 @@ function showApp() {
         if (mg) mg.classList.remove('sidebar-open');
     };
 
-    // Avatar no user-chip
+    // Avatar no user-chip (mantém o id para sobreviver a re-renders)
     const uname = app.currentUser.name;
     const chip = document.getElementById('userNameLabel')?.closest('.user-chip');
-    if (chip) chip.innerHTML = `<div class="user-avatar">${esc(uname.charAt(0).toUpperCase())}</div><strong>${esc(uname)}</strong>`;
+    if (chip) chip.innerHTML = `<div class="user-avatar">${esc(uname.charAt(0).toUpperCase())}</div><strong id="userNameLabel">${esc(uname)}</strong>`;
 
     renderAppViews();
 
@@ -5286,7 +5287,8 @@ function exitDemoMode() {
 function showClientePortal() {
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('clientePortal').classList.remove('hidden');
-    document.getElementById('clienteNameLabel').textContent = app.currentUser.name;
+    const _cnlEl = document.getElementById('clienteNameLabel');
+    if (_cnlEl) _cnlEl.textContent = app.currentUser.name;
     app.clienteNavState = { depth: 0, group: null, subGroup: null, subItem: null };
     renderClienteNav();
     renderClienteBreadcrumb();
@@ -5319,10 +5321,10 @@ function showClientePortal() {
         if (mg) mg.classList.remove('sidebar-open');
     };
 
-    // Avatar no user-chip do cliente
+    // Avatar no user-chip do cliente (mantém o id para sobreviver a re-renders)
     const uname = app.currentUser.name;
     const chip = document.getElementById('clienteNameLabel')?.closest('.user-chip');
-    if (chip) chip.innerHTML = `<div class="user-avatar">${esc(uname.charAt(0).toUpperCase())}</div><strong>${esc(uname)}</strong>`;
+    if (chip) chip.innerHTML = `<div class="user-avatar">${esc(uname.charAt(0).toUpperCase())}</div><strong id="clienteNameLabel">${esc(uname)}</strong>`;
 }
 
 /* ═══ PORTAL DO CLIENTE — NAVEGAÇÃO HIERÁRQUICA ═══ */
