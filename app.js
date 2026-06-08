@@ -99,7 +99,8 @@ const NAV_TREE = {
             { id: 'g_cfg_planos',   label: 'Planos e Preços',       icon: '💎', render: () => renderGestorPlanos() },
             { id: 'g_cfg_forms',    label: 'Editor de Formulários', icon: '🔧', render: () => renderGestorFormEditor() },
             { id: 'g_cfg_modulos',  label: 'Módulos',               icon: '🧩', render: () => renderModulosConfig('gestor') },
-            { id: 'g_cfg_trein',    label: 'Criar Treinamento',     icon: '🎓', render: () => renderGestorCustomTrainings() }
+            { id: 'g_cfg_trein',    label: 'Criar Treinamento',     icon: '🎓', render: () => renderGestorCustomTrainings() },
+            { id: 'g_cfg_armazenamento', label: 'Armazenamento',    icon: '💾', render: () => renderGestorArmazenamento() }
         ]},
         { id: 'g_produtos_cfg', label: 'Produtos',        icon: '📦', render: () => renderGestorProdutos() },
         { id: 'g_mural',       label: 'Mural e Desafios',icon: '🏆', render: () => renderGestorMuralConfig() },
@@ -179,6 +180,7 @@ const NAV_TREE = {
         { id: 't_link',       label: 'Meu Link',       icon: '🔗', render: () => renderMeuLinkTecnico() },
         { id: 't_formulario', label: 'Meus Formulários', icon: '📝', render: () => renderTecnicoFormLibrary() },
         { id: 't_respostas',  label: 'Respostas',      icon: '📥', render: () => renderTecnicoFormSubmissions() },
+        { id: 't_armazenamento', label: 'Armazenamento', icon: '💾', render: () => renderTecnicoArmazenamento() },
         { id: 't_mensagens',  label: 'Mensagens',      icon: '💬', action: () => openChatOverlay('gestor') }
     ]
 };
@@ -208,7 +210,8 @@ const NAV_TREE_PRESIDENTE = [
     { id: 'p_modulos',    label: 'Módulos',                  icon: '🧩', render: () => renderModulosConfig('presidente') },
     { id: 'p_whitelabel', label: 'White Label',              icon: '🎨', render: () => renderWhiteLabel() },
     { id: 'p_config',     label: 'Configurações',            icon: '⚙️', render: () => renderPresidenteConfig() },
-    { id: 'p_sim',        label: 'Simulador de Lucro',       icon: '🧮', render: () => renderPresidenteSimulador() }
+    { id: 'p_sim',           label: 'Simulador de Lucro',       icon: '🧮', render: () => renderPresidenteSimulador() },
+    { id: 'p_armazenamento', label: 'Armazenamento',            icon: '💾', render: () => renderPresidenteArmazenamento() }
 ];
 
 // NAV do Parceiro Executivo
@@ -221,6 +224,13 @@ NAV_TREE.executivo = [
 ];
 
 const stageOrder = ['Novo Lead', 'Contato Feito', 'Apresentação', 'Proposta', 'Fechado', 'Perdido'];
+
+const STORAGE_PLANS = [
+    { label: 'Básico — 1 GB',       bytes: 1073741824   },
+    { label: 'Profissional — 5 GB', bytes: 5368709120   },
+    { label: 'Enterprise — 20 GB',  bytes: 21474836480  },
+    { label: 'Ilimitado',           bytes: null          }
+];
 
 /* ── MÓDULOS CONFIGURÁVEIS ─────────────────────────────────────── */
 const MODULE_DEFINITIONS = [
@@ -2158,6 +2168,11 @@ function loadState() {
             if (!app.state.empresas)          app.state.empresas          = [{ id: 'main', name: app.state.brandConfig?.companyName || 'Tracktiv', plan: 'enterprise', status: 'ativa', createdAt: '2026-01-01', modules: [] }];
             if (!app.state.activeEmpresaId)   app.state.activeEmpresaId   = 'main';
             if (!app.state.empresaData)       app.state.empresaData       = {};
+            // Migração: armazenamento por empresa
+            (app.state.empresas || []).forEach(e => {
+                if (e.storageLimit       === undefined) e.storageLimit       = null;
+                if (e.storageTecnicoLimit === undefined) e.storageTecnicoLimit = null;
+            });
             // Migração: Qualificação, Link e Formulário do Técnico
             if (!app.state.tecnicoForms)         app.state.tecnicoForms         = {};
             if (!app.state.tecnicoSubmissions)   app.state.tecnicoSubmissions   = {};
@@ -2415,6 +2430,19 @@ function renderGestorStats() {
                     <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${(d.sales/maxSales*100).toFixed(0)}%"></div></div>
                 </div>`).join('')}`;
     document.getElementById('gestorStats').appendChild(chartCard);
+    // Storage alert
+    const _storInfo = getStoragePctAndLevel();
+    if (_storInfo.level) {
+        const _alertCard = document.createElement('div');
+        _alertCard.className = 'card';
+        _alertCard.style.cssText = `border-left:4px solid ${_storInfo.level==='critical'?'var(--danger)':'var(--warning)'};grid-column:1/-1;padding:14px 18px;`;
+        _alertCard.innerHTML = `<strong>${_storInfo.level==='critical'?'🔴 Armazenamento crítico ('+_storInfo.pct+'%)':'⚠️ Armazenamento em atenção ('+_storInfo.pct+'%)'}</strong>
+            <p style="margin:4px 0 0;font-size:0.85rem;">${_storInfo.level==='critical'
+                ? 'O espaço está quase esgotado. Novos uploads serão bloqueados em breve.'
+                : 'Mais de 80% do armazenamento foi utilizado.'
+            } <a href="#" onclick="renderGestorArmazenamento();return false;" style="color:var(--accent);">Ver detalhes →</a></p>`;
+        document.getElementById('gestorStats').appendChild(_alertCard);
+    }
     const rankingEl = document.getElementById('gestorRanking');
     if (rankingEl) {
         const ranked = buildRanking();
@@ -4040,6 +4068,13 @@ async function handlePhotoInstallSave(pendingInstId, pInst, durationSeconds) {
     const errEl  = document.getElementById('piError');
     errEl.textContent = '';
     if (!plate || !modelo || !local) { errEl.textContent = 'Preencha todos os campos obrigatórios.'; return; }
+    const _pvFile = document.getElementById('piPhotoVehicle').files[0];
+    const _peFile = document.getElementById('piPhotoEquip').files[0];
+    if (_pvFile || _peFile) {
+        const _estSize = ((_pvFile?.size || 0) + (_peFile?.size || 0)) * 1.37;
+        const _sc = checkStorageSpace(_estSize);
+        if (!_sc.ok) { errEl.textContent = _sc.message; return; }
+    }
     const toBase64 = file => new Promise(resolve => {
         if (!file) return resolve(null);
         const reader = new FileReader();
@@ -6216,6 +6251,10 @@ function openDocUploadModal(clienteUserId) {
         err.textContent = '';
         if (!name) { err.textContent = 'Nome do documento é obrigatório.'; return; }
         if (file && file.size > 1048576) { err.textContent = 'Arquivo muito grande. Máximo 1 MB.'; return; }
+        if (file) {
+            const _sc = checkStorageSpace(file.size);
+            if (!_sc.ok) { err.textContent = _sc.message; return; }
+        }
         const saveDoc = (data) => {
             if (!app.state.clientDocuments) app.state.clientDocuments = [];
             app.state.clientDocuments.push({
@@ -7276,6 +7315,8 @@ function submitClienteChecklistDoc(itemId) {
     const file = fileInput?.files?.[0];
     if (!file) { showToast('Selecione um arquivo para enviar.', 'warning'); return; }
     if (file.size > 2 * 1024 * 1024) { showToast('Arquivo muito grande. Tamanho máximo permitido: 2MB.', 'error'); return; }
+    const _scChk = checkStorageSpace(file.size);
+    if (!_scChk.ok) { showToast(_scChk.message, 'error'); return; }
     const items = (app.state.docChecklists || {})[u.id] || [];
     const item = items.find(i => i.id === itemId);
     if (!item) return;
@@ -9115,6 +9156,8 @@ function openTecnicoDocModal(clientId) {
         if (!name) { err.textContent = 'Nome do documento é obrigatório.'; return; }
         if (!file) { err.textContent = 'Selecione um arquivo para enviar.'; return; }
         if (file.size > 2097152) { err.textContent = 'Arquivo muito grande. Máximo 2 MB.'; return; }
+        const _scTec = checkStorageSpace(file.size);
+        if (!_scTec.ok) { err.textContent = _scTec.message; return; }
 
         const [category, subfolder] = folderVal.split('|');
         const reader = new FileReader();
@@ -17796,6 +17839,11 @@ function openEmpresaModal(id) {
                     ${['ativa','suspensa','cancelada'].map(s=>`<option value="${s}" ${(e?.status||'ativa')===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
                 </select>
             </div>
+            <div class="field"><label>Limite de Armazenamento</label>
+                <select id="emp_storage">
+                    ${STORAGE_PLANS.map(p=>`<option value="${p.bytes===null?'null':p.bytes}" ${(e?.storageLimit??null)===p.bytes?'selected':''}>${p.label}</option>`).join('')}
+                </select>
+            </div>
             <div class="field" style="grid-column:1/-1;"><label>Observações</label><input id="emp_notes" type="text" value="${esc(e?.notes||'')}" placeholder="Observações sobre esta empresa"></div>
         </div>
         <div id="emp_err" class="error-text" style="margin-top:8px;"></div>
@@ -17812,13 +17860,15 @@ function saveEmpresaModal(id) {
     const status = document.getElementById('emp_status')?.value;
     const notes  = document.getElementById('emp_notes')?.value.trim();
     const errEl  = document.getElementById('emp_err');
+    const storageRaw = document.getElementById('emp_storage')?.value;
+    const storageLimit = storageRaw === 'null' ? null : parseInt(storageRaw);
     if (!name) { if (errEl) errEl.textContent = 'Nome obrigatório.'; return; }
     if (!app.state.empresas) app.state.empresas = [];
     if (id) {
         const e = app.state.empresas.find(x => x.id === id);
-        if (e) Object.assign(e, { name, plan, status, notes });
+        if (e) Object.assign(e, { name, plan, status, notes, storageLimit });
     } else {
-        app.state.empresas.push({ id: `emp_${Date.now()}`, name, plan, status: status||'ativa', createdAt: todayISO(), notes, modules: [] });
+        app.state.empresas.push({ id: `emp_${Date.now()}`, name, plan, status: status||'ativa', createdAt: todayISO(), notes, storageLimit, storageTecnicoLimit: null, modules: [] });
     }
     saveState(); closeModal();
     _updateEmpresaSwitcher();
@@ -18113,6 +18163,396 @@ function renderGestorMetasHistorico() {
         });
     });
     showSection('dynamicContent');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   STORAGE MANAGEMENT SYSTEM
+═══════════════════════════════════════════════════════════════════ */
+
+function formatBytes(bytes) {
+    if (bytes === null || bytes === undefined) return 'Ilimitado';
+    if (bytes === 0) return '0 B';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
+    return (bytes / 1073741824).toFixed(2) + ' GB';
+}
+
+function calcStorageUsedFromData(docs, photos) {
+    let bytes = 0;
+    (docs || []).forEach(d => { bytes += d.size || 0; });
+    (photos || []).forEach(p => {
+        if (p.photoVehicle) bytes += Math.round(p.photoVehicle.length * 0.75);
+        if (p.photoEquip)   bytes += Math.round(p.photoEquip.length   * 0.75);
+    });
+    return bytes;
+}
+
+function calcStorageUsed() {
+    return calcStorageUsedFromData(app.state.clientDocuments, app.state.photoInstallations);
+}
+
+function getActiveEmpresa() {
+    const empresas = app.state.empresas || [];
+    const activeId = app.state.activeEmpresaId || 'main';
+    return empresas.find(e => e.id === activeId) || empresas[0] || null;
+}
+
+function getStorageLimit() {
+    const emp = getActiveEmpresa();
+    if (!emp) return null;
+    return emp.storageLimit !== undefined ? emp.storageLimit : null;
+}
+
+function getEffectiveStorageLimit() {
+    const emp = getActiveEmpresa();
+    if (!emp) return null;
+    const empLimit = emp.storageLimit !== undefined ? emp.storageLimit : null;
+    const tecLimit = emp.storageTecnicoLimit !== undefined ? emp.storageTecnicoLimit : null;
+    if (empLimit === null) return tecLimit;
+    if (tecLimit === null) return empLimit;
+    return Math.min(empLimit, tecLimit);
+}
+
+function checkStorageSpace(fileSize) {
+    const limit = getEffectiveStorageLimit();
+    if (limit === null) return { ok: true };
+    const used = calcStorageUsed();
+    const remaining = limit - used;
+    if (remaining < fileSize) {
+        return {
+            ok: false,
+            message: `Espaço insuficiente. Disponível: ${formatBytes(Math.max(0, remaining))}. Necessário: ${formatBytes(fileSize)}. Contate o gestor para aumentar o limite de armazenamento.`
+        };
+    }
+    return { ok: true };
+}
+
+function getStoragePctAndLevel() {
+    const limit = getEffectiveStorageLimit();
+    if (!limit) return { pct: 0, level: null };
+    const used = calcStorageUsed();
+    const pct  = Math.min(100, Math.round((used / limit) * 100));
+    const level = pct >= 95 ? 'critical' : pct >= 80 ? 'warning' : null;
+    return { pct, level };
+}
+
+function renderStorageBar(used, limit, opts) {
+    opts = opts || {};
+    if (!limit) {
+        return `<div style="font-size:0.88rem;color:var(--text-soft);">💾 ${opts.label||'Armazenamento'}: <strong>${formatBytes(used)}</strong> usados <span style="color:var(--success);">(sem limite)</span></div>`;
+    }
+    const pct   = Math.min(100, Math.round((used / limit) * 100));
+    const color = pct >= 95 ? 'var(--danger)' : pct >= 80 ? 'var(--warning)' : 'var(--success)';
+    return `
+        <div class="storage-bar-wrap${opts.compact ? ' compact' : ''}">
+            <div class="storage-bar-header">
+                <span>💾 ${opts.label || 'Armazenamento'}</span>
+                <span>${formatBytes(used)} de ${formatBytes(limit)} usados <strong>(${pct}%)</strong></span>
+            </div>
+            <div class="storage-bar-track">
+                <div class="storage-bar-fill" style="width:${pct}%;background:${color};"></div>
+            </div>
+            ${pct >= 95 ? `<div class="storage-alert critical">🔴 Armazenamento quase esgotado! Novos uploads serão bloqueados. Contate o presidente.</div>` :
+              pct >= 80 ? `<div class="storage-alert warning">⚠️ Mais de 80% do armazenamento utilizado. Considere aumentar o limite.</div>` : ''}
+        </div>`;
+}
+
+function renderPresidenteArmazenamento() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const empresas = app.state.empresas || [];
+    const activeId = app.state.activeEmpresaId || 'main';
+
+    const rows = empresas.map(e => {
+        let docs, photos;
+        if (e.id === activeId) {
+            docs   = app.state.clientDocuments    || [];
+            photos = app.state.photoInstallations || [];
+        } else {
+            const snap = (app.state.empresaData || {})[e.id] || {};
+            docs   = snap.clientDocuments    || [];
+            photos = snap.photoInstallations || [];
+        }
+        const used  = calcStorageUsedFromData(docs, photos);
+        const limit = e.storageLimit !== undefined ? e.storageLimit : null;
+        const pct   = limit ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+        const color = pct >= 95 ? 'var(--danger)' : pct >= 80 ? 'var(--warning)' : 'var(--success)';
+        const badge = pct >= 95
+            ? '<span class="badge badge-danger">Crítico</span>'
+            : pct >= 80 ? '<span class="badge badge-warn">Atenção</span>'
+            : '<span class="badge badge-active">Normal</span>';
+        const barHtml = limit
+            ? `<div style="display:flex;align-items:center;gap:8px;">
+                   <div class="storage-bar-track" style="height:8px;width:100px;flex-shrink:0;">
+                       <div class="storage-bar-fill" style="width:${pct}%;background:${color};"></div>
+                   </div>
+                   <small>${pct}%</small>
+               </div>`
+            : `<small style="color:var(--text-soft);">Ilimitado</small>`;
+        return `<tr>
+            <td><strong>${esc(e.name)}</strong>${e.id === activeId ? ' <span class="badge badge-active" style="font-size:0.7rem;">Ativa</span>' : ''}</td>
+            <td>${esc(e.plan || '—')}</td>
+            <td>${formatBytes(used)}</td>
+            <td>${limit ? formatBytes(limit) : 'Ilimitado'}</td>
+            <td>${barHtml}</td>
+            <td>${badge}</td>
+            <td><button class="small-btn" onclick="openEmpresaStorageModal('${e.id}')">✏️ Ajustar</button></td>
+        </tr>`;
+    }).join('');
+
+    const activeDocs   = app.state.clientDocuments    || [];
+    const activePhotos = app.state.photoInstallations || [];
+    const docBytes   = activeDocs.reduce((s, d) => s + (d.size || 0), 0);
+    const photoBytes = activePhotos.reduce((s, p) =>
+        s + (p.photoVehicle ? Math.round(p.photoVehicle.length * 0.75) : 0)
+          + (p.photoEquip   ? Math.round(p.photoEquip.length   * 0.75) : 0), 0);
+    const totalActive = docBytes + photoBytes;
+
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>💾 Armazenamento</h2><p>Gerencie o espaço de armazenamento de todas as empresas.</p></div>
+        </div>
+
+        <div class="card" style="overflow-x:auto;margin-bottom:20px;">
+            <h3 style="margin:0 0 16px;">📊 Uso por empresa</h3>
+            <table>
+                <thead><tr>
+                    <th>Empresa</th><th>Plano</th><th>Espaço usado</th><th>Limite</th><th>Ocupação</th><th>Status</th><th>Ação</th>
+                </tr></thead>
+                <tbody>${rows || '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Nenhuma empresa cadastrada.</td></tr>'}</tbody>
+            </table>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+            <div class="card">
+                <h3 style="margin:0 0 14px;">📁 Tipos de arquivo (empresa ativa)</h3>
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                    <div>
+                        <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:5px;">
+                            <span>📄 Documentos PDF/imagem</span><strong>${formatBytes(docBytes)}</strong>
+                        </div>
+                        <div class="storage-bar-track">
+                            <div class="storage-bar-fill" style="width:${totalActive>0?Math.round(docBytes/totalActive*100):0}%;background:var(--info);"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:5px;">
+                            <span>📷 Fotos de instalação</span><strong>${formatBytes(photoBytes)}</strong>
+                        </div>
+                        <div class="storage-bar-track">
+                            <div class="storage-bar-fill" style="width:${totalActive>0?Math.round(photoBytes/totalActive*100):0}%;background:var(--accent);"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h3 style="margin:0 0 14px;">💡 Planos disponíveis</h3>
+                <div style="display:flex;flex-direction:column;gap:8px;font-size:0.88rem;">
+                    ${STORAGE_PLANS.map(p => `
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:8px;">
+                            <span>${p.label}</span>
+                        </div>`).join('')}
+                </div>
+            </div>
+        </div>`;
+    showSection('dynamicContent');
+}
+
+function openEmpresaStorageModal(empresaId) {
+    if (!app.state.empresas) return;
+    const e = app.state.empresas.find(x => x.id === empresaId);
+    if (!e) return;
+    const currentLimit = e.storageLimit !== undefined ? e.storageLimit : null;
+    showModal(`💾 Limite de armazenamento — ${esc(e.name)}`, `
+        <p style="margin:0 0 16px;color:var(--text-soft);font-size:0.9rem;">Define o espaço máximo de armazenamento para esta empresa.</p>
+        <div class="field">
+            <label>Plano de armazenamento</label>
+            <select id="storage_plan_sel" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;">
+                ${STORAGE_PLANS.map(p => `<option value="${p.bytes === null ? 'null' : p.bytes}" ${currentLimit === p.bytes ? 'selected' : ''}>${p.label}</option>`).join('')}
+            </select>
+        </div>
+        <div id="stor_err" class="error-text" style="margin-top:8px;"></div>
+        <div class="actions" style="margin-top:16px;">
+            <button class="primary-btn" onclick="saveEmpresaStorageModal('${empresaId}')">💾 Salvar</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+}
+
+function saveEmpresaStorageModal(empresaId) {
+    const e = (app.state.empresas || []).find(x => x.id === empresaId);
+    if (!e) return;
+    const raw = document.getElementById('storage_plan_sel')?.value;
+    e.storageLimit = raw === 'null' ? null : parseInt(raw);
+    saveState();
+    closeModal();
+    renderPresidenteArmazenamento();
+    showToast(`Limite de armazenamento: ${formatBytes(e.storageLimit)}.`, 'success');
+}
+
+function renderGestorArmazenamento() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const emp    = getActiveEmpresa();
+    const limit  = getStorageLimit();
+    const used   = calcStorageUsed();
+    const docs   = app.state.clientDocuments    || [];
+    const photos = app.state.photoInstallations || [];
+    const docBytes   = docs.reduce((s, d) => s + (d.size || 0), 0);
+    const photoBytes = photos.reduce((s, p) =>
+        s + (p.photoVehicle ? Math.round(p.photoVehicle.length * 0.75) : 0)
+          + (p.photoEquip   ? Math.round(p.photoEquip.length   * 0.75) : 0), 0);
+    const pct    = limit ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>💾 Armazenamento</h2><p>Uso de espaço da empresa ${esc(emp?.name || '')}.</p></div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+            ${renderStorageBar(used, limit, { label: 'Armazenamento total' })}
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
+            <div class="card" style="text-align:center;">
+                <div style="font-size:1.8rem;font-weight:800;color:var(--accent);">${formatBytes(used)}</div>
+                <div style="color:var(--text-soft);font-size:0.85rem;margin-top:4px;">Espaço utilizado</div>
+            </div>
+            <div class="card" style="text-align:center;">
+                <div style="font-size:1.8rem;font-weight:800;color:var(--success);">${limit ? formatBytes(Math.max(0, limit - used)) : '∞'}</div>
+                <div style="color:var(--text-soft);font-size:0.85rem;margin-top:4px;">Espaço disponível</div>
+            </div>
+            <div class="card" style="text-align:center;">
+                <div style="font-size:1.8rem;font-weight:800;color:var(--info);">${limit ? formatBytes(limit) : 'Ilimitado'}</div>
+                <div style="color:var(--text-soft);font-size:0.85rem;margin-top:4px;">Limite configurado</div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+            <h3 style="margin:0 0 14px;">📁 Uso por tipo de arquivo</h3>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+                <div>
+                    <div style="display:flex;justify-content:space-between;font-size:0.88rem;margin-bottom:6px;">
+                        <span>📄 Documentos (${docs.length} arquivo${docs.length!==1?'s':''})</span>
+                        <strong>${formatBytes(docBytes)}</strong>
+                    </div>
+                    <div class="storage-bar-track">
+                        <div class="storage-bar-fill" style="width:${used>0?Math.round(docBytes/used*100):0}%;background:var(--info);"></div>
+                    </div>
+                </div>
+                <div>
+                    <div style="display:flex;justify-content:space-between;font-size:0.88rem;margin-bottom:6px;">
+                        <span>📷 Fotos de instalação (${photos.length} registro${photos.length!==1?'s':''})</span>
+                        <strong>${formatBytes(photoBytes)}</strong>
+                    </div>
+                    <div class="storage-bar-track">
+                        <div class="storage-bar-fill" style="width:${used>0?Math.round(photoBytes/used*100):0}%;background:var(--accent);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        ${pct >= 80 ? `
+        <div class="card" style="border-left:4px solid ${pct>=95?'var(--danger)':'var(--warning)'};padding:14px 16px;">
+            <strong>${pct>=95?'🔴 Armazenamento crítico':'⚠️ Armazenamento quase cheio'}</strong>
+            <p style="margin:6px 0 0;font-size:0.88rem;">${pct>=95
+                ? 'O espaço de armazenamento está quase esgotado. Novos uploads serão bloqueados. Entre em contato com o presidente para aumentar o limite.'
+                : 'Mais de 80% do armazenamento está sendo utilizado. Solicite aumento de limite ao presidente.'}</p>
+        </div>` : ''}
+    `;
+    showSection('dynamicContent');
+}
+
+function renderTecnicoArmazenamento() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const emp      = getActiveEmpresa();
+    const empLimit = getStorageLimit();
+    const tecLimit = emp?.storageTecnicoLimit !== undefined ? emp.storageTecnicoLimit : null;
+    const effLimit = getEffectiveStorageLimit();
+    const used     = calcStorageUsed();
+    const myPhotos = (app.state.photoInstallations || []).filter(p => p.instaladorId === app.currentUser.id);
+    const myPhotoBytes = myPhotos.reduce((s, p) =>
+        s + (p.photoVehicle ? Math.round(p.photoVehicle.length * 0.75) : 0)
+          + (p.photoEquip   ? Math.round(p.photoEquip.length   * 0.75) : 0), 0);
+
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>💾 Armazenamento</h2><p>Gerencie o espaço de armazenamento da empresa.</p></div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+            ${renderStorageBar(used, effLimit, { label: 'Espaço em uso' })}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
+            <div class="card">
+                <div style="font-size:0.8rem;color:var(--text-soft);margin-bottom:4px;">Limite definido pelo presidente</div>
+                <div style="font-weight:800;font-size:1.1rem;">${empLimit ? formatBytes(empLimit) : 'Ilimitado'}</div>
+            </div>
+            <div class="card">
+                <div style="font-size:0.8rem;color:var(--text-soft);margin-bottom:4px;">Limite operacional (seu ajuste)</div>
+                <div style="font-weight:800;font-size:1.1rem;">${tecLimit ? formatBytes(tecLimit) : empLimit ? 'Mesmo do presidente' : 'Ilimitado'}</div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+            <h3 style="margin:0 0 12px;">🔧 Ajustar limite operacional</h3>
+            <p style="font-size:0.85rem;color:var(--text-soft);margin:0 0 14px;">
+                Defina um limite operacional menor que o máximo do presidente.
+                Máximo permitido: <strong>${empLimit ? formatBytes(empLimit) : 'Ilimitado'}</strong>.
+            </p>
+            <div class="form-grid">
+                <div class="field">
+                    <label>Limite operacional</label>
+                    <select id="tecStorageSel" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;">
+                        <option value="null" ${!tecLimit ? 'selected' : ''}>Usar limite do presidente (${empLimit ? formatBytes(empLimit) : 'Ilimitado'})</option>
+                        ${STORAGE_PLANS.filter(p => p.bytes !== null && (!empLimit || p.bytes <= empLimit)).map(p =>
+                            `<option value="${p.bytes}" ${tecLimit === p.bytes ? 'selected' : ''}>${p.label}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+            </div>
+            <div id="tecStorErr" class="error-text" style="margin-top:8px;"></div>
+            <div class="actions" style="margin-top:12px;">
+                <button class="primary-btn" onclick="saveTecnicoStorageLimit()">💾 Salvar limite</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin:0 0 12px;">📷 Meu uso (fotos de instalação)</h3>
+            <div style="font-size:0.88rem;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;padding:8px 0;border-bottom:1px solid var(--border);">
+                    <span>Registros de instalação feitos por mim</span>
+                    <strong>${myPhotos.length}</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;">
+                    <span>Espaço ocupado pelas minhas fotos</span>
+                    <strong>${formatBytes(myPhotoBytes)}</strong>
+                </div>
+            </div>
+        </div>
+    `;
+    showSection('dynamicContent');
+}
+
+function saveTecnicoStorageLimit() {
+    const emp = getActiveEmpresa();
+    if (!emp) return;
+    const raw      = document.getElementById('tecStorageSel')?.value;
+    const errEl    = document.getElementById('tecStorErr');
+    const empLimit = getStorageLimit();
+    const newLimit = raw === 'null' ? null : parseInt(raw);
+    if (newLimit !== null && empLimit !== null && newLimit > empLimit) {
+        if (errEl) errEl.textContent = `Limite não pode ultrapassar ${formatBytes(empLimit)}.`;
+        return;
+    }
+    emp.storageTecnicoLimit = newLimit;
+    saveState();
+    if (errEl) errEl.textContent = '';
+    showToast(`Limite operacional: ${newLimit ? formatBytes(newLimit) : 'Usando limite do presidente'}.`, 'success');
+    renderTecnicoArmazenamento();
 }
 
 document.addEventListener('DOMContentLoaded', init);
