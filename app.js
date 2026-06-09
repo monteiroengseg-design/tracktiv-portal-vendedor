@@ -74,6 +74,7 @@ const NAV_TREE = {
             { id: 'g_cli_lista',    label: 'Lista de Clientes',      icon: '📋', section: 'gestorClientesPortal' },
             { id: 'g_cli_new',      label: 'Cadastrar Novo',         icon: '➕', action: () => openGestorClienteModal() },
             { id: 'g_cli_docs',     label: 'Documentos Pendentes',   icon: '⏳', render: () => renderGestorDocsPendentes() },
+            { id: 'g_cli_vencer',   label: 'Docs a Vencer',          icon: '⏰', render: () => renderDocsAVencer('gestor') },
             { id: 'g_cli_forms',    label: 'Formulários Incompletos',icon: '📋', render: () => renderGestorFormsIncompletos() }
         ]},
         { id: 'g_vendas',      label: 'Vendas',          icon: '💼', children: [
@@ -180,6 +181,7 @@ const NAV_TREE = {
         { id: 't_link',       label: 'Meu Link',       icon: '🔗', render: () => renderMeuLinkTecnico() },
         { id: 't_formulario', label: 'Meus Formulários', icon: '📝', render: () => renderTecnicoFormLibrary() },
         { id: 't_respostas',  label: 'Respostas',      icon: '📥', render: () => renderTecnicoFormSubmissions() },
+        { id: 't_docs_vencer',   label: 'Docs a Vencer',  icon: '⏰', render: () => renderDocsAVencer('tecnico') },
         { id: 't_armazenamento', label: 'Armazenamento', icon: '💾', render: () => renderTecnicoArmazenamento() },
         { id: 't_mensagens',  label: 'Mensagens',      icon: '💬', action: () => openChatOverlay('gestor') }
     ]
@@ -2173,6 +2175,18 @@ function loadState() {
                 if (e.storageLimit       === undefined) e.storageLimit       = null;
                 if (e.storageTecnicoLimit === undefined) e.storageTecnicoLimit = null;
             });
+            // Migração: validade e versões de documentos
+            if (!app.state.docVersionHistory)   app.state.docVersionHistory   = {};
+            if (!app.state.docExpiryAlertsSent) app.state.docExpiryAlertsSent = {};
+            (app.state.clientDocuments || []).forEach(d => {
+                if (!d.docGroupId)          d.docGroupId  = d.id;
+                if (d.emittedAt === undefined) d.emittedAt = d.uploadedAt || todayISO();
+                if (d.expiresAt === undefined) d.expiresAt = null;
+                if (d.noExpiry  === undefined) d.noExpiry  = true;
+                if (d.version   === undefined) d.version   = 1;
+            });
+            if (!app.state.presidenteConfig)      app.state.presidenteConfig = {};
+            if (!app.state.presidenteConfig.maxDocVersions) app.state.presidenteConfig.maxDocVersions = 3;
             // Migração: Qualificação, Link e Formulário do Técnico
             if (!app.state.tecnicoForms)         app.state.tecnicoForms         = {};
             if (!app.state.tecnicoSubmissions)   app.state.tecnicoSubmissions   = {};
@@ -6216,11 +6230,22 @@ function openDocUploadModal(clienteUserId) {
             <h4 style="margin:0 0 12px;">Documentos atuais (${docs.length})</h4>
             ${docs.length === 0
                 ? `<p class="text-muted">Nenhum documento ainda.</p>`
-                : docs.map(d => `
-                    <div class="extrato-item" style="align-items:center;margin-bottom:6px;">
-                        <div><strong>${esc(d.name)}</strong><small style="display:block;color:var(--text-soft);">${esc(d.category)} · ${d.uploadedAt}</small></div>
-                        <button class="danger-btn" onclick="deleteClienteDoc('${d.id}','${clienteUserId}')">🗑</button>
-                    </div>`).join('')
+                : docs.map(d => {
+                    const hist = (app.state.docVersionHistory || {})[d.docGroupId || d.id] || [];
+                    return `
+                    <div class="extrato-item" style="align-items:flex-start;margin-bottom:6px;gap:10px;">
+                        <div style="flex:1;">
+                            <strong>${esc(d.name)}</strong>
+                            <small style="display:block;color:var(--text-soft);">${esc(d.category)} · ${d.uploadedAt}</small>
+                            ${renderDocExpiryBadge(d)}
+                        </div>
+                        <div style="display:flex;gap:6px;flex-shrink:0;">
+                            ${hist.length ? `<button class="small-btn" onclick="openDocVersionHistory('${d.docGroupId||d.id}')">📚 ${hist.length}</button>` : ''}
+                            <button class="small-btn primary-btn" onclick="openRenovarDocModal('${d.id}','${clienteUserId}')">🔄</button>
+                            <button class="danger-btn" onclick="deleteClienteDoc('${d.id}','${clienteUserId}')">🗑</button>
+                        </div>
+                    </div>`;
+                  }).join('')
             }
         </div>
         <h4 style="margin:0 0 12px;">Adicionar documento</h4>
@@ -6228,6 +6253,14 @@ function openDocUploadModal(clienteUserId) {
             <div class="field"><label>Nome do documento *</label><input id="docName" type="text" placeholder="Ex: Contrato de Serviço 2026" required /></div>
             <div class="field"><label>Pasta de destino *</label>
                 <select id="docCat" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;">${catOpts}</select>
+            </div>
+            <div class="field"><label>Data de emissão *</label><input id="docEmittedAt" type="date" value="${todayISO()}" required style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;"/></div>
+            <div class="field" id="docExpiresAtWrap"><label>Data de validade</label><input id="docExpiresAt" type="date" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;"/></div>
+            <div class="field" style="grid-column:1/-1;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" id="docNoExpiry" onchange="document.getElementById('docExpiresAtWrap').style.display=this.checked?'none':'block'" style="width:16px;height:16px;"/>
+                    Sem validade (documento permanente)
+                </label>
             </div>
             <div class="field"><label>Notas (opcional)</label><input id="docNotes" type="text" placeholder="Informação adicional" /></div>
             <div class="field"><label>Arquivo (PDF, imagem, max 1 MB)</label>
@@ -6245,11 +6278,15 @@ function openDocUploadModal(clienteUserId) {
         const name  = document.getElementById('docName').value.trim();
         const folderVal = document.getElementById('docCat').value;
         const [cat, subfolder] = folderVal.includes('|') ? folderVal.split('|') : [folderVal, ''];
-        const notes = document.getElementById('docNotes').value.trim();
+        const notes      = document.getElementById('docNotes').value.trim();
+        const emittedAt  = document.getElementById('docEmittedAt').value || todayISO();
+        const noExpiry   = document.getElementById('docNoExpiry').checked;
+        const expiresAt  = noExpiry ? null : (document.getElementById('docExpiresAt').value || null);
         const file  = document.getElementById('docFile').files[0];
         const err   = document.getElementById('docUploadError');
         err.textContent = '';
         if (!name) { err.textContent = 'Nome do documento é obrigatório.'; return; }
+        if (!noExpiry && !expiresAt) { err.textContent = 'Informe a data de validade ou marque "Sem validade".'; return; }
         if (file && file.size > 1048576) { err.textContent = 'Arquivo muito grande. Máximo 1 MB.'; return; }
         if (file) {
             const _sc = checkStorageSpace(file.size);
@@ -6257,13 +6294,20 @@ function openDocUploadModal(clienteUserId) {
         }
         const saveDoc = (data) => {
             if (!app.state.clientDocuments) app.state.clientDocuments = [];
+            const newId       = `cdoc_${Date.now()}`;
+            const existing    = (app.state.clientDocuments).find(d => d.clientId === cu.clientId && d.category === cat && d.name.toLowerCase() === name.toLowerCase() && !d._archived);
+            const docGroupId  = existing ? (existing.docGroupId || existing.id) : newId;
+            if (existing) archiveDocVersion(existing);
+            app.state.clientDocuments = app.state.clientDocuments.filter(d => d.id !== existing?.id);
+            const nextVer = existing ? ((existing.version || 1) + 1) : 1;
             app.state.clientDocuments.push({
-                id: `cdoc_${Date.now()}`, clientId: cu.clientId, category: cat,
+                id: newId, clientId: cu.clientId, category: cat,
                 subfolder: subfolder || '', name,
                 fileName: file ? file.name : name, data: data || null, type: file ? file.type : '',
                 size: file ? file.size : 0, uploadedAt: todayISO(),
                 uploadedBy: app.currentUser.name, uploadedByRole: 'gestor',
-                viewedBy: [], notes
+                viewedBy: [], notes,
+                emittedAt, expiresAt, noExpiry, docGroupId, version: nextVer
             });
             addNotification(cu.id, 'new_document', `📄 Novo documento disponível: "${name}"`, null);
             saveState(); closeModal(); renderGestorClientesPortal();
@@ -7165,8 +7209,8 @@ function _bibDocList(docs, u, emptyMsg) {
         return `<div class="bib-doc-row">
             <div class="bib-doc-icon">${typeIcon}</div>
             <div class="bib-doc-info">
-                <div class="bib-doc-name">${esc(d.name)}${isNew ? ' <span class="bib-new-badge">Novo</span>' : ''}</div>
-                <div class="bib-doc-meta">${catInfo ? catInfo.icon + ' ' + catInfo.label : ''}${d.subfolder ? ' › ' + esc(d.subfolder) : ''} · ${d.uploadedAt} · ${esc(d.uploadedBy)}${size ? ' · ' + size : ''}</div>
+                <div class="bib-doc-name">${esc(d.name)}${isNew ? ' <span class="bib-new-badge">Novo</span>' : ''}${renderDocExpiryBadge(d)}</div>
+                <div class="bib-doc-meta">${catInfo ? catInfo.icon + ' ' + catInfo.label : ''}${d.subfolder ? ' › ' + esc(d.subfolder) : ''} · ${d.uploadedAt} · ${esc(d.uploadedBy)}${size ? ' · ' + size : ''}${d.emittedAt && d.emittedAt !== d.uploadedAt ? ' · Emitido: '+formatDate(d.emittedAt) : ''}</div>
                 ${d.notes ? `<div class="bib-doc-notes">${esc(d.notes)}</div>` : ''}
             </div>
             <div class="bib-doc-actions">
@@ -9105,15 +9149,20 @@ function openTecnicoDocModal(clientId) {
         ? '<p class="text-muted">Nenhum documento enviado ainda para este cliente.</p>'
         : docs.map(d => {
             const catInfo = DOC_LIBRARY_TREE.find(c => c.key === d.category);
-            const vis = d.visibility === 'cliente' ? 'Só cliente' : 'Cliente e Gestor';
+            const vis  = d.visibility === 'cliente' ? 'Só cliente' : 'Cliente e Gestor';
+            const hist = (app.state.docVersionHistory || {})[d.docGroupId || d.id] || [];
             return `
-                <div class="extrato-item" style="align-items:center;margin-bottom:6px;">
-                    <div>
+                <div class="extrato-item" style="align-items:flex-start;margin-bottom:6px;gap:10px;">
+                    <div style="flex:1;">
                         <strong>${esc(d.name)}</strong>
                         <small style="display:block;color:var(--text-soft);">${catInfo ? catInfo.icon + ' ' + catInfo.label : d.category}${d.subfolder ? ' › ' + d.subfolder : ''} · ${d.uploadedAt} · ${vis}</small>
                         ${d.notes ? `<small style="color:var(--text-soft);">${esc(d.notes)}</small>` : ''}
+                        ${renderDocExpiryBadge(d)}
                     </div>
-                    <button style="background:none;border:none;cursor:pointer;font-size:1rem;padding:4px 8px;color:#dc3545;" onclick="deleteTecnicoDoc('${d.id}','${clientId}')">🗑</button>
+                    <div style="display:flex;gap:6px;flex-shrink:0;">
+                        ${hist.length ? `<button class="small-btn" onclick="openDocVersionHistory('${d.docGroupId||d.id}')">📚 ${hist.length}</button>` : ''}
+                        <button style="background:none;border:none;cursor:pointer;font-size:1rem;padding:4px 8px;color:#dc3545;" onclick="deleteTecnicoDoc('${d.id}','${clientId}')">🗑</button>
+                    </div>
                 </div>`;
         }).join('');
 
@@ -9128,6 +9177,14 @@ function openTecnicoDocModal(clientId) {
                 <input id="tecDocName" type="text" placeholder="Ex: Laudo técnico de instalação"></div>
             <div class="field"><label>Pasta de destino *</label>
                 <select id="tecDocFolder" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;">${catOpts}</select></div>
+            <div class="field"><label>Data de emissão *</label><input id="tecDocEmittedAt" type="date" value="${todayISO()}" required style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;"/></div>
+            <div class="field" id="tecDocExpiresAtWrap"><label>Data de validade</label><input id="tecDocExpiresAt" type="date" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;"/></div>
+            <div class="field" style="grid-column:1/-1;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" id="tecDocNoExpiry" onchange="document.getElementById('tecDocExpiresAtWrap').style.display=this.checked?'none':'block'" style="width:16px;height:16px;"/>
+                    Sem validade (documento permanente)
+                </label>
+            </div>
             <div class="field"><label>Descrição (opcional)</label>
                 <input id="tecDocDesc" type="text" placeholder="Observação adicional"></div>
             <div class="field"><label>Visibilidade</label>
@@ -9146,15 +9203,19 @@ function openTecnicoDocModal(clientId) {
     `);
 
     document.getElementById('tecDocSaveBtn').addEventListener('click', () => {
-        const name = document.getElementById('tecDocName').value.trim();
-        const folderVal = document.getElementById('tecDocFolder').value;
-        const desc = document.getElementById('tecDocDesc').value.trim();
-        const vis = document.getElementById('tecDocVis').value;
+        const name       = document.getElementById('tecDocName').value.trim();
+        const folderVal  = document.getElementById('tecDocFolder').value;
+        const desc       = document.getElementById('tecDocDesc').value.trim();
+        const vis        = document.getElementById('tecDocVis').value;
+        const emittedAt  = document.getElementById('tecDocEmittedAt').value || todayISO();
+        const noExpiry   = document.getElementById('tecDocNoExpiry').checked;
+        const expiresAt  = noExpiry ? null : (document.getElementById('tecDocExpiresAt').value || null);
         const file = document.getElementById('tecDocFile').files[0];
         const err = document.getElementById('tecDocError');
         err.textContent = '';
         if (!name) { err.textContent = 'Nome do documento é obrigatório.'; return; }
         if (!file) { err.textContent = 'Selecione um arquivo para enviar.'; return; }
+        if (!noExpiry && !expiresAt) { err.textContent = 'Informe a data de validade ou marque "Sem validade".'; return; }
         if (file.size > 2097152) { err.textContent = 'Arquivo muito grande. Máximo 2 MB.'; return; }
         const _scTec = checkStorageSpace(file.size);
         if (!_scTec.ok) { err.textContent = _scTec.message; return; }
@@ -9163,12 +9224,18 @@ function openTecnicoDocModal(clientId) {
         const reader = new FileReader();
         reader.onload = e => {
             if (!app.state.clientDocuments) app.state.clientDocuments = [];
+            const newId      = `tdoc_${Date.now()}`;
+            const existing   = app.state.clientDocuments.find(d => d.clientId === clientId && d.category === category && d.name.toLowerCase() === name.toLowerCase() && !d._archived);
+            const docGroupId = existing ? (existing.docGroupId || existing.id) : newId;
+            if (existing) archiveDocVersion(existing);
+            app.state.clientDocuments = app.state.clientDocuments.filter(d => d.id !== existing?.id);
             app.state.clientDocuments.push({
-                id: `tdoc_${Date.now()}`, clientId, category, subfolder: subfolder || '',
+                id: newId, clientId, category, subfolder: subfolder || '',
                 name, fileName: file.name, data: e.target.result,
                 type: file.type, size: file.size, uploadedAt: todayISO(),
                 uploadedBy: app.currentUser.name, uploadedByRole: 'tecnico',
-                tecnicoId: uid, visibility: vis, viewedBy: [], notes: desc
+                tecnicoId: uid, visibility: vis, viewedBy: [], notes: desc,
+                emittedAt, expiresAt, noExpiry, docGroupId, version: existing ? ((existing.version || 1) + 1) : 1
             });
             const clientUser = (app.state.users || []).find(u => u.clientId === clientId && u.role === 'cliente');
             if (clientUser) addNotification(clientUser.id, 'new_document', `📄 Novo documento disponível: "${name}"`, null);
@@ -10618,6 +10685,8 @@ function init() {
 
     // Feature 3: Check re-engagement queue on load
     checkReengagementQueue();
+    // Document expiry alerts
+    checkDocumentExpiry();
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -13529,6 +13598,14 @@ function renderPresidenteConfig() {
                 <input type="checkbox" id="cfg_notif_meta" ${cfg.notifMeta!==false?'checked':''} style="width:16px;height:16px;"/>
                 Notificação ao atingir metas
             </label>
+            <h3 style="margin-top:20px;">📚 Histórico de versões de documentos</h3>
+            <div class="field" style="margin-top:8px;">
+                <label>Versões mantidas por documento</label>
+                <select id="cfg_max_doc_versions" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;">
+                    ${[1,2,3,5].map(n=>`<option value="${n}" ${(cfg.maxDocVersions||3)===n?'selected':''}>${n} versão${n>1?'ões':''}</option>`).join('')}
+                </select>
+                <small style="color:var(--text-soft);margin-top:4px;display:block;">Ao ultrapassar o limite, a versão mais antiga é excluída automaticamente.</small>
+            </div>
         </div>
     </div>
 
@@ -13551,7 +13628,8 @@ function savePresidenteConfig() {
         email:   document.getElementById('cfg_email')?.value.trim(),
         phone:   document.getElementById('cfg_phone')?.value.trim(),
         notifChurn: document.getElementById('cfg_notif_churn')?.checked,
-        notifMeta:  document.getElementById('cfg_notif_meta')?.checked
+        notifMeta:  document.getElementById('cfg_notif_meta')?.checked,
+        maxDocVersions: parseInt(document.getElementById('cfg_max_doc_versions')?.value) || 3
     });
     addAuditLog('config_update', { companyName: app.state.presidenteConfig.companyName });
     saveState();
@@ -18162,6 +18240,266 @@ function renderGestorMetasHistorico() {
             }
         });
     });
+    showSection('dynamicContent');
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DOCUMENT VALIDITY SYSTEM
+═══════════════════════════════════════════════════════════════════ */
+
+function daysDiff(isoA, isoB) {
+    return Math.round((new Date(isoB) - new Date(isoA)) / 86400000);
+}
+
+function getDocExpiryStatus(doc) {
+    if (!doc || doc.noExpiry || !doc.expiresAt) return { status: 'no-expiry', daysLeft: null };
+    const today = todayISO();
+    const diff  = daysDiff(today, doc.expiresAt);
+    if (diff < 0)  return { status: 'expired',        daysLeft: diff };
+    if (diff <= 7)  return { status: 'expiring-urgent', daysLeft: diff };
+    if (diff <= 30) return { status: 'expiring-soon',  daysLeft: diff };
+    return { status: 'valid', daysLeft: diff };
+}
+
+function renderDocExpiryBadge(doc) {
+    const { status, daysLeft } = getDocExpiryStatus(doc);
+    if (status === 'no-expiry') return '';
+    if (status === 'valid') {
+        return `<span class="doc-expiry-badge valid" style="margin-left:6px;">✅ Válido até ${formatDate(doc.expiresAt)}</span>`;
+    }
+    if (status === 'expiring-urgent') {
+        const label = daysLeft === 0 ? 'Vence hoje!' : `Vence em ${daysLeft} dia${daysLeft !== 1 ? 's' : ''}`;
+        return `<span class="doc-expiry-badge urgent" style="margin-left:6px;">🔶 ${label}</span>`;
+    }
+    if (status === 'expiring-soon') {
+        return `<span class="doc-expiry-badge warning" style="margin-left:6px;">⚠️ Vence em ${daysLeft} dias</span>`;
+    }
+    if (status === 'expired') {
+        const ago = Math.abs(daysLeft);
+        return `<span class="doc-expiry-badge expired" style="margin-left:6px;">❌ Vencido há ${ago} dia${ago !== 1 ? 's' : ''}</span>`;
+    }
+    return '';
+}
+
+function getMaxDocVersions() {
+    return (app.state.presidenteConfig || {}).maxDocVersions || 3;
+}
+
+function archiveDocVersion(doc) {
+    if (!doc) return;
+    if (!app.state.docVersionHistory) app.state.docVersionHistory = {};
+    const groupId = doc.docGroupId || doc.id;
+    if (!app.state.docVersionHistory[groupId]) app.state.docVersionHistory[groupId] = [];
+    const archived = Object.assign({}, doc, { _archived: true, archivedAt: todayISO() });
+    app.state.docVersionHistory[groupId].push(archived);
+    enforceDocVersionLimit(groupId);
+}
+
+function enforceDocVersionLimit(groupId) {
+    if (!app.state.docVersionHistory) return;
+    const hist = app.state.docVersionHistory[groupId];
+    if (!hist) return;
+    const max = getMaxDocVersions() - 1; // -1 because current version is in clientDocuments
+    while (hist.length > max) {
+        hist.sort((a, b) => (a.uploadedAt || '').localeCompare(b.uploadedAt || ''));
+        hist.shift();
+    }
+}
+
+function checkDocumentExpiry() {
+    if (!app.currentUser) return;
+    const today   = todayISO();
+    const key     = today;
+    if (!app.state.docExpiryAlertsSent) app.state.docExpiryAlertsSent = {};
+    const docs    = app.state.clientDocuments || [];
+    const gestor  = (app.state.users || []).find(u => u.role === 'gestor');
+    let changed   = false;
+
+    docs.filter(d => !d.noExpiry && d.expiresAt).forEach(d => {
+        const { status, daysLeft } = getDocExpiryStatus(d);
+        if (status === 'no-expiry' || status === 'valid') return;
+        const alertKey = `${d.id}_${key}_${status}`;
+        if (app.state.docExpiryAlertsSent[alertKey]) return;
+        app.state.docExpiryAlertsSent[alertKey] = true;
+        changed = true;
+
+        const clientUser = (app.state.users || []).find(u => u.clientId === d.clientId && u.role === 'cliente');
+        const tecnicoId  = Object.keys(app.state.tecnicoClients || {}).find(tId =>
+            (app.state.tecnicoClients[tId] || []).includes(d.clientId));
+        const clientName = (app.state.clients || []).find(c => c.id === d.clientId)?.name || '';
+
+        let msg, type;
+        if (status === 'expired') {
+            msg  = `❌ Documento "${d.name}" de ${clientName} está vencido.`;
+            type = 'doc_expired';
+        } else if (status === 'expiring-urgent') {
+            msg  = daysLeft === 0
+                ? `🔴 Documento "${d.name}" de ${clientName} vence HOJE!`
+                : `🔶 Documento "${d.name}" de ${clientName} vence em ${daysLeft} dia${daysLeft!==1?'s':''}!`;
+            type = 'doc_expiring_urgent';
+        } else {
+            msg  = `⚠️ Documento "${d.name}" de ${clientName} vence em ${daysLeft} dias.`;
+            type = 'doc_expiring';
+        }
+
+        if (gestor) addNotification(gestor.id, type, msg, null);
+        if (tecnicoId) addNotification(tecnicoId, type, msg, null);
+        if (clientUser && (status === 'expiring-urgent' || status === 'expired')) {
+            addNotification(clientUser.id, type, `📄 ${msg}`, null);
+        }
+    });
+    if (changed) saveState();
+}
+
+function openDocVersionHistory(docGroupId) {
+    const hist = (app.state.docVersionHistory || {})[docGroupId] || [];
+    if (hist.length === 0) { showToast('Nenhuma versão anterior encontrada.', 'info'); return; }
+    const sorted = [...hist].sort((a, b) => (b.uploadedAt || '').localeCompare(a.uploadedAt || ''));
+    showModal('📚 Histórico de versões', `
+        <p style="font-size:0.85rem;color:var(--text-soft);margin:0 0 16px;">Versões anteriores do documento. O cliente sempre vê apenas a versão mais recente.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            ${sorted.map((d, i) => `
+                <div style="padding:12px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                        <div>
+                            <strong>v${d.version || (sorted.length - i)}</strong> — ${esc(d.name)}
+                            <div style="font-size:0.8rem;color:var(--text-soft);margin-top:3px;">
+                                Enviado por ${esc(d.uploadedBy)} em ${formatDate(d.uploadedAt)}
+                                ${d.emittedAt ? ` · Emitido: ${formatDate(d.emittedAt)}` : ''}
+                                ${d.expiresAt ? ` · Válido até: ${formatDate(d.expiresAt)}` : ' · Sem validade'}
+                            </div>
+                        </div>
+                        <span class="badge badge-warn" style="flex-shrink:0;">Arquivado</span>
+                    </div>
+                </div>`).join('')}
+        </div>
+        <div class="actions" style="margin-top:16px;">
+            <button class="secondary-btn" onclick="closeModal()">Fechar</button>
+        </div>
+    `);
+}
+
+function openRenovarDocModal(docId, clienteUserId) {
+    const cu  = (app.state.users || []).find(u => u.id === clienteUserId);
+    const doc = (app.state.clientDocuments || []).find(d => d.id === docId);
+    if (!cu || !doc) return;
+    showModal(`🔄 Renovar documento — ${esc(doc.name)}`, `
+        <p style="font-size:0.85rem;color:var(--text-soft);margin:0 0 16px;">
+            A versão atual será arquivada. Preencha as novas datas e selecione o arquivo atualizado.
+        </p>
+        <div class="form-grid">
+            <div class="field"><label>Data de emissão *</label>
+                <input id="renEmittedAt" type="date" value="${todayISO()}" required style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;"/></div>
+            <div class="field" id="renExpiresAtWrap"><label>Nova data de validade</label>
+                <input id="renExpiresAt" type="date" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;"/></div>
+            <div class="field" style="grid-column:1/-1;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                    <input type="checkbox" id="renNoExpiry" ${doc.noExpiry?'checked':''} onchange="document.getElementById('renExpiresAtWrap').style.display=this.checked?'none':'block'" style="width:16px;height:16px;"/>
+                    Sem validade
+                </label>
+            </div>
+            <div class="field" style="grid-column:1/-1;"><label>Novo arquivo (opcional — deixe em branco para manter o atual)</label>
+                <input id="renFile" type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" style="margin-top:4px;"/></div>
+        </div>
+        <div id="renErr" class="error-text" style="margin-top:8px;"></div>
+        <div class="actions" style="margin-top:14px;">
+            <button class="primary-btn" onclick="saveRenovarDoc('${docId}','${clienteUserId}')">🔄 Renovar</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+    if (doc.noExpiry) document.getElementById('renExpiresAtWrap').style.display = 'none';
+}
+
+function saveRenovarDoc(docId, clienteUserId) {
+    const cu  = (app.state.users || []).find(u => u.id === clienteUserId);
+    const doc = (app.state.clientDocuments || []).find(d => d.id === docId);
+    const err = document.getElementById('renErr');
+    if (!cu || !doc) return;
+    const emittedAt = document.getElementById('renEmittedAt').value || todayISO();
+    const noExpiry  = document.getElementById('renNoExpiry').checked;
+    const expiresAt = noExpiry ? null : (document.getElementById('renExpiresAt').value || null);
+    if (!noExpiry && !expiresAt) { err.textContent = 'Informe a data de validade ou marque "Sem validade".'; return; }
+    const file = document.getElementById('renFile').files[0];
+
+    const doRenew = (newData) => {
+        archiveDocVersion(doc);
+        doc.emittedAt  = emittedAt;
+        doc.expiresAt  = expiresAt;
+        doc.noExpiry   = noExpiry;
+        doc.uploadedAt = todayISO();
+        doc.uploadedBy = app.currentUser.name;
+        doc.version    = (doc.version || 1) + 1;
+        if (newData) { doc.data = newData; doc.fileName = file.name; doc.size = file.size; doc.type = file.type; }
+        // Clear old expiry alerts for this doc
+        Object.keys(app.state.docExpiryAlertsSent || {}).forEach(k => { if (k.startsWith(docId + '_')) delete app.state.docExpiryAlertsSent[k]; });
+        addNotification(cu.id, 'new_document', `📄 Documento renovado: "${doc.name}"`, null);
+        saveState(); closeModal(); openDocUploadModal(clienteUserId);
+        showToast('Documento renovado com sucesso!', 'success');
+    };
+
+    if (file) {
+        const sc = checkStorageSpace(file.size);
+        if (!sc.ok) { err.textContent = sc.message; return; }
+        const reader = new FileReader();
+        reader.onload = e => doRenew(e.target.result);
+        reader.readAsDataURL(file);
+    } else {
+        doRenew(null);
+    }
+}
+
+function renderDocsAVencer(role) {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+    const today = todayISO();
+    let docs = app.state.clientDocuments || [];
+    if (role === 'tecnico') {
+        const myClients = (app.state.tecnicoClients || {})[app.currentUser.id] || [];
+        docs = docs.filter(d => myClients.includes(d.clientId));
+    }
+    const withExpiry = docs.filter(d => !d.noExpiry && d.expiresAt);
+    const processed  = withExpiry.map(d => {
+        const { status, daysLeft } = getDocExpiryStatus(d);
+        const client = (app.state.clients || []).find(c => c.id === d.clientId);
+        return { doc: d, status, daysLeft, clientName: client?.name || d.clientId };
+    }).filter(x => x.status !== 'no-expiry' && x.status !== 'valid' || (x.daysLeft !== null && x.daysLeft <= 30));
+    processed.sort((a, b) => (a.daysLeft ?? 9999) - (b.daysLeft ?? 9999));
+
+    const urgentCount  = processed.filter(x => x.status === 'expiring-urgent' || x.status === 'expired').length;
+    const warnCount    = processed.filter(x => x.status === 'expiring-soon').length;
+
+    const rows = processed.map(({ doc: d, status, daysLeft, clientName }) => {
+        const badge = renderDocExpiryBadge(d);
+        const catInfo = DOC_LIBRARY_TREE.find(c => c.key === d.category);
+        return `<tr>
+            <td><strong>${esc(d.name)}</strong><br><small>${catInfo ? catInfo.icon + ' ' + catInfo.label : d.category}</small></td>
+            <td>${esc(clientName)}</td>
+            <td>${d.emittedAt ? formatDate(d.emittedAt) : '—'}</td>
+            <td>${formatDate(d.expiresAt)}</td>
+            <td>${badge}</td>
+            ${role === 'gestor' ? `<td><button class="small-btn primary-btn" onclick="openDocUploadModal('${(app.state.users||[]).find(u=>u.clientId===d.clientId&&u.role==='cliente')?.id||''}')">🔄 Renovar</button></td>` : '<td></td>'}
+        </tr>`;
+    }).join('');
+
+    el.innerHTML = `
+        <div class="section-header" style="margin-bottom:24px;">
+            <div><h2>⏰ Documentos a Vencer</h2>
+            <p>${processed.length} documento${processed.length!==1?'s':''} com vencimento próximo ou vencido${urgentCount?' · <strong style="color:var(--danger);">'+urgentCount+' urgente'+( urgentCount>1?'s':'')+'</strong>':''}</p></div>
+        </div>
+
+        ${urgentCount > 0 ? `
+        <div class="card" style="border-left:4px solid var(--danger);padding:14px 16px;margin-bottom:20px;">
+            🔴 <strong>${urgentCount} documento${urgentCount>1?'s':''} exige${urgentCount===1?'':'m'} ação imediata</strong> — vencido${urgentCount>1?'s':''} ou vencendo em até 7 dias.
+        </div>` : ''}
+
+        <div class="card" style="overflow-x:auto;">
+            ${processed.length === 0
+                ? '<p class="text-muted" style="padding:20px 0;">Nenhum documento próximo do vencimento.</p>'
+                : `<table>
+                    <thead><tr><th>Documento</th><th>Cliente</th><th>Emissão</th><th>Validade</th><th>Status</th><th>Ação</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>`}
+        </div>`;
     showSection('dynamicContent');
 }
 
