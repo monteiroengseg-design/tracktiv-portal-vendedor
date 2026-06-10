@@ -2857,3 +2857,69 @@ td strong { color: var(--text); font-weight: 600; }
     border-radius: 10px; background: #fff; text-align: center;
 }
 .sig-stamp { font-size: 0.8rem; color: var(--success); font-weight: 600; margin-top: 4px; }
+
+/* ═════════════════════════════════════════════════════════════════
+   DASHBOARDS INTELIGENTES v2
+═════════════════════════════════════════════════════════════════ */
+.dash-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+}
+.dash-kpi {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,.18);
+    transition: transform .2s;
+}
+.dash-kpi:hover { transform: translateY(-2px); }
+.dash-kpi-icon { font-size: 2.1rem; flex-shrink: 0; line-height: 1; }
+.dash-kpi-lbl {
+    font-size: .67rem;
+    font-weight: 700;
+    opacity: .82;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+.dash-kpi-val {
+    font-size: 1.55rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 2px;
+}
+.dash-kpi-sub { font-size: .71rem; opacity: .75; }
+.dash-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+.dash-alert {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: .84rem;
+    cursor: pointer;
+    margin-bottom: 8px;
+    transition: opacity .15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.dash-alert:hover { opacity: .8; }
+.dash-alert.warn  { background: #fffbeb; border-left: 4px solid var(--warning);  color: #92400e; }
+.dash-alert.danger{ background: #fef2f2; border-left: 4px solid var(--danger);   color: #991b1b; }
+.dash-alert.info  { background: #eff6ff; border-left: 4px solid var(--info);     color: #1e40af; }
+@media (max-width: 768px) {
+    .dash-kpi-row  { grid-template-columns: repeat(2, 1fr); }
+    .dash-grid-2   { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+    .dash-kpi-row  { grid-template-columns: 1fr; }
+    .dash-kpi-val  { font-size: 1.3rem; }
+    .dash-kpi-icon { font-size: 1.6rem; }
+}

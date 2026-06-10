@@ -2382,26 +2382,26 @@ function showActiveSection() {
 
 function renderActiveSection(viewId) {
     const renders = {
-        gestorDashboard:    () => { renderGestorStats(); renderConsultorTable(); renderInstaladorDashTable(); renderPendingApprovals(); },
+        gestorDashboard:    renderGestorDashboardV2,
         gestorConsultores:  renderManageConsultors,
         gestorInstaladores: renderGestorInstaladores,
         gestorCupons:       renderGestorCupons,
         gestorConfig:           renderGestorConfig,
         gestorClientesPortal:   renderGestorClientesPortal,
-        consultorDashboard: renderConsultorDashboard,
+        consultorDashboard: renderConsultorDashboardV2,
         consultorCRM:       renderFunnelBoard,
         consultorClientes:  renderClientTable,
         consultorProdutos:  renderProducts,
         consultorTreinamento:  renderTrainingModules,
         consultorSimulador:    renderSimulador,
         consultorInformativos: renderInformativos,
-        instaladorDashboard:    renderInstaladorDashboard,
+        instaladorDashboard:    function() { if (app.currentUser && app.currentUser.partnerType === 'indicador') renderIndicadorDashboardV2(); else renderInstaladorDashboardV2(); },
         instaladorCRM:          renderInstaladorFunnelBoard,
         instaladorClientes:     renderInstaladorClientes,
         instaladorInformativos: renderInstaladorInformativos,
         instaladorFotos:        renderInstaladorFotos,
         instaladorExtrato:      renderInstaladorExtrato,
-        tecnicoDashboard:       renderTecnicoDashboard,
+        tecnicoDashboard:       renderTecnicoDashboardV2,
         tecnicoClientes:        renderTecnicoClientes,
         tecnicoChamados:        renderTecnicoChamados
     };
@@ -4334,10 +4334,7 @@ function renderAppViews() {
     const role = app.currentUser?.role;
 
     if (role === 'gestor') {
-        renderGestorStats();
-        renderConsultorTable();
-        renderInstaladorDashTable();
-        renderPendingApprovals();
+        renderGestorDashboardV2();
         renderManageConsultors();
         renderGestorInstaladores();
         renderGestorCupons();
@@ -4345,7 +4342,7 @@ function renderAppViews() {
     }
 
     if (role === 'consultor') {
-        renderConsultorDashboard();
+        renderConsultorDashboardV2();
         renderFunnelBoard();
         renderClientTable();
         renderSimulador();
@@ -4356,9 +4353,9 @@ function renderAppViews() {
 
     if (role === 'instalador') {
         if (app.currentUser.partnerType === 'indicador') {
-            renderIndicadorDashboard();
+            renderIndicadorDashboardV2();
         } else {
-            renderInstaladorDashboard();
+            renderInstaladorDashboardV2();
             renderInstaladorFunnelBoard();
             renderInstaladorClientes();
             renderInstaladorFotos();
@@ -4375,7 +4372,7 @@ function renderAppViews() {
     }
 
     if (role === 'tecnico') {
-        renderTecnicoDashboard();
+        renderTecnicoDashboardV2();
         renderTecnicoClientes();
         renderTecnicoChamados();
     }
@@ -5703,6 +5700,9 @@ function renderClienteSubItem(serviceKey, subItem) {
 }
 
 function renderClienteHome() {
+    renderClienteHomeV2();
+}
+function _renderClienteHomeLegacy() {
     const u = app.currentUser;
     const crm = (app.state.clients || []).find(c => c.id === u.clientId);
     const docs = (app.state.clientDocuments || []).filter(d => d.clientId === u.clientId);
@@ -12867,6 +12867,9 @@ function presidenteEl() {
 
 // ── ABA 1: VISÃO GERAL ──────────────────────────────────────────
 function renderPresidenteOverview() {
+    renderPresidenteDashboardV2();
+}
+function _renderPresidenteOverviewLegacy() {
     const el = presidenteEl(); if (!el) return;
     const clients    = app.state.clients || [];
     const users      = app.state.users   || [];
@@ -15751,6 +15754,9 @@ function exportExtratoExec(executivoId) {
 ═══════════════════════════════════════════════════════════════════ */
 
 function renderExecutivoDashboard() {
+    renderExecutivoDashboardV2();
+}
+function _renderExecutivoDashboardLegacy() {
     const u = app.currentUser;
     if (!u || u.role !== 'executivo') return;
     const el = document.getElementById('dynamicContent');
@@ -19483,6 +19489,847 @@ function saveTecnicoStorageLimit() {
     if (errEl) errEl.textContent = '';
     showToast(`Limite operacional: ${newLimit ? formatBytes(newLimit) : 'Usando limite do presidente'}.`, 'success');
     renderTecnicoArmazenamento();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DASHBOARDS INTELIGENTES v2
+═══════════════════════════════════════════════════════════════════ */
+
+function _last6Months(valFn) {
+    const result = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+        const d   = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        const lbl = d.toLocaleString('pt-BR', { month: 'short' }).replace('.', '');
+        const v   = valFn ? valFn(key) : (app.state.clients || []).filter(c => (c.closedDate || '').startsWith(key)).length;
+        result.push({ key, l: lbl.charAt(0).toUpperCase() + lbl.slice(1), v });
+    }
+    return result;
+}
+
+function _barChart(months, color) {
+    const max = Math.max(...months.map(m => m.v), 1);
+    return '<div style="display:flex;align-items:flex-end;gap:6px;height:80px;padding-bottom:4px;">' +
+        months.map(function(m, i) {
+            const h    = Math.round(m.v / max * 68);
+            const cur  = i === 5;
+            const bg   = cur ? color : color.replace(')', ', 0.35)').replace('rgb', 'rgba').replace('var(', 'var(');
+            const opac = cur ? '1' : '0.38';
+            return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">' +
+                '<div style="font-size:.67rem;color:var(--text-soft);">' + m.v + '</div>' +
+                '<div style="width:100%;height:' + h + 'px;background:' + color + ';opacity:' + opac + ';border-radius:4px 4px 0 0;min-height:3px;"></div>' +
+                '<div style="font-size:.64rem;color:var(--text-soft);text-transform:capitalize;">' + m.l + '</div>' +
+                '</div>';
+        }).join('') +
+        '</div>';
+}
+
+function _kpi(icon, label, val, sub, grad, dataCount, fmt) {
+    var countAttr = dataCount !== undefined ? ' data-count="' + dataCount + '"' + (fmt ? ' data-fmt="' + fmt + '"' : '') : '';
+    return '<div class="dash-kpi" style="background:' + grad + ';">' +
+        '<div class="dash-kpi-icon">' + icon + '</div>' +
+        '<div class="dash-kpi-body">' +
+        '<div class="dash-kpi-lbl">' + label + '</div>' +
+        '<div class="dash-kpi-val"' + countAttr + '>' + val + '</div>' +
+        '<div class="dash-kpi-sub">' + sub + '</div>' +
+        '</div></div>';
+}
+
+function _pbar(pct, color) {
+    var c = isNaN(pct) ? 0 : Math.max(0, Math.min(100, pct));
+    return '<div style="background:#e2e8f0;border-radius:6px;height:8px;overflow:hidden;">' +
+        '<div class="dash-anim-bar" data-bar-w="' + c + '" style="height:100%;width:0;background:' + color + ';border-radius:6px;transition:width .7s ease;"></div>' +
+        '</div>';
+}
+
+function initDashCounters() {
+    document.querySelectorAll('[data-count]').forEach(function(el) {
+        var target = parseFloat(el.dataset.count);
+        if (isNaN(target)) return;
+        var fmt   = el.dataset.fmt || '';
+        var dur   = 700;
+        var start = Date.now();
+        function tick() {
+            var p = Math.min((Date.now() - start) / dur, 1);
+            var e = 1 - Math.pow(1 - p, 3);
+            var v = target * e;
+            if (fmt === 'currency')    el.textContent = 'R$ ' + formatCurrency(v);
+            else if (fmt === 'dec')    el.textContent = v.toFixed(1).replace('.', ',') + '%';
+            else                       el.textContent = Math.round(v).toLocaleString('pt-BR');
+            if (p < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    });
+    setTimeout(function() {
+        document.querySelectorAll('.dash-anim-bar[data-bar-w]').forEach(function(b) {
+            b.style.width = b.dataset.barW + '%';
+        });
+    }, 80);
+}
+
+// ── GESTOR ──────────────────────────────────────────────────────
+function renderGestorDashboardV2() {
+    var el = document.getElementById('gestorDashboard');
+    if (!el) return;
+
+    var today    = todayISO();
+    var month    = getCurrentMonthKey();
+    var clients  = app.state.clients || [];
+    var users    = app.state.users   || [];
+    var consults = users.filter(function(u) { return u.role === 'consultor'; });
+
+    var ativos      = clients.filter(function(c) { return c.stage === 'Fechado'; });
+    var vendosMes   = clients.filter(function(c) { return (c.closedDate || '').startsWith(month); });
+    var perdidos    = clients.filter(function(c) { return c.stage === 'Perdido' && (c.updatedAt || '').startsWith(month); });
+    var metaTotal   = consults.reduce(function(s, u) { return s + getGoalForConsultant(u.id); }, 0) || consults.length * 10 || 10;
+    var metaPct     = metaTotal > 0 ? Math.round(vendosMes.length / metaTotal * 100) : 0;
+    var churnRate   = (ativos.length + perdidos.length > 0) ? ((perdidos.length / (ativos.length + perdidos.length)) * 100).toFixed(1) : '0.0';
+
+    var months6  = _last6Months();
+    var ranked   = buildRanking();
+    var noFU3    = clients.filter(function(c) { return c.stage !== 'Fechado' && c.stage !== 'Perdido' && c.updatedAt && daysDiff(c.updatedAt, today) > 3; });
+    var docsVenc = (app.state.clientDocuments || []).filter(function(d) {
+        if (!d.expiresAt || d.noExpiry) return false;
+        var diff = daysDiff(today, d.expiresAt);
+        return diff >= 0 && diff <= 7;
+    });
+    var churnRisk = clients.filter(function(c) { return c.stage === 'Fechado' && calculateChurnScore(c) >= 70; });
+    var gFus      = (app.state.followUps || []).filter(function(f) { return !f.done && f.date <= today; }).slice(0, 5);
+    var feed      = (app.state.salesFeed || []).slice().reverse().slice(0, 6);
+
+    var maxFunnel = Math.max.apply(null, stageOrder.map(function(s) { return clients.filter(function(c) { return c.stage === s; }).length; }).concat([1]));
+
+    var g1 = 'linear-gradient(135deg,#1a2e4a 0%,#2d4a6e 100%)';
+    var g2 = metaPct >= 100 ? 'linear-gradient(135deg,#10b981 0%,#059669 100%)' : metaPct >= 70 ? 'linear-gradient(135deg,#f59e0b 0%,#d97706 100%)' : 'linear-gradient(135deg,#ef4444 0%,#dc2626 100%)';
+    var g3 = 'linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%)';
+    var g4 = Number(churnRate) > 5 ? 'linear-gradient(135deg,#ef4444 0%,#b91c1c 100%)' : 'linear-gradient(135deg,#10b981 0%,#059669 100%)';
+
+    var funnelHtml = stageOrder.map(function(s) {
+        var v   = clients.filter(function(c) { return c.stage === s; }).length;
+        var pct = Math.round(v / maxFunnel * 100);
+        var col = s === 'Fechado' ? '#10b981' : s === 'Perdido' ? '#ef4444' : 'var(--accent)';
+        return '<div style="margin-bottom:9px;">' +
+            '<div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:3px;"><span>' + s + '</span><strong>' + v + '</strong></div>' +
+            _pbar(pct, col) + '</div>';
+    }).join('');
+
+    var rankHtml = ranked.length === 0
+        ? '<p style="color:var(--text-soft);text-align:center;padding:16px;">Nenhum consultor registrado.</p>'
+        : ranked.slice(0, 5).map(function(r) {
+            var meta = getGoalForConsultant(r.user.id);
+            var p    = meta > 0 ? Math.min(100, Math.round(r.m.salesCount / meta * 100)) : 0;
+            var col  = p >= 100 ? '#10b981' : p >= 70 ? 'var(--accent)' : '#f59e0b';
+            return '<div style="margin-bottom:10px;">' +
+                '<div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:3px;">' +
+                '<span>' + r.badge.emoji + ' ' + esc(r.user.name.split(' ')[0]) + '</span>' +
+                '<span style="font-weight:700;">' + r.m.salesCount + ' venda' + (r.m.salesCount !== 1 ? 's' : '') + ' <small style="color:var(--text-soft);">' + p + '%</small></span>' +
+                '</div>' + _pbar(p, col) + '</div>';
+        }).join('');
+
+    var alertsHtml = (noFU3.length + docsVenc.length + churnRisk.length === 0)
+        ? '<div style="text-align:center;padding:20px;color:var(--success);"><div style="font-size:2rem;">✅</div><div style="font-size:.85rem;margin-top:6px;">Tudo em ordem!</div></div>'
+        : (noFU3.length > 0 ? '<div class="dash-alert warn">⏰ <strong>' + noFU3.length + '</strong> lead' + (noFU3.length > 1 ? 's' : '') + ' sem follow-up há +3 dias</div>' : '') +
+          (docsVenc.length > 0 ? '<div class="dash-alert danger">📄 <strong>' + docsVenc.length + '</strong> documento' + (docsVenc.length > 1 ? 's' : '') + ' vencendo em 7 dias</div>' : '') +
+          (churnRisk.length > 0 ? '<div class="dash-alert danger">📉 <strong>' + churnRisk.length + '</strong> cliente' + (churnRisk.length > 1 ? 's' : '') + ' em alto risco de churn</div>' : '');
+
+    var fuHtml = gFus.length === 0
+        ? '<p style="text-align:center;color:var(--text-soft);padding:16px;">Nenhum follow-up pendente.</p>'
+        : gFus.map(function(f) {
+            var c  = clients.find(function(x) { return x.id === f.clientId; });
+            var ov = f.date < today;
+            return '<div style="display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">' +
+                '<span>' + ((FU_ICONS_MAP || {})[f.type] || '📅') + '</span>' +
+                '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:.83rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(c ? c.name : '—') + '</div>' +
+                '<div style="font-size:.72rem;color:' + (ov ? 'var(--danger)' : 'var(--text-soft)') + ';">' + (ov ? '⏰ Vencido' : 'Hoje') + ' · ' + esc(f.type || '') + '</div>' +
+                '</div></div>';
+        }).join('');
+
+    var feedHtml = feed.length === 0
+        ? '<p style="text-align:center;color:var(--text-soft);padding:16px;">Nenhuma atividade recente.</p>'
+        : feed.map(function(f) {
+            return '<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);">' +
+                '<span style="font-size:.85rem;">🏷️</span>' +
+                '<div style="flex:1;">' +
+                '<div style="font-size:.82rem;"><strong>' + esc((f.clientName || '').split(' ')[0]) + '</strong> → ' +
+                (f.stage === 'Fechado' ? '<span style="color:var(--success);">Fechado ✅</span>' : esc(f.stage || '')) + '</div>' +
+                '<div style="font-size:.72rem;color:var(--text-soft);">' + esc(f.consultorName || '') + ' · ' + formatDate(f.date || '') + '</div>' +
+                '</div></div>';
+        }).join('');
+
+    el.innerHTML =
+        '<div class="section-header"><h2>📊 Dashboard — ' + getCurrentMonthLabel() + '</h2>' +
+        '<p style="color:var(--text-soft);font-size:.87rem;margin:0;">Visão geral da operação em tempo real</p></div>' +
+        '<div class="dash-kpi-row">' +
+            _kpi('🏷️', 'VENDAS DO MÊS', vendosMes.length, 'meta: ' + metaTotal + ' contratos', g1, vendosMes.length) +
+            _kpi('🎯', 'META ATINGIDA', metaPct + '%', vendosMes.length + ' de ' + metaTotal, g2, metaPct) +
+            _kpi('👥', 'CLIENTES ATIVOS', ativos.length, 'contratos vigentes', g3, ativos.length) +
+            _kpi('📉', 'CHURN DO MÊS', churnRate + '%', perdidos.length + ' perdidos', g4) +
+        '</div>' +
+        '<div class="dash-grid-2">' +
+            '<div class="card"><h3 style="margin:0 0 14px;">🔽 Funil de Vendas</h3>' + funnelHtml + '</div>' +
+            '<div class="card"><h3 style="margin:0 0 8px;">📈 Vendas — últimos 6 meses</h3>' + _barChart(months6, '#f5820d') + '</div>' +
+        '</div>' +
+        '<div class="dash-grid-2" style="margin-top:18px;">' +
+            '<div class="card"><h3 style="margin:0 0 14px;">🏆 Ranking de Consultores</h3>' + rankHtml + '</div>' +
+            '<div class="card"><h3 style="margin:0 0 12px;">🚨 Alertas</h3>' + alertsHtml + '</div>' +
+        '</div>' +
+        '<div class="dash-grid-2" style="margin-top:18px;">' +
+            '<div class="card">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+            '<h3 style="margin:0;">📅 Follow-ups pendentes</h3>' +
+            '<button class="small-btn" onclick="showSection(\'dynamicContent\');typeof renderFollowUpCalendar===\'function\'&&renderFollowUpCalendar()">Ver todos</button>' +
+            '</div>' + fuHtml + '</div>' +
+            '<div class="card"><h3 style="margin:0 0 12px;">⚡ Feed de atividades</h3>' + feedHtml + '</div>' +
+        '</div>';
+
+    initDashCounters();
+}
+
+// ── CONSULTOR ────────────────────────────────────────────────────
+function renderConsultorDashboardV2() {
+    var el = document.getElementById('consultorDashboard');
+    if (!el) return;
+
+    var u      = app.currentUser;
+    var today  = todayISO();
+    var month  = getCurrentMonthKey();
+    var m      = getConsultantMetrics(u);
+    var goal   = getGoalForConsultant(u.id);
+    var pct    = goal > 0 ? Math.min(100, Math.round(m.salesCount / goal * 100)) : 0;
+
+    var myClients = (app.state.clients || []).filter(function(c) { return c.consultantId === u.id; });
+    var hotLeads  = myClients.filter(function(c) { return c.stage === 'Apresentação' || c.stage === 'Proposta'; }).slice(0, 4);
+    var months6   = _last6Months(function(key) {
+        return myClients.filter(function(c) { return (c.closedDate || '').startsWith(key); }).length;
+    });
+    var fus       = (app.state.followUps || []).filter(function(f) {
+        if (f.done || f.date > today) return false;
+        return (app.state.clients || []).some(function(c) { return c.id === f.clientId && c.consultantId === u.id; });
+    }).slice(0, 4);
+
+    var now   = new Date();
+    var daysLeft = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
+
+    var trakMsgs = typeof TRAK_META_MSGS !== 'undefined' ? TRAK_META_MSGS : [];
+    var trakIdx  = pct < 30 ? 0 : pct < 70 ? 1 : pct < 100 ? 2 : 3;
+    var trakArr  = trakMsgs[trakIdx];
+    var trakMsg  = trakArr && trakArr.length ? trakArr[Math.floor(Math.random() * trakArr.length)] : '🚀 Continue em frente!';
+
+    var g1 = 'linear-gradient(135deg,#1a2e4a 0%,#2d4a6e 100%)';
+    var g2 = pct >= 100 ? 'linear-gradient(135deg,#10b981 0%,#059669 100%)' : pct >= 70 ? 'linear-gradient(135deg,#f59e0b 0%,#d97706 100%)' : 'linear-gradient(135deg,#ef4444 0%,#dc2626 100%)';
+    var g3 = 'linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%)';
+    var g4 = 'linear-gradient(135deg,#8b5cf6 0%,#6d28d9 100%)';
+    var barCol = pct >= 100 ? '#10b981' : pct >= 70 ? 'var(--accent)' : '#ef4444';
+
+    var hotHtml = hotLeads.length === 0
+        ? '<p style="text-align:center;color:var(--text-soft);padding:16px;">Nenhum lead em negociação avançada.</p>'
+        : hotLeads.map(function(c) {
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">' +
+                '<div><div style="font-size:.85rem;font-weight:600;">' + esc(c.name) + '</div>' +
+                '<div style="font-size:.72rem;color:var(--text-soft);">' + esc(c.stage) + ' · ' + esc(c.plan || '—') + '</div></div>' +
+                '<button class="small-btn" onclick="openClientProfile(\'' + c.id + '\')">Ver</button>' +
+                '</div>';
+        }).join('');
+
+    var fuHtml2 = fus.length === 0
+        ? '<p style="text-align:center;color:var(--success);padding:16px;">Você está em dia! ✅</p>'
+        : fus.map(function(f) {
+            var c  = (app.state.clients || []).find(function(x) { return x.id === f.clientId; });
+            var ov = f.date < today;
+            return '<div style="display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">' +
+                '<span>' + ((FU_ICONS_MAP || {})[f.type] || '📅') + '</span>' +
+                '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:.83rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(c ? c.name : '—') + '</div>' +
+                '<div style="font-size:.72rem;color:' + (ov ? 'var(--danger)' : 'var(--text-soft)') + ';">' + (ov ? '⏰ Vencido' : 'Hoje') + ' · ' + esc(f.type || '') + '</div>' +
+                '</div>' +
+                '<button class="small-btn" onclick="openClientProfile(\'' + f.clientId + '\')">Ver</button>' +
+                '</div>';
+        }).join('');
+
+    var simPer = m.salesCount > 0 ? m.commission / m.salesCount : 50;
+    var simProj = Math.round(simPer * goal);
+
+    el.innerHTML =
+        '<div class="section-header">' +
+        '<h2>👋 Olá, ' + esc(u.name.split(' ')[0]) + '! — ' + getCurrentMonthLabel() + '</h2>' +
+        '<p style="color:var(--text-soft);font-size:.87rem;margin:0;">' + esc(trakMsg) + '</p></div>' +
+        '<div class="dash-kpi-row">' +
+            _kpi('🏷️', 'VENDAS DO MÊS', m.salesCount, 'meta: ' + goal + ' contratos', g1, m.salesCount) +
+            _kpi('🎯', 'META ATINGIDA', pct + '%', daysLeft + ' dias restantes', g2, pct) +
+            _kpi('👥', 'CLIENTES ATIVOS', m.clientCount, 'na sua carteira', g3, m.clientCount) +
+            _kpi('💰', 'COMISSÃO PREV.', 'R$ ' + formatCurrency(m.commission), 'estimada este mês', g4) +
+        '</div>' +
+        '<div class="card" style="margin-bottom:18px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+            '<div><h3 style="margin:0;">🎯 Progresso da Meta — ' + getCurrentMonthLabel() + '</h3>' +
+            '<p style="margin:4px 0 0;font-size:.82rem;color:var(--text-soft);">' + m.salesCount + ' de ' + goal + ' vendas · ' + daysLeft + ' dias restantes</p></div>' +
+            '<div style="font-size:1.6rem;font-weight:800;color:' + (pct >= 100 ? 'var(--success)' : pct >= 70 ? 'var(--warning)' : 'var(--danger)') + ';">' + pct + '%</div>' +
+            '</div>' +
+            _pbar(pct, barCol) +
+            (pct >= 100
+                ? '<p style="margin:8px 0 0;font-size:.82rem;color:var(--success);">🎉 Meta atingida! Você superou o objetivo.</p>'
+                : '<p style="margin:8px 0 0;font-size:.82rem;color:var(--text-soft);">Faltam <strong>' + (goal - m.salesCount) + '</strong> venda' + (goal - m.salesCount !== 1 ? 's' : '') + ' para bater a meta.</p>') +
+        '</div>' +
+        '<div class="dash-grid-2">' +
+            '<div class="card"><h3 style="margin:0 0 14px;">🔥 Leads Quentes</h3>' + hotHtml + '</div>' +
+            '<div class="card"><h3 style="margin:0 0 8px;">📈 Vendas — últimos 6 meses</h3>' + _barChart(months6, '#8b5cf6') + '</div>' +
+        '</div>' +
+        '<div class="dash-grid-2" style="margin-top:18px;">' +
+            '<div class="card">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+            '<h3 style="margin:0;">📅 Follow-ups de hoje</h3>' +
+            '<button class="small-btn" onclick="showSection(\'dynamicContent\');typeof renderFollowUpCalendar===\'function\'&&renderFollowUpCalendar()">Ver todos</button>' +
+            '</div>' + fuHtml2 + '</div>' +
+            '<div class="card"><h3 style="margin:0 0 12px;">💡 Simulador de Ganhos</h3>' +
+            '<div style="font-size:.82rem;color:var(--text-soft);margin-bottom:12px;">Projeção baseada no seu desempenho atual:</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+            '<div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;">' +
+            '<div style="font-size:.72rem;color:var(--text-soft);">Por venda</div>' +
+            '<div style="font-size:1.3rem;font-weight:800;color:var(--accent);">R$ ' + formatCurrency(simPer) + '</div>' +
+            '</div>' +
+            '<div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;">' +
+            '<div style="font-size:.72rem;color:var(--text-soft);">Se bater a meta (' + goal + ')</div>' +
+            '<div style="font-size:1.3rem;font-weight:800;color:var(--success);">R$ ' + formatCurrency(simProj) + '</div>' +
+            '</div></div>' +
+            '<div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;font-size:.82rem;">' +
+            '📊 Recorrência ativa: <strong>' + m.recurrence + ' cliente' + (m.recurrence !== 1 ? 's' : '') + '</strong> gerando renda mensal estável.' +
+            '</div></div>' +
+        '</div>';
+
+    initDashCounters();
+}
+
+// ── TÉCNICO ──────────────────────────────────────────────────────
+function renderTecnicoDashboardV2() {
+    var el = document.getElementById('tecnicoDashboard');
+    if (!el) return;
+
+    var u      = app.currentUser;
+    var today  = todayISO();
+    var clients = (app.state.clients || []).filter(function(c) { return c.tecnicoId === u.id || c.assignedTecnico === u.id; });
+    var chamados = (app.state.chamados || []).filter(function(ch) { return ch.tecnicoId === u.id || !ch.tecnicoId; });
+    var docsVenc = (app.state.clientDocuments || []).filter(function(d) {
+        if (!d.expiresAt || d.noExpiry) return false;
+        if (!clients.some(function(c) { return c.id === d.clientId; })) return false;
+        var diff = daysDiff(today, d.expiresAt);
+        return diff >= 0 && diff <= 30;
+    });
+    var semInt = clients.filter(function(c) { return c.stage === 'Fechado' && c.updatedAt && daysDiff(c.updatedAt, today) > 15; });
+    var abertos = chamados.filter(function(ch) { return ch.status === 'Aberto' || ch.status === 'Em Andamento'; });
+    var pendForms = (app.state.tecnicoFormSends || []).filter(function(r) { return r.status !== 'preenchido' && clients.some(function(c) { return c.id === r.clientId; }); });
+
+    var g1 = 'linear-gradient(135deg,#1a2e4a 0%,#2d4a6e 100%)';
+    var g2 = abertos.length > 5 ? 'linear-gradient(135deg,#ef4444 0%,#dc2626 100%)' : 'linear-gradient(135deg,#f59e0b 0%,#d97706 100%)';
+    var g3 = docsVenc.length > 0 ? 'linear-gradient(135deg,#f59e0b 0%,#d97706 100%)' : 'linear-gradient(135deg,#10b981 0%,#059669 100%)';
+    var g4 = pendForms.length > 0 ? 'linear-gradient(135deg,#8b5cf6 0%,#6d28d9 100%)' : 'linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%)';
+
+    var chHtml = abertos.length === 0
+        ? '<p style="text-align:center;color:var(--success);padding:20px;">✅ Nenhum chamado aberto!</p>'
+        : abertos.slice(0, 5).map(function(ch) {
+            var c = (app.state.clients || []).find(function(x) { return x.id === ch.clientId; });
+            var urg = ch.priority === 'Alta' || ch.status === 'Em Andamento';
+            return '<div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">' +
+                '<span style="font-size:1.1rem;">' + (urg ? '🔴' : '🟡') + '</span>' +
+                '<div style="flex:1;">' +
+                '<div style="font-size:.83rem;font-weight:600;">' + esc(c ? c.name : 'Cliente') + '</div>' +
+                '<div style="font-size:.72rem;color:var(--text-soft);">' + esc(ch.subject || ch.title || 'Chamado') + ' · ' + esc(ch.status) + '</div>' +
+                '</div></div>';
+        }).join('') + (abertos.length > 5 ? '<p style="font-size:.78rem;color:var(--text-soft);text-align:center;margin-top:8px;">+' + (abertos.length - 5) + ' chamados</p>' : '');
+
+    var docsHtml = docsVenc.length === 0
+        ? '<p style="text-align:center;color:var(--success);padding:20px;">✅ Nenhum documento vencendo!</p>'
+        : docsVenc.slice(0, 5).map(function(d) {
+            var c    = (app.state.clients || []).find(function(x) { return x.id === d.clientId; });
+            var diff = daysDiff(today, d.expiresAt);
+            var col  = diff <= 7 ? 'var(--danger)' : diff <= 15 ? 'var(--warning)' : 'var(--text-soft)';
+            return '<div style="display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">' +
+                '<span>📄</span><div style="flex:1;">' +
+                '<div style="font-size:.83rem;font-weight:600;">' + esc(d.name || 'Documento') + '</div>' +
+                '<div style="font-size:.72rem;color:' + col + ';">' + esc(c ? c.name : '—') + ' · vence em ' + diff + ' dia' + (diff !== 1 ? 's' : '') + '</div>' +
+                '</div></div>';
+        }).join('');
+
+    var intHtml = semInt.length === 0
+        ? '<p style="text-align:center;color:var(--success);padding:20px;">✅ Todos interagidos recentemente!</p>'
+        : semInt.slice(0, 5).map(function(c) {
+            var diff = daysDiff(c.updatedAt, today);
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">' +
+                '<div><div style="font-size:.83rem;font-weight:600;">' + esc(c.name) + '</div>' +
+                '<div style="font-size:.72rem;color:var(--text-soft);">' + esc(c.plan || '—') + '</div></div>' +
+                '<span style="font-size:.75rem;color:var(--danger);font-weight:600;">' + diff + 'd sem interação</span>' +
+                '</div>';
+        }).join('');
+
+    var formHtml = pendForms.length === 0
+        ? '<p style="text-align:center;color:var(--success);padding:20px;">✅ Todos revisados!</p>'
+        : pendForms.slice(0, 5).map(function(r) {
+            var c = (app.state.clients || []).find(function(x) { return x.id === r.clientId; });
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">' +
+                '<div><div style="font-size:.83rem;font-weight:600;">' + esc(c ? c.name : 'Cliente') + '</div>' +
+                '<div style="font-size:.72rem;color:var(--text-soft);">' + formatDate(r.sentAt || r.createdAt || '') + '</div></div>' +
+                '<span style="background:var(--info);color:#fff;padding:2px 8px;border-radius:12px;font-size:.72rem;">Pendente</span>' +
+                '</div>';
+        }).join('');
+
+    el.innerHTML =
+        '<div class="section-header"><h2>🔧 Dashboard Técnico — ' + esc(u.name.split(' ')[0]) + '</h2>' +
+        '<p style="color:var(--text-soft);font-size:.87rem;margin:0;">Chamados, documentos e clientes sem interação</p></div>' +
+        '<div class="dash-kpi-row">' +
+            _kpi('👥', 'CLIENTES', clients.length, 'atribuídos a você', g1, clients.length) +
+            _kpi('🎫', 'CHAMADOS ABERTOS', abertos.length, 'requerem atenção', g2, abertos.length) +
+            _kpi('📄', 'DOCS VENCENDO', docsVenc.length, 'em 30 dias', g3, docsVenc.length) +
+            _kpi('📋', 'FORMS PENDENTES', pendForms.length, 'aguardando resposta', g4, pendForms.length) +
+        '</div>' +
+        '<div class="dash-grid-2">' +
+            '<div class="card"><h3 style="margin:0 0 12px;">🚨 Chamados Urgentes</h3>' + chHtml + '</div>' +
+            '<div class="card"><h3 style="margin:0 0 12px;">📄 Docs vencendo em 30 dias</h3>' + docsHtml + '</div>' +
+        '</div>' +
+        '<div class="dash-grid-2" style="margin-top:18px;">' +
+            '<div class="card"><h3 style="margin:0 0 12px;">👤 Sem interação +15 dias</h3>' + intHtml + '</div>' +
+            '<div class="card"><h3 style="margin:0 0 12px;">📋 Forms aguardando resposta</h3>' + formHtml + '</div>' +
+        '</div>';
+
+    initDashCounters();
+}
+
+// ── INSTALADOR ───────────────────────────────────────────────────
+function renderInstaladorDashboardV2() {
+    var el = document.getElementById('instaladorDashboard');
+    if (!el) return;
+
+    var u      = app.currentUser;
+    var month  = getCurrentMonthKey();
+    var m      = getInstaladorMetrics(u);
+    var clients = (app.state.clients || []).filter(function(c) { return c.instaladorId === u.id; });
+    var insts   = (app.state.installations || []).filter(function(i) { return i.instaladorId === u.id; });
+    var mInsts  = insts.filter(function(i) { return (i.date || '').startsWith(month); });
+    var pendI   = insts.filter(function(i) { return i.status === 'Pendente' || i.status === 'Agendado'; });
+    var months6 = _last6Months(function(key) { return insts.filter(function(i) { return (i.date || '').startsWith(key); }).length; });
+
+    var g1 = 'linear-gradient(135deg,#1a2e4a 0%,#2d4a6e 100%)';
+    var g2 = 'linear-gradient(135deg,#f5820d 0%,#e06d00 100%)';
+    var g3 = 'linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%)';
+    var g4 = 'linear-gradient(135deg,#10b981 0%,#059669 100%)';
+
+    var recComm = m.totalToReceive - m.installCommission;
+    if (recComm < 0) recComm = 0;
+
+    var pendHtml = pendI.length === 0
+        ? '<p style="text-align:center;color:var(--text-soft);padding:20px;">Nenhuma instalação pendente.</p>'
+        : pendI.slice(0, 5).map(function(i) {
+            var c = (app.state.clients || []).find(function(x) { return x.id === i.clientId; });
+            return '<div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">' +
+                '<span>🚗</span><div style="flex:1;">' +
+                '<div style="font-size:.83rem;font-weight:600;">' + esc(c ? c.name : 'Cliente') + '</div>' +
+                '<div style="font-size:.72rem;color:var(--text-soft);">' + esc(i.vehicle || 'Veículo') + ' · ' + (i.scheduledDate ? formatDate(i.scheduledDate) : 'Sem data') + '</div>' +
+                '</div><span style="background:var(--warning);color:#fff;padding:2px 8px;border-radius:12px;font-size:.72rem;">' + esc(i.status) + '</span>' +
+                '</div>';
+        }).join('');
+
+    el.innerHTML =
+        '<div class="section-header"><h2>🔧 Dashboard Instalador — ' + esc(u.name.split(' ')[0]) + '</h2>' +
+        '<p style="color:var(--text-soft);font-size:.87rem;margin:0;">' + getCurrentMonthLabel() + '</p></div>' +
+        '<div class="dash-kpi-row">' +
+            _kpi('🔧', 'INSTALAÇÕES MÊS', mInsts.length, 'R$ ' + formatCurrency(mInsts.length * INSTALL_FEE) + ' gerados', g1, mInsts.length) +
+            _kpi('💰', 'COMISSÃO INSTAL.', 'R$ ' + formatCurrency(m.installCommission), 'este mês', g2) +
+            _kpi('👥', 'CLIENTES LOJA', m.clientCount, 'ativos na base', g3, m.clientCount) +
+            _kpi('🔄', 'RECORRÊNCIA', m.recurrence, 'contratos gerando renda', g4, m.recurrence) +
+        '</div>' +
+        '<div class="dash-grid-2">' +
+            '<div class="card"><h3 style="margin:0 0 12px;">⏳ Instalações Pendentes</h3>' + pendHtml + '</div>' +
+            '<div class="card"><h3 style="margin:0 0 8px;">📈 Instalações — 6 meses</h3>' + _barChart(months6, '#f5820d') + '</div>' +
+        '</div>' +
+        '<div class="card" style="margin-top:18px;">' +
+            '<h3 style="margin:0 0 12px;">💰 Breakdown de Comissão</h3>' +
+            '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">' +
+            '<div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;">' +
+            '<div style="font-size:1.4rem;font-weight:800;color:var(--accent);">R$ ' + formatCurrency(m.installCommission) + '</div>' +
+            '<div style="font-size:.75rem;color:var(--text-soft);">Instalações</div></div>' +
+            '<div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;">' +
+            '<div style="font-size:1.4rem;font-weight:800;color:var(--success);">R$ ' + formatCurrency(recComm) + '</div>' +
+            '<div style="font-size:.75rem;color:var(--text-soft);">Recorrência</div></div>' +
+            '<div style="text-align:center;padding:12px;background:var(--bg);border-radius:10px;">' +
+            '<div style="font-size:1.4rem;font-weight:800;color:var(--primary);">R$ ' + formatCurrency(m.totalToReceive) + '</div>' +
+            '<div style="font-size:.75rem;color:var(--text-soft);">Total a Receber</div></div>' +
+            '</div></div>';
+
+    initDashCounters();
+}
+
+// ── INDICADOR ────────────────────────────────────────────────────
+function renderIndicadorDashboardV2() {
+    var el = document.getElementById('instaladorDashboard');
+    if (!el) return;
+
+    var u      = app.currentUser;
+    var month  = getCurrentMonthKey();
+    var refs   = (app.state.indicadorReferrals || []).filter(function(r) { return r.indicadorId === u.id; });
+    var monthR = refs.filter(function(r) { return (r.createdAt || '').startsWith(month); });
+    var fechadas = refs.filter(function(r) { return r.status === 'Fechado'; });
+    var emNeg  = refs.filter(function(r) { return r.status === 'Em Negociação' || r.status === 'Apresentação' || r.status === 'Proposta' || r.status === 'Novo Lead'; });
+    var perdidas = refs.filter(function(r) { return r.status === 'Perdido'; });
+    var convRate = refs.length > 0 ? ((fechadas.length / refs.length) * 100).toFixed(0) : '0';
+    var comAcum = refs.reduce(function(s, r) { return s + (r.commission || 0); }, 0);
+    var months6 = _last6Months(function(key) { return refs.filter(function(r) { return (r.createdAt || '').startsWith(key); }).length; });
+
+    var g1 = 'linear-gradient(135deg,#1a2e4a 0%,#2d4a6e 100%)';
+    var g2 = 'linear-gradient(135deg,#10b981 0%,#059669 100%)';
+    var g3 = 'linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%)';
+    var g4 = 'linear-gradient(135deg,#8b5cf6 0%,#6d28d9 100%)';
+
+    var refsHtml = refs.length === 0
+        ? '<p style="text-align:center;color:var(--text-soft);padding:20px;">Nenhuma indicação enviada ainda.</p>'
+        : refs.slice().reverse().slice(0, 5).map(function(r) {
+            var col = r.status === 'Fechado' ? 'var(--success)' : r.status === 'Perdido' ? 'var(--danger)' : 'var(--info)';
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">' +
+                '<div><div style="font-size:.83rem;font-weight:600;">' + esc(r.name || r.clientName || '—') + '</div>' +
+                '<div style="font-size:.72rem;color:var(--text-soft);">' + formatDate(r.createdAt || '') + ' · ' + esc(r.phone || r.contact || '—') + '</div></div>' +
+                '<span style="padding:3px 10px;border-radius:12px;font-size:.73rem;background:' + col + ';color:#fff;">' + esc(r.status || 'Pendente') + '</span>' +
+                '</div>';
+        }).join('');
+
+    el.innerHTML =
+        '<div class="section-header"><h2>🤝 Dashboard Indicador — ' + esc(u.name.split(' ')[0]) + '</h2>' +
+        '<p style="color:var(--text-soft);font-size:.87rem;margin:0;">' + getCurrentMonthLabel() + '</p></div>' +
+        '<div class="dash-kpi-row">' +
+            _kpi('🤝', 'INDICAÇÕES MÊS', monthR.length, 'enviadas este mês', g1, monthR.length) +
+            _kpi('✅', 'FECHAMENTOS', fechadas.length, 'total acumulado', g2, fechadas.length) +
+            _kpi('📊', 'CONVERSÃO', convRate + '%', 'de indicações fechadas', g3) +
+            _kpi('💰', 'COMISSÃO ACUM.', 'R$ ' + formatCurrency(comAcum), 'total ganho', g4) +
+        '</div>' +
+        '<div class="dash-grid-2">' +
+            '<div class="card">' +
+            '<h3 style="margin:0 0 12px;">📋 Status das Indicações</h3>' +
+            '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center;">' +
+            '<div style="padding:12px;background:var(--bg);border-radius:10px;">' +
+            '<div style="font-size:1.6rem;font-weight:800;color:var(--info);">' + emNeg.length + '</div>' +
+            '<div style="font-size:.73rem;color:var(--text-soft);">Em Negociação</div></div>' +
+            '<div style="padding:12px;background:var(--bg);border-radius:10px;">' +
+            '<div style="font-size:1.6rem;font-weight:800;color:var(--success);">' + fechadas.length + '</div>' +
+            '<div style="font-size:.73rem;color:var(--text-soft);">Fechadas</div></div>' +
+            '<div style="padding:12px;background:var(--bg);border-radius:10px;">' +
+            '<div style="font-size:1.6rem;font-weight:800;color:var(--danger);">' + perdidas.length + '</div>' +
+            '<div style="font-size:.73rem;color:var(--text-soft);">Perdidas</div></div></div>' +
+            '<div style="margin-top:14px;">' +
+            '<div style="font-size:.82rem;margin-bottom:4px;">Taxa de Conversão: <strong>' + convRate + '%</strong></div>' +
+            _pbar(Number(convRate), '#10b981') + '</div>' +
+            '</div>' +
+            '<div class="card"><h3 style="margin:0 0 8px;">📈 Indicações — 6 meses</h3>' + _barChart(months6, '#10b981') + '</div>' +
+        '</div>' +
+        '<div class="card" style="margin-top:18px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+            '<h3 style="margin:0;">📬 Indicações Recentes</h3>' +
+            '<button class="small-btn" onclick="showSection(\'dynamicContent\');typeof renderIndicadorReferrals===\'function\'&&renderIndicadorReferrals()">Ver todas</button>' +
+            '</div>' + refsHtml + '</div>';
+
+    initDashCounters();
+}
+
+// ── PRESIDENTE ───────────────────────────────────────────────────
+function renderPresidenteDashboardV2() {
+    var el = presidenteEl();
+    if (!el) return;
+
+    var month    = getCurrentMonthKey();
+    var clients  = app.state.clients || [];
+    var users    = app.state.users   || [];
+    var consults = users.filter(function(u) { return u.role === 'consultor'; });
+    var gestores = users.filter(function(u) { return u.role === 'gestor'; });
+    var parceiros = users.filter(function(u) { return u.role === 'instalador'; });
+    var tecnicos = users.filter(function(u) { return u.role === 'tecnico'; });
+    var fechados   = clients.filter(function(c) { return c.stage === 'Fechado'; });
+    var fechadosMes = fechados.filter(function(c) { return (c.closedDate || '').startsWith(month); });
+
+    var PPLAN = { 'Essencial': 44.9, 'Profissional': 54.9, 'Controle Total': 64.9, 'Empresas': 74.9 };
+    var mrr = fechados.reduce(function(s, c) { return s + (Number(c.monthlyFee) || PPLAN[c.plan] || 54.9); }, 0);
+    var receitaMes = fechadosMes.reduce(function(s, c) { return s + (Number(c.monthlyFee) || PPLAN[c.plan] || 54.9); }, 0);
+    var custoComissao = receitaMes * 0.18;
+    var margem    = receitaMes - custoComissao;
+    var margemPct = receitaMes > 0 ? (margem / receitaMes * 100).toFixed(1) : '0.0';
+    var perdidos  = clients.filter(function(c) { return c.stage === 'Perdido' && (c.updatedAt || '').startsWith(month); });
+    var totalBase = Math.max(1, fechados.length + perdidos.length);
+    var churnRate = ((perdidos.length / totalBase) * 100).toFixed(1);
+    var months6   = _last6Months();
+    var ranked    = buildRanking();
+
+    var g1 = 'linear-gradient(135deg,#1a2e4a 0%,#2d4a6e 100%)';
+    var g2 = 'linear-gradient(135deg,#10b981 0%,#059669 100%)';
+    var g3 = Number(churnRate) > 5 ? 'linear-gradient(135deg,#ef4444 0%,#dc2626 100%)' : 'linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%)';
+    var g4 = 'linear-gradient(135deg,#8b5cf6 0%,#6d28d9 100%)';
+
+    var rankHtml = ranked.slice(0, 5).map(function(r, i) {
+        var medals = ['🥇', '🥈', '🥉'];
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">' +
+            '<div style="display:flex;gap:8px;align-items:center;">' +
+            '<span style="font-size:1.1rem;">' + (medals[i] || '#' + (i + 1)) + '</span>' +
+            '<div><div style="font-size:.85rem;font-weight:600;">' + esc(r.user.name) + '</div>' +
+            '<div style="font-size:.72rem;color:var(--text-soft);">R$ ' + formatCurrency(r.m.commission) + ' comissão</div></div></div>' +
+            '<span style="font-weight:800;color:var(--accent);">' + r.m.salesCount + ' venda' + (r.m.salesCount !== 1 ? 's' : '') + '</span></div>';
+    }).join('');
+
+    var planHtml = Object.keys(PPLAN).map(function(plan) {
+        var count = fechados.filter(function(c) { return c.plan === plan; }).length;
+        var pct   = fechados.length > 0 ? Math.round(count / fechados.length * 100) : 0;
+        var rev   = count * PPLAN[plan];
+        return '<div style="margin-bottom:10px;">' +
+            '<div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:3px;">' +
+            '<span>' + plan + '</span>' +
+            '<span>' + count + ' cliente' + (count !== 1 ? 's' : '') + ' — R$ ' + formatCurrency(rev) + '</span></div>' +
+            _pbar(pct, '#1a2e4a') + '</div>';
+    }).join('');
+
+    var avgSales = fechadosMes.length;
+    var proj3Html = [1, 2, 3].map(function(i) {
+        var d = new Date();
+        d.setMonth(d.getMonth() + i);
+        var label = d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+        var acum  = fechados.length + avgSales * i;
+        var projRec = acum * (mrr / Math.max(1, fechados.length));
+        return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">' +
+            '<span style="font-size:.83rem;text-transform:capitalize;">' + label + '</span>' +
+            '<strong style="color:var(--success);">R$ ' + formatCurrency(projRec) + '</strong></div>';
+    }).join('');
+
+    el.innerHTML =
+        '<div class="section-header">' +
+        '<h2>👑 Visão Executiva — ' + getCurrentMonthLabel() + '</h2>' +
+        '<p style="color:var(--text-soft);font-size:.87rem;margin:0;">Panorama completo da operação Tracktiv</p>' +
+        (app.demoMode ? '<span class="pill pill-new" style="font-size:.8rem;">🎭 Modo Demo</span>' : '') +
+        '</div>' +
+        '<div class="dash-kpi-row">' +
+            _kpi('💳', 'RECEITA RECORRENTE', 'R$ ' + formatCurrency(mrr), 'base ativa — MRR', g1) +
+            _kpi('📈', 'MARGEM ESTIMADA', margemPct + '%', 'R$ ' + formatCurrency(margem) + ' / mês', g2) +
+            _kpi('📉', 'CHURN DO MÊS', churnRate + '%', perdidos.length + ' perdidos', g3) +
+            _kpi('🏷️', 'VENDAS DO MÊS', fechadosMes.length, consults.length + ' consultores ativos', g4, fechadosMes.length) +
+        '</div>' +
+        '<div class="dash-grid-2">' +
+            '<div class="card"><h3 style="margin:0 0 8px;">📊 Vendas — últimos 6 meses</h3>' + _barChart(months6, '#1a2e4a') + '</div>' +
+            '<div class="card"><h3 style="margin:0 0 14px;">🏆 Top Consultores</h3>' +
+            (ranked.length === 0 ? '<p style="color:var(--text-soft);text-align:center;padding:20px;">Nenhum consultor cadastrado.</p>' : rankHtml) + '</div>' +
+        '</div>' +
+        '<div class="dash-grid-2" style="margin-top:18px;">' +
+            '<div class="card"><h3 style="margin:0 0 12px;">🔢 Distribuição de Planos</h3>' + planHtml + '</div>' +
+            '<div class="card">' +
+            '<h3 style="margin:0 0 12px;">🔮 Projeção — próximos 3 meses</h3>' +
+            '<p style="font-size:.82rem;color:var(--text-soft);margin:0 0 12px;">Ritmo atual: <strong>' + avgSales + ' venda' + (avgSales !== 1 ? 's' : '') + '/mês</strong></p>' +
+            proj3Html +
+            '<div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;text-align:center;">' +
+            '<div style="font-size:.75rem;color:var(--text-soft);">Margem estimada (82%)</div>' +
+            '<div style="font-size:1.3rem;font-weight:800;color:var(--success);">R$ ' + formatCurrency(mrr * 0.82) + '</div></div>' +
+            '</div>' +
+        '</div>' +
+        '<div class="card" style="margin-top:18px;">' +
+            '<h3 style="margin:0 0 14px;">👔 Equipe Ativa</h3>' +
+            '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center;">' +
+            '<div style="padding:12px;background:var(--bg);border-radius:10px;">' +
+            '<div style="font-size:1.8rem;font-weight:800;color:var(--primary);">' + consults.length + '</div>' +
+            '<div style="font-size:.75rem;color:var(--text-soft);">Consultores</div></div>' +
+            '<div style="padding:12px;background:var(--bg);border-radius:10px;">' +
+            '<div style="font-size:1.8rem;font-weight:800;color:var(--accent);">' + gestores.length + '</div>' +
+            '<div style="font-size:.75rem;color:var(--text-soft);">Gestores</div></div>' +
+            '<div style="padding:12px;background:var(--bg);border-radius:10px;">' +
+            '<div style="font-size:1.8rem;font-weight:800;color:var(--info);">' + parceiros.length + '</div>' +
+            '<div style="font-size:.75rem;color:var(--text-soft);">Parceiros</div></div>' +
+            '<div style="padding:12px;background:var(--bg);border-radius:10px;">' +
+            '<div style="font-size:1.8rem;font-weight:800;color:var(--success);">' + tecnicos.length + '</div>' +
+            '<div style="font-size:.75rem;color:var(--text-soft);">Técnicos</div></div>' +
+            '</div></div>';
+
+    initDashCounters();
+}
+
+// ── EXECUTIVO ────────────────────────────────────────────────────
+function renderExecutivoDashboardV2() {
+    var u = app.currentUser;
+    if (!u || u.role !== 'executivo') return;
+    var el = document.getElementById('dynamicContent');
+    if (!el) return;
+
+    var m       = calcExecMetrics(u.id);
+    var pays    = getExecPayments(u.id);
+    var sales   = getExecSales(u.id);
+    var configs = getExecClientConfig(u.id);
+    var clients = app.state.clients || [];
+    var month   = getCurrentMonthKey();
+    var anoKey  = String(new Date().getFullYear());
+    var anoComm = pays.filter(function(p) { return p.month.startsWith(anoKey); }).reduce(function(s, p) { return s + (p.portfolioComm || 0); }, 0)
+                + sales.filter(function(s) { return s.month && s.month.startsWith(anoKey); }).reduce(function(s, x) { return s + (x.commValue || 0); }, 0);
+    var thisMes = pays.filter(function(p) { return p.month === month; });
+    var pendPays = thisMes.filter(function(p) { return p.commissionStatus !== 'pago'; });
+    var months6  = _last6Months(function(key) {
+        return pays.filter(function(p) { return p.month === key; }).reduce(function(s, p) { return s + (p.portfolioComm || 0); }, 0)
+             + sales.filter(function(s) { return s.month === key; }).reduce(function(s2, x) { return s2 + (x.commValue || 0); }, 0);
+    });
+
+    var g1 = 'linear-gradient(135deg,#1a2e4a 0%,#2d4a6e 100%)';
+    var g2 = 'linear-gradient(135deg,#f5820d 0%,#e06d00 100%)';
+    var g3 = m.pendComm > 0 ? 'linear-gradient(135deg,#f59e0b 0%,#d97706 100%)' : 'linear-gradient(135deg,#10b981 0%,#059669 100%)';
+    var g4 = 'linear-gradient(135deg,#8b5cf6 0%,#6d28d9 100%)';
+
+    var cartHtml = configs.length === 0
+        ? '<p style="text-align:center;color:var(--text-soft);padding:20px;">Aguardando vinculação de clientes.</p>'
+        : configs.slice(0, 6).map(function(cfg) {
+            var c    = clients.find(function(x) { return x.id === cfg.clientId; });
+            var pay  = thisMes.find(function(p) { return p.clientId === cfg.clientId; });
+            var stat = pay ? (pay.commissionStatus === 'pago' ? '✅ Pago' : '⏳ Pendente') : '—';
+            var stCol = pay && pay.commissionStatus === 'pago' ? 'var(--success)' : 'var(--warning)';
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">' +
+                '<div><div style="font-size:.83rem;font-weight:600;">' + esc(c ? c.name : 'Cliente') + '</div>' +
+                '<div style="font-size:.72rem;color:var(--text-soft);">Vence dia ' + (cfg.paymentDay || '—') + '</div></div>' +
+                '<div style="text-align:right;">' +
+                '<div style="font-weight:700;color:var(--accent);">R$ ' + formatCurrency((pay && pay.portfolioComm) || 0) + '</div>' +
+                '<div style="font-size:.72rem;color:' + stCol + ';">' + stat + '</div>' +
+                '</div></div>';
+        }).join('');
+
+    el.innerHTML =
+        '<div class="section-header">' +
+        '<h2>📊 Dashboard — Parceiro Executivo</h2>' +
+        '<p style="color:var(--text-soft);font-size:.87rem;margin:0;">Bem-vindo, ' + esc(u.name) + '! Resumo completo da sua comissão.</p>' +
+        '</div>' +
+        '<div class="dash-kpi-row">' +
+            _kpi('💼', 'CLIENTES', m.clientCount, 'na sua carteira', g1, m.clientCount) +
+            _kpi('💰', 'COMISSÃO DO MÊS', 'R$ ' + formatCurrency(m.totalComissaoMes), 'prevista', g2) +
+            _kpi('⏳', 'PENDENTE', 'R$ ' + formatCurrency(m.pendComm), 'aguardando liberação', g3) +
+            _kpi('📅', 'ACUMULADO ' + anoKey, 'R$ ' + formatCurrency(anoComm), 'total do ano', g4) +
+        '</div>' +
+        '<div class="dash-grid-2">' +
+            '<div class="card">' +
+            '<h3 style="margin:0 0 8px;">📈 Comissão — últimos 6 meses</h3>' +
+            '<div style="font-size:.75rem;color:var(--text-soft);margin-bottom:8px;">Valores em R$</div>' +
+            _barChart(months6, '#f5820d') +
+            '</div>' +
+            '<div class="card">' +
+            '<h3 style="margin:0 0 12px;">💡 Composição da Comissão</h3>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center;">' +
+            '<div style="padding:12px;background:var(--bg);border-radius:10px;">' +
+            '<div style="font-size:.7rem;color:var(--text-soft);margin-bottom:4px;">CARTEIRA</div>' +
+            '<strong style="color:var(--accent);">R$ ' + formatCurrency(m.totalPortfolioComm) + '</strong></div>' +
+            '<div style="padding:12px;background:var(--bg);border-radius:10px;">' +
+            '<div style="font-size:.7rem;color:var(--text-soft);margin-bottom:4px;">VENDAS</div>' +
+            '<strong style="color:var(--accent);">' + (u.hasConsultorRole ? 'R$ ' + formatCurrency(m.thisMoSalesComm) : '—') + '</strong></div>' +
+            '<div style="padding:12px;background:var(--bg);border-radius:10px;">' +
+            '<div style="font-size:.7rem;color:var(--text-soft);margin-bottom:4px;">RECORRÊNCIA</div>' +
+            '<strong style="color:var(--accent);">' + (u.hasRecurrence ? 'R$ ' + formatCurrency(m.recurrenceComm) : '—') + '</strong></div>' +
+            '</div></div>' +
+        '</div>' +
+        '<div class="card" style="margin-top:18px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+            '<h3 style="margin:0;">💼 Carteira — ' + getCurrentMonthLabel() + '</h3>' +
+            '<span style="font-size:.82rem;color:' + (pendPays.length > 0 ? 'var(--warning)' : 'var(--success)') + ';">' +
+            (pendPays.length > 0 ? pendPays.length + ' pagamento' + (pendPays.length > 1 ? 's' : '') + ' pendente' + (pendPays.length > 1 ? 's' : '') : '✅ Tudo pago') + '</span>' +
+            '</div>' + cartHtml + '</div>';
+
+    showSection('dynamicContent');
+    initDashCounters();
+}
+
+// ── CLIENTE ──────────────────────────────────────────────────────
+function renderClienteHomeV2() {
+    var u   = app.currentUser;
+    var crm = (app.state.clients || []).find(function(c) { return c.id === u.clientId; });
+    var el  = document.getElementById('clienteHome');
+    if (!el) return;
+
+    var docs       = (app.state.clientDocuments || []).filter(function(d) { return d.clientId === u.clientId; });
+    var refs       = (app.state.clientReferrals || []).filter(function(r) { return r.clientUserId === u.id; });
+    var approvedR  = refs.filter(function(r) { return r.status === 'approved'; }).length;
+    var chamados   = (app.state.chamados || []).filter(function(ch) { return ch.clientId === u.clientId; });
+    var openCh     = chamados.filter(function(ch) { return ch.status !== 'Fechado' && ch.status !== 'Resolvido'; });
+    var contracted = u.contractedServices || [];
+    var today      = todayISO();
+
+    var docsVenc = docs.filter(function(d) {
+        if (!d.expiresAt || d.noExpiry) return false;
+        var diff = daysDiff(today, d.expiresAt);
+        return diff >= 0 && diff <= 30;
+    });
+
+    var pendForms = (app.state.tecnicoFormSends || []).filter(function(s) { return s.clientId === u.clientId && s.status !== 'preenchido'; });
+    var chkItems  = (app.state.docChecklists || {})[u.id] || [];
+    var chkDone   = chkItems.filter(function(i) { return _chkStatus(i) === 'concluido'; }).length;
+    var chkPending = chkItems.length - chkDone;
+
+    var hasAlert = docsVenc.length > 0 || pendForms.length > 0 || chkPending > 0 || openCh.length > 0;
+    var hasTracking = crm && crm.stage === 'Fechado';
+
+    var PPLAN = { 'Essencial': 44.9, 'Profissional': 54.9, 'Controle Total': 64.9, 'Empresas': 74.9 };
+    var monthFee = crm ? (Number(crm.monthlyFee) || PPLAN[crm.plan] || 0) : 0;
+
+    var g1 = 'linear-gradient(135deg,#1a2e4a 0%,#2d4a6e 100%)';
+    var g2 = 'linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%)';
+    var g3 = 'linear-gradient(135deg,#10b981 0%,#059669 100%)';
+    var g4 = 'linear-gradient(135deg,#8b5cf6 0%,#6d28d9 100%)';
+
+    var sigCardsHtml = renderAssinaturaCards(u.id);
+
+    var alertHtml = hasAlert
+        ? '<div class="card" style="margin-bottom:16px;border-left:4px solid var(--warning);background:#fffbeb;">' +
+          '<h3 style="margin:0 0 10px;color:#92400e;">🔔 Itens que precisam de atenção</h3>' +
+          (pendForms.length > 0 ? '<div class="dash-alert warn">📋 <strong>' + pendForms.length + '</strong> formulário' + (pendForms.length > 1 ? 's' : '') + ' enviado' + (pendForms.length > 1 ? 's' : '') + ' aguardando preenchimento</div>' : '') +
+          (chkPending > 0 ? '<div class="dash-alert warn">📄 <strong>' + chkPending + '</strong> documento' + (chkPending > 1 ? 's' : '') + ' pendente' + (chkPending > 1 ? 's' : '') + ' no checklist</div>' : '') +
+          (docsVenc.length > 0 ? '<div class="dash-alert danger">⚠️ <strong>' + docsVenc.length + '</strong> documento' + (docsVenc.length > 1 ? 's' : '') + ' vencendo em 30 dias</div>' : '') +
+          (openCh.length > 0 ? '<div class="dash-alert info">🎫 <strong>' + openCh.length + '</strong> chamado' + (openCh.length > 1 ? 's' : '') + ' aberto' + (openCh.length > 1 ? 's' : '') + ' em andamento</div>' : '') +
+          '</div>'
+        : '';
+
+    var kpiHtml =
+        '<div class="dash-kpi-row" style="margin-bottom:20px;">' +
+            _kpi('📦', 'PLANO ATUAL', crm ? esc(crm.plan || '—') : '—', crm ? 'R$ ' + formatCurrency(monthFee) + '/mês' : 'aguardando ativação', g1) +
+            _kpi('📄', 'DOCUMENTOS', docs.length, docsVenc.length > 0 ? docsVenc.length + ' vencendo em breve' : 'todos atualizados', g2, docs.length) +
+            _kpi('🎁', 'PONTOS', u.points || 0, approvedR + ' indicação' + (approvedR !== 1 ? 'ões' : '') + ' aprovada' + (approvedR !== 1 ? 's' : ''), g3, u.points || 0) +
+            _kpi('🎫', 'CHAMADOS', openCh.length, openCh.length > 0 ? 'em aberto' : 'nenhum aberto', g4, openCh.length) +
+        '</div>';
+
+    var recovHtml = hasTracking
+        ? '<div class="card" style="margin-bottom:16px;border:2px solid var(--danger);background:#fef2f2;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">' +
+          '<div><h3 style="margin:0;color:var(--danger);">🚨 Kit de Recuperação de Veículo</h3>' +
+          '<p style="margin:4px 0 0;font-size:.82rem;color:var(--text-soft);">Em caso de furto ou roubo, acione aqui.</p></div>' +
+          '<button class="btn-danger" onclick="typeof openRecoveryKit===\'function\'&&openRecoveryKit(\'' + u.id + '\')">Acionar Kit</button>' +
+          '</div></div>'
+        : '';
+
+    el.innerHTML =
+        '<div class="section-header">' +
+        '<h2>👋 Bem-vindo, ' + esc(u.name.split(' ')[0]) + '!</h2>' +
+        '<p style="color:var(--text-soft);font-size:.87rem;margin:0;">Seu portal de documentos, serviços e indicações Tracktiv.</p>' +
+        '</div>' +
+        sigCardsHtml +
+        alertHtml +
+        kpiHtml +
+        recovHtml +
+        '<div class="card" style="margin-bottom:16px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
+        '<h3 style="margin:0;">📦 Serviços Contratados</h3>' +
+        '<span style="font-size:.82rem;color:var(--text-soft);">' + contracted.length + ' serviço' + (contracted.length !== 1 ? 's' : '') + ' ativo' + (contracted.length !== 1 ? 's' : '') + '</span>' +
+        '</div>' +
+        (contracted.length === 0
+            ? '<div style="text-align:center;padding:24px;color:var(--text-soft);"><div style="font-size:2rem;">⚙️</div><p>Aguardando configuração pelo consultor.</p></div>'
+            : (function() {
+                var shtml = '';
+                (typeof SERVICE_MAP !== 'undefined' ? SERVICE_MAP : []).filter(function(s) { return contracted.includes(s.key); }).forEach(function(s) {
+                    var formKey = u.id + '_' + s.key;
+                    var fs   = ((app.state.segmentForms || {})[formKey] || { data: {} });
+                    var prog = typeof calcSegmentProgress === 'function' ? calcSegmentProgress(s.product, fs.data || {}) : 100;
+                    var col  = prog === 100 ? '#10b981' : 'var(--accent)';
+                    shtml += '<div style="margin-bottom:16px;">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+                        '<span style="font-size:.95rem;">' + s.icon + ' <strong>' + esc(s.label) + '</strong>' +
+                        (prog < 100 ? ' <span style="color:var(--danger);font-size:.78rem;font-weight:700;">🔴 Incompleto</span>' : ' <span style="color:var(--success);font-size:.78rem;font-weight:700;">✅ Completo</span>') +
+                        '</span>' +
+                        '<strong style="color:' + col + ';">' + prog + '%</strong></div>' +
+                        '<div class="seg-progress-track"><div class="seg-progress-fill" style="width:' + prog + '%;' + (prog === 100 ? 'background:linear-gradient(90deg,#10b981,#059669);' : '') + '"></div></div>' +
+                        '</div>';
+                });
+                return shtml || '<p style="color:var(--text-soft);text-align:center;padding:16px;">Serviços configurados.</p>';
+              })()
+        ) +
+        '</div>';
+
+    initDashCounters();
 }
 
 document.addEventListener('DOMContentLoaded', init);
