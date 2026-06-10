@@ -2187,6 +2187,9 @@ function loadState() {
             });
             if (!app.state.presidenteConfig)      app.state.presidenteConfig = {};
             if (!app.state.presidenteConfig.maxDocVersions) app.state.presidenteConfig.maxDocVersions = 3;
+            // Migração: assinatura digital v2
+            if (!app.state.signatureLibrary)   app.state.signatureLibrary   = {};
+            if (!app.state.signatureRequests)  app.state.signatureRequests  = [];
             // Migração: Qualificação, Link e Formulário do Técnico
             if (!app.state.tecnicoForms)         app.state.tecnicoForms         = {};
             if (!app.state.tecnicoSubmissions)   app.state.tecnicoSubmissions   = {};
@@ -10687,6 +10690,8 @@ function init() {
     checkReengagementQueue();
     // Document expiry alerts
     checkDocumentExpiry();
+    // Signature request expiry
+    checkSignatureExpiry();
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -16615,24 +16620,429 @@ function deleteCustomTraining(id) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   ASSINATURA DIGITAL (CANVAS)
+   ASSINATURA DIGITAL — SISTEMA COMPLETO v2
+   Tipos: desenhada / imagem / fonte cursiva / certificado A1
 ═══════════════════════════════════════════════════════════════════ */
 
-function openSignatureModal(label, onSave) {
-    showModal(`✍️ Assinar: ${esc(label)}`, `
-        <p class="text-muted" style="margin-bottom:12px;font-size:0.88rem;">Desenhe sua assinatura abaixo com o mouse ou dedo.</p>
-        <canvas id="sigCanvas" class="sig-canvas-wrapper" width="460" height="140"></canvas>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-            <button class="secondary-btn" style="font-size:0.82rem;" onclick="clearSigCanvas()">🗑 Limpar</button>
-            <button class="primary-btn" onclick="confirmSignature('${label.replace(/'/g,"\'")}')">✅ Confirmar assinatura</button>
-            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
-        </div>
-        <div id="sig_err" class="error-text" style="margin-top:6px;"></div>
-    `);
-    setTimeout(() => _initSigCanvas(onSave), 80);
+// ── HELPERS ──────────────────────────────────────────────────────
+
+function generateVerifyCode() {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+function getSimIP() {
+    return `187.${Math.floor(Math.random()*253)+1}.${Math.floor(Math.random()*253)+1}.${Math.floor(Math.random()*253)+1}`;
+}
+
+async function sha256Hash(str) {
+    try {
+        const buf  = new TextEncoder().encode(str);
+        const hash = await crypto.subtle.digest('SHA-256', buf);
+        return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+    } catch {
+        let h = 0;
+        for (let i = 0; i < str.length; i++) h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+        return Math.abs(h).toString(16).padStart(64,'a');
+    }
+}
+
+function sigTypeLabel(type) {
+    return { drawn: 'Assinatura Desenhada', image: 'Imagem Enviada', font: 'Fonte Cursiva', a1: 'Certificado Digital A1' }[type] || type;
+}
+
+function sigTypeBadge(type) {
+    const map = {
+        drawn: '<span class="sig-type-badge drawn">✏️ Simples</span>',
+        image: '<span class="sig-type-badge image">🖼 Avançada</span>',
+        font:  '<span class="sig-type-badge font">✒️ Avançada</span>',
+        a1:    '<span class="sig-type-badge a1">🔐 A1</span>'
+    };
+    return map[type] || '';
+}
+
+function getReqStatusHtml(req) {
+    if (!req) return '—';
+    if (req.status === 'recusado') return '<span class="badge badge-danger">❌ Recusado</span>';
+    if (req.status === 'expirado') return '<span class="badge" style="background:#f3f4f6;color:#9ca3af;">⌛ Expirado</span>';
+    if (req.status === 'completo') return '<span class="badge badge-active">✅ Assinado</span>';
+    const total = (req.signers || []).length;
+    const done  = (req.signers || []).filter(s => s.status === 'assinado').length;
+    if (done > 0 && done < total) return `<span class="badge badge-warn">✍️ Parcial (${done}/${total})</span>`;
+    return '<span class="badge badge-warn">⏳ Aguardando</span>';
+}
+
+function removeWhiteBackground(src, callback) {
+    const img = new Image();
+    img.onload = function() {
+        const cv  = document.createElement('canvas');
+        cv.width  = img.width; cv.height = img.height;
+        const ctx = cv.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const d = ctx.getImageData(0, 0, cv.width, cv.height);
+        for (let i = 0; i < d.data.length; i += 4) {
+            if (d.data[i] > 220 && d.data[i+1] > 220 && d.data[i+2] > 220) d.data[i+3] = 0;
+        }
+        ctx.putImageData(d, 0, 0);
+        callback(cv.toDataURL('image/png'));
+    };
+    img.src = src;
+}
+
+// ── SIGNATURE LIBRARY ─────────────────────────────────────────────
+
+function getSigLibrary(userId) {
+    if (!app.state.signatureLibrary)         app.state.signatureLibrary = {};
+    if (!app.state.signatureLibrary[userId]) app.state.signatureLibrary[userId] = [];
+    return app.state.signatureLibrary[userId];
+}
+
+function getDefaultSig(userId, docType) {
+    const lib = getSigLibrary(userId);
+    return lib.find(s => s.defaultFor && s.defaultFor.includes(docType)) || lib.find(s => s.isDefault) || lib[0] || null;
+}
+
+function openSigLibraryModal(userId) {
+    const lib = getSigLibrary(userId);
+    const rows = lib.length === 0
+        ? '<p style="color:var(--text-soft);font-size:0.88rem;padding:12px 0;">Nenhuma assinatura salva ainda.</p>'
+        : lib.map(s => `
+            <div class="sig-lib-card">
+                <div class="sig-lib-preview">
+                    ${s.imageData ? `<img src="${s.imageData}" alt="sig" style="max-height:40px;max-width:120px;object-fit:contain;">` :
+                      s.type === 'a1' ? `<span style="font-size:0.75rem;font-weight:700;color:var(--info);">🔐 ${esc(s.a1Name||'')}</span>` : '—'}
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <strong>${esc(s.name)}</strong>
+                    <div style="font-size:0.75rem;color:var(--text-soft);">${sigTypeLabel(s.type)}</div>
+                    ${s.defaultFor?.length ? `<div style="font-size:0.72rem;color:var(--accent);">Padrão: ${s.defaultFor.join(', ')}</div>` : ''}
+                    ${s.isDefault ? '<span class="badge badge-active" style="font-size:0.68rem;padding:1px 6px;">⭐ Padrão geral</span>' : ''}
+                </div>
+                <div style="display:flex;gap:6px;flex-shrink:0;">
+                    <button class="small-btn" onclick="openSetDefaultModal('${userId}','${s.id}')">⭐</button>
+                    <button class="danger-btn small-btn" onclick="deleteSigFromLibrary('${userId}','${s.id}')">🗑</button>
+                </div>
+            </div>`).join('');
+    showModal('📚 Biblioteca de Assinaturas', `
+        <div style="margin-bottom:20px;">${rows}</div>
+        <div class="actions" style="flex-wrap:wrap;">
+            <button class="primary-btn" onclick="closeModal();openFullSignatureModal({userId:'${userId}',saveToLib:true})">+ Nova assinatura</button>
+            <button class="secondary-btn" onclick="closeModal()">Fechar</button>
+        </div>
+    `);
+}
+
+function openSetDefaultModal(userId, sigId) {
+    const DOC_TYPES = [
+        { key: 'geral',    label: 'Geral (todos os documentos)' },
+        { key: 'contrato', label: 'Contratos' },
+        { key: 'proposta', label: 'Propostas' },
+        { key: 'sst',      label: 'Documentos SST' },
+        { key: 'outros',   label: 'Outros documentos' }
+    ];
+    const lib = getSigLibrary(userId);
+    const sig = lib.find(s => s.id === sigId);
+    if (!sig) return;
+    showModal(`⭐ Definir padrão — ${esc(sig.name)}`, `
+        <p style="font-size:0.85rem;color:var(--text-soft);margin:0 0 14px;">Defina para quais documentos esta assinatura será sugerida automaticamente.</p>
+        ${DOC_TYPES.map(t => `<label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer;">
+            <input type="checkbox" data-dtype="${t.key}" ${(sig.defaultFor||[]).includes(t.key)?'checked':''} style="width:16px;height:16px;">
+            ${t.label}</label>`).join('')}
+        <label style="display:flex;align-items:center;gap:10px;margin-bottom:14px;cursor:pointer;">
+            <input type="checkbox" id="sigIsDefault" ${sig.isDefault?'checked':''} style="width:16px;height:16px;">
+            Marcar como assinatura padrão geral</label>
+        <div class="actions">
+            <button class="primary-btn" onclick="saveSetDefault('${userId}','${sigId}')">💾 Salvar</button>
+            <button class="secondary-btn" onclick="openSigLibraryModal('${userId}')">Voltar</button>
+        </div>
+    `);
+}
+
+function saveSetDefault(userId, sigId) {
+    const lib  = getSigLibrary(userId);
+    const sig  = lib.find(s => s.id === sigId);
+    if (!sig) return;
+    sig.defaultFor = Array.from(document.querySelectorAll('[data-dtype]:checked')).map(el => el.dataset.dtype);
+    sig.isDefault  = document.getElementById('sigIsDefault')?.checked || false;
+    if (sig.isDefault) lib.forEach(s => { if (s.id !== sigId) s.isDefault = false; });
+    saveState();
+    showToast('Configuração salva!', 'success');
+    openSigLibraryModal(userId);
+}
+
+function deleteSigFromLibrary(userId, sigId) {
+    if (!confirm('Excluir esta assinatura da biblioteca?')) return;
+    app.state.signatureLibrary[userId] = getSigLibrary(userId).filter(s => s.id !== sigId);
+    saveState();
+    openSigLibraryModal(userId);
+}
+
+// ── MULTI-TYPE SIGNATURE CREATOR ──────────────────────────────────
+
+let _sigModalOpts    = null;
+let _sigSelectedFont = 'Dancing Script';
+
+function openFullSignatureModal(opts) {
+    _sigModalOpts    = opts || {};
+    _sigSelectedFont = 'Dancing Script';
+    window._currentSigTab = 'drawn';
+    window._currentLibSig = null;
+    const uid = opts?.userId || app.currentUser?.id;
+    const lib = getSigLibrary(uid);
+
+    const libHtml = lib.length > 0 ? `
+        <div style="margin-bottom:14px;padding:10px 12px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
+            <div style="font-size:0.75rem;font-weight:700;color:var(--text-soft);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Assinaturas salvas</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;">
+                ${lib.map(s => `
+                    <button class="sig-lib-thumb" id="libthumb_${s.id}" onclick="_selectLibSig('${s.id}')">
+                        ${s.imageData ? `<img src="${s.imageData}" style="height:28px;max-width:70px;object-fit:contain;">` :
+                          s.type==='font' ? `<span style="font-family:'${esc(s.fontFamily)}',cursive;font-size:18px;white-space:nowrap;overflow:hidden;max-width:80px;">${esc((s.fontText||'').substring(0,12))}</span>` :
+                          `<span style="font-size:0.75rem;font-weight:700;">🔐 A1</span>`}
+                        <div style="font-size:0.62rem;margin-top:2px;white-space:nowrap;overflow:hidden;max-width:80px;text-overflow:ellipsis;">${esc(s.name)}</div>
+                    </button>`).join('')}
+                <button class="sig-lib-thumb" id="libthumb_null" onclick="_selectLibSig(null)"><span style="font-size:1.1rem;">+</span><div style="font-size:0.62rem;">Nova</div></button>
+            </div>
+        </div>` : '';
+
+    showModal(opts?.docName ? `✍️ Assinar: ${esc(opts.docName)}` : '✍️ Criar assinatura', `
+        ${libHtml}
+        <div id="sigCreatorWrap">${_buildSigTabsHtml('drawn', '')}</div>
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <button class="primary-btn" onclick="_confirmFullSig()">✅ Confirmar assinatura</button>
+            ${opts?.proposalSigId ? `<button class="secondary-btn" onclick="_rejectProposal('${opts.proposalSigId}')">✗ Recusar proposta</button>` :
+              opts?.requestId    ? `<button class="secondary-btn" onclick="rejectDocSignature('${opts.requestId}','${uid}')">✗ Recusar</button>` : ''}
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+        <div id="sigFullErr" class="error-text" style="margin-top:6px;"></div>
+    `);
+
+    const def = getDefaultSig(uid, opts?.docType || 'geral');
+    if (def && lib.length > 0) {
+        setTimeout(() => _selectLibSig(def.id), 80);
+    } else {
+        setTimeout(() => _initSigCanvas(null), 80);
+    }
+}
+
+function _buildSigTabsHtml(activeTab, fontText) {
+    const tabs = [
+        { id: 'drawn', icon: '✏️', label: 'Desenhar' },
+        { id: 'image', icon: '🖼',  label: 'Imagem' },
+        { id: 'font',  icon: '✒️', label: 'Fonte Cursiva' },
+        { id: 'a1',    icon: '🔐', label: 'Cert. A1' }
+    ];
+    return `<div class="sig-tabs">${tabs.map(t =>
+        `<button class="sig-tab-btn ${t.id === activeTab ? 'active' : ''}" onclick="_activateSigTab('${t.id}')">${t.icon} ${t.label}</button>`
+    ).join('')}</div>
+    <div id="sigTabContent" style="padding:10px 0;">
+        ${activeTab === 'drawn' ? _sigTabDrawn() :
+          activeTab === 'image' ? _sigTabImage() :
+          activeTab === 'font'  ? _sigTabFont(fontText) :
+                                  _sigTabA1()}
+    </div>`;
+}
+
+function _sigTabDrawn() {
+    return `<p style="font-size:0.82rem;color:var(--text-soft);margin-bottom:8px;">Desenhe sua assinatura com o mouse ou dedo.</p>
+    <canvas id="sigCanvas" class="sig-canvas-wrapper" width="460" height="140"></canvas>
+    <button class="secondary-btn" style="margin-top:8px;font-size:0.8rem;" onclick="clearSigCanvas()">🗑 Limpar</button>`;
+}
+
+function _sigTabImage() {
+    return `<p style="font-size:0.82rem;color:var(--text-soft);margin-bottom:8px;">Envie uma foto da sua assinatura manuscrita (PNG/JPG). Fundo branco é removido automaticamente.</p>
+    <input type="file" id="sigImgInput" accept="image/png,image/jpeg" style="margin-bottom:10px;" onchange="_previewSigImage(this)">
+    <div id="sigImgPreview" style="min-height:60px;border:1.5px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--text-soft);font-size:0.85rem;">Nenhuma imagem selecionada</div>`;
+}
+
+function _sigTabFont(fontText) {
+    const fonts = [
+        { name: 'Dancing Script', label: 'Elegante' },
+        { name: 'Great Vibes',    label: 'Clássica'  },
+        { name: 'Pacifico',       label: 'Moderna'   }
+    ];
+    return `<p style="font-size:0.82rem;color:var(--text-soft);margin-bottom:8px;">Digite seu nome e escolha o estilo.</p>
+    <input type="text" id="sigFontText" placeholder="Seu nome completo" value="${esc(fontText || app.currentUser?.name || '')}"
+        oninput="_updateFontPreview()" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;width:100%;margin-bottom:10px;font-size:0.95rem;box-sizing:border-box;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        ${fonts.map((f, i) => `<button class="sig-font-opt ${i===0?'active':''}" data-font="${f.name}" onclick="_selectFont(this,'${f.name}')"
+            style="font-family:'${f.name}',cursive;font-size:20px;padding:7px 14px;flex:1;">${f.label}</button>`).join('')}
+    </div>
+    <canvas id="fontSigCanvas" width="460" height="100" style="border:1px solid var(--border);border-radius:10px;width:100%;display:block;"></canvas>`;
+}
+
+function _sigTabA1() {
+    return `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px;margin-bottom:12px;font-size:0.82rem;">
+        <strong>🔐 Certificado Digital A1 (ICP-Brasil)</strong><br>
+        <span style="color:var(--text-soft);">Nível máximo de validade jurídica — equivale à assinatura com reconhecimento em cartório.</span>
+    </div>
+    <div class="form-grid">
+        <div class="field full-width"><label>Arquivo do certificado (.pfx / .p12)</label>
+            <input type="file" id="sigA1File" accept=".pfx,.p12" onchange="_loadA1Cert(this)"></div>
+        <div class="field"><label>Senha do certificado *</label>
+            <input id="sigA1Pass" type="password" placeholder="Senha do certificado"></div>
+        <div class="field"><label>Nome do titular</label>
+            <input id="sigA1Name" type="text" placeholder="Nome conforme certificado" value="${esc(app.currentUser?.name||'')}"></div>
+        <div class="field"><label>CPF do titular</label>
+            <input id="sigA1Cpf" type="text" placeholder="000.000.000-00"></div>
+    </div>
+    <div id="sigA1Status" style="margin-top:8px;font-size:0.82rem;"></div>`;
+}
+
+function _activateSigTab(tab) {
+    const fontText = document.getElementById('sigFontText')?.value || '';
+    const wrap = document.getElementById('sigCreatorWrap');
+    if (!wrap) return;
+    wrap.innerHTML = _buildSigTabsHtml(tab, fontText);
+    window._currentSigTab = tab;
+    window._currentLibSig = null;
+    if (tab === 'drawn') setTimeout(() => _initSigCanvas(null), 60);
+    if (tab === 'font')  setTimeout(() => _updateFontPreview(), 60);
+}
+
+function _selectLibSig(sigId) {
+    const uid = _sigModalOpts?.userId || app.currentUser?.id;
+    const lib = getSigLibrary(uid);
+    window._currentLibSig = sigId ? lib.find(s => s.id === sigId) : null;
+    document.querySelectorAll('.sig-lib-thumb').forEach(b => {
+        b.classList.toggle('active', b.id === `libthumb_${sigId}`);
+    });
+    const wrap = document.getElementById('sigCreatorWrap');
+    if (!wrap) return;
+    if (!sigId) {
+        wrap.innerHTML = _buildSigTabsHtml('drawn', '');
+        window._currentSigTab = 'drawn';
+        setTimeout(() => _initSigCanvas(null), 60);
+    } else {
+        const s = lib.find(x => x.id === sigId);
+        if (!s) return;
+        wrap.innerHTML = `<div class="sig-selected-preview">
+            <div style="font-size:0.8rem;color:var(--text-soft);margin-bottom:8px;">Assinatura: <strong>${esc(s.name)}</strong> ${sigTypeBadge(s.type)}</div>
+            <div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff;text-align:center;min-height:60px;display:flex;align-items:center;justify-content:center;">
+                ${s.imageData ? `<img src="${s.imageData}" style="max-height:80px;max-width:100%;object-fit:contain;">` :
+                  s.type==='font' ? `<span style="font-family:'${esc(s.fontFamily)}',cursive;font-size:40px;color:#0f172a;">${esc(s.fontText||'')}</span>` :
+                  `<div style="font-size:0.9rem;font-weight:700;color:var(--info);">🔐 ${esc(s.a1Name||'')} · CPF: ${esc(s.a1Cpf||'')}</div>`}
+            </div>
+        </div>`;
+    }
+}
+
+function _previewSigImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        removeWhiteBackground(e.target.result, cleaned => {
+            window._sigImagePreviewData = cleaned;
+            const prev = document.getElementById('sigImgPreview');
+            if (prev) prev.innerHTML = `<img src="${cleaned}" style="max-height:80px;max-width:100%;object-fit:contain;">`;
+        });
+    };
+    reader.readAsDataURL(file);
+}
+
+function _selectFont(btn, fontName) {
+    document.querySelectorAll('.sig-font-opt').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    _sigSelectedFont = fontName;
+    _updateFontPreview();
+}
+
+function _updateFontPreview() {
+    const text   = document.getElementById('sigFontText')?.value || app.currentUser?.name || '';
+    const canvas = document.getElementById('fontSigCanvas');
+    if (!canvas) return;
+    const ctx    = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font         = `italic 48px '${_sigSelectedFont}', cursive`;
+    ctx.fillStyle    = '#0f172a';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+}
+
+function _loadA1Cert(input) {
+    if (!input.files[0]) return;
+    const el = document.getElementById('sigA1Status');
+    if (el) el.innerHTML = `<span style="color:var(--warning);">⏳ Validando certificado...</span>`;
+    setTimeout(() => {
+        if (el) el.innerHTML = `<span style="color:var(--success);">✅ Arquivo carregado. Confirme nome e CPF abaixo.</span>`;
+    }, 800);
+}
+
+async function _confirmFullSig() {
+    const uid   = _sigModalOpts?.userId || app.currentUser?.id;
+    const errEl = document.getElementById('sigFullErr');
+    let sigData = null;
+
+    if (window._currentLibSig) {
+        sigData = { ...window._currentLibSig };
+    } else {
+        const tab = window._currentSigTab || 'drawn';
+        if (tab === 'drawn') {
+            const canvas = document.getElementById('sigCanvas');
+            if (!canvas) { if (errEl) errEl.textContent = 'Erro: canvas não encontrado.'; return; }
+            const px = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+            if (!px.some((v, i) => i % 4 === 3 && v > 10)) {
+                if (errEl) errEl.textContent = 'Desenhe sua assinatura antes de confirmar.'; return;
+            }
+            sigData = { type: 'drawn', imageData: canvas.toDataURL('image/png') };
+        } else if (tab === 'image') {
+            if (!window._sigImagePreviewData) { if (errEl) errEl.textContent = 'Selecione uma imagem de assinatura.'; return; }
+            sigData = { type: 'image', imageData: window._sigImagePreviewData };
+        } else if (tab === 'font') {
+            const text = document.getElementById('sigFontText')?.value.trim();
+            if (!text) { if (errEl) errEl.textContent = 'Digite seu nome para a assinatura.'; return; }
+            const canvas = document.getElementById('fontSigCanvas');
+            sigData = { type: 'font', fontFamily: _sigSelectedFont, fontText: text, imageData: canvas ? canvas.toDataURL('image/png') : null };
+        } else if (tab === 'a1') {
+            const a1File = document.getElementById('sigA1File')?.files[0];
+            const a1Pass = document.getElementById('sigA1Pass')?.value;
+            const a1Name = document.getElementById('sigA1Name')?.value.trim();
+            const a1Cpf  = document.getElementById('sigA1Cpf')?.value.trim();
+            if (!a1File) { if (errEl) errEl.textContent = 'Selecione o arquivo .pfx / .p12.'; return; }
+            if (!a1Pass) { if (errEl) errEl.textContent = 'Informe a senha do certificado.'; return; }
+            if (!a1Name) { if (errEl) errEl.textContent = 'Informe o nome do titular.'; return; }
+            sigData = { type: 'a1', a1Name, a1Cpf: a1Cpf || '—', imageData: null };
+        }
+        // Auto-save new signatures to library (up to 10 per user)
+        if (sigData) {
+            const lib = getSigLibrary(uid);
+            if (lib.length < 10) {
+                lib.push({ id: `slib_${Date.now()}`, userId: uid, name: sigTypeLabel(sigData.type), ...sigData, isDefault: lib.length === 0, defaultFor: [] });
+            }
+        }
+    }
+
+    if (!sigData) return;
+
+    if (_sigModalOpts?.requestId) {
+        await _finishDocSign(_sigModalOpts.requestId, uid, sigData);
+        return;
+    }
+    if (_sigModalOpts?.onConfirm) {
+        saveState();
+        closeModal();
+        window._currentLibSig = null;
+        _sigModalOpts.onConfirm(sigData);
+        return;
+    }
+    if (!app.state.clientSignatures)       app.state.clientSignatures = {};
+    if (!app.state.clientSignatures[uid])  app.state.clientSignatures[uid] = [];
+    const u = app.currentUser;
+    app.state.clientSignatures[uid].push({ id: `sig_${Date.now()}`, label: _sigModalOpts?.docName || 'Assinatura', imageData: sigData.imageData, signedAt: todayISO(), signerName: u?.name || 'Assinante', type: sigData.type });
+    saveState();
+    closeModal();
+    window._currentLibSig = null;
+    showToast('Assinatura registrada com sucesso!', 'success');
+}
+
+// ── BACKWARD COMPAT ───────────────────────────────────────────────
+
 let _sigOnSave = null;
+
+function openSignatureModal(label, onSave) {
+    openFullSignatureModal({ userId: app.currentUser?.id, docName: label, onConfirm: onSave ? (sig) => onSave(sig) : null });
+}
 
 function _initSigCanvas(onSave) {
     _sigOnSave = onSave;
@@ -16641,87 +17051,259 @@ function _initSigCanvas(onSave) {
     const ctx = canvas.getContext('2d');
     ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     let drawing = false, lastX = 0, lastY = 0;
-
     function getPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        if (e.touches) return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
-        return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+        const rect   = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
+        if (e.touches) return { x: (e.touches[0].clientX - rect.left)*scaleX, y: (e.touches[0].clientY - rect.top)*scaleY };
+        return { x: (e.clientX - rect.left)*scaleX, y: (e.clientY - rect.top)*scaleY };
     }
-
-    canvas.addEventListener('mousedown', e => { drawing = true; const p = getPos(e); lastX = p.x; lastY = p.y; });
-    canvas.addEventListener('mousemove', e => {
-        if (!drawing) return;
-        const p = getPos(e);
-        ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(p.x, p.y); ctx.stroke();
-        lastX = p.x; lastY = p.y;
-    });
-    canvas.addEventListener('mouseup',   () => { drawing = false; });
-    canvas.addEventListener('mouseleave',() => { drawing = false; });
-    canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; const p = getPos(e); lastX = p.x; lastY = p.y; }, { passive: false });
-    canvas.addEventListener('touchmove',  e => {
-        e.preventDefault(); if (!drawing) return;
-        const p = getPos(e);
-        ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(p.x, p.y); ctx.stroke();
-        lastX = p.x; lastY = p.y;
-    }, { passive: false });
-    canvas.addEventListener('touchend', () => { drawing = false; });
+    canvas.addEventListener('mousedown',  e => { drawing=true; const p=getPos(e); lastX=p.x; lastY=p.y; });
+    canvas.addEventListener('mousemove',  e => { if(!drawing)return; const p=getPos(e); ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(p.x,p.y); ctx.stroke(); lastX=p.x; lastY=p.y; });
+    canvas.addEventListener('mouseup',    () => { drawing=false; });
+    canvas.addEventListener('mouseleave', () => { drawing=false; });
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing=true; const p=getPos(e); lastX=p.x; lastY=p.y; }, {passive:false});
+    canvas.addEventListener('touchmove',  e => { e.preventDefault(); if(!drawing)return; const p=getPos(e); ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(p.x,p.y); ctx.stroke(); lastX=p.x; lastY=p.y; }, {passive:false});
+    canvas.addEventListener('touchend',   () => { drawing=false; });
 }
 
 function clearSigCanvas() {
     const canvas = document.getElementById('sigCanvas');
-    if (!canvas) return;
-    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
 }
 
-function confirmSignature(label) {
-    const canvas = document.getElementById('sigCanvas');
-    const errEl  = document.getElementById('sig_err');
-    if (!canvas) return;
-    // Check if canvas has any drawing
-    const ctx  = canvas.getContext('2d');
-    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    const hasDrawing = data.some((v, i) => i % 4 === 3 && v > 10);
-    if (!hasDrawing) { if (errEl) errEl.textContent = 'Desenhe sua assinatura antes de confirmar.'; return; }
-    const imageData = canvas.toDataURL('image/png');
-    const u = app.currentUser;
-    if (!app.state.clientSignatures) app.state.clientSignatures = {};
-    const uid = u?.id || 'unknown';
-    if (!app.state.clientSignatures[uid]) app.state.clientSignatures[uid] = [];
-    const sig = { id: `sig_${Date.now()}`, label, imageData, signedAt: todayISO(), signerName: u?.name || 'Assinante' };
-    app.state.clientSignatures[uid].push(sig);
+function confirmSignature() { _confirmFullSig(); }
+
+// ── DOCUMENT SIGNATURE REQUESTS ───────────────────────────────────
+
+function createSignatureRequest(docName, docType, signerUserIds, expiryDays, docId) {
+    expiryDays = expiryDays || 15;
+    const expiry = new Date(); expiry.setDate(expiry.getDate() + expiryDays);
+    if (!app.state.signatureRequests) app.state.signatureRequests = [];
+    const req = {
+        id: `sreq_${Date.now()}`, docName, docType: docType || 'geral', docId: docId || null,
+        requestedBy: app.currentUser?.id, requestedByName: app.currentUser?.name,
+        requestedAt: todayISO(), expiresAt: expiry.toISOString().slice(0,10),
+        status: 'aguardando', verifyCode: generateVerifyCode(),
+        signers: signerUserIds.map(userId => {
+            const u = (app.state.users || []).find(x => x.id === userId);
+            return { userId, userName: u?.name||'—', userEmail: u?.email||'—', status: 'aguardando', signedAt: null, rejectedAt: null, rejectionReason: null, sigType: null, sigImageData: null, signerName: null, ip: null, docHash: null, a1Data: null };
+        })
+    };
+    app.state.signatureRequests.push(req);
+    signerUserIds.forEach(uid => addNotification(uid, 'sig_request', `✍️ "${docName}" aguarda sua assinatura. Código: ${req.verifyCode}`, null));
     saveState();
-    closeModal();
-    showToast('Assinatura registrada com sucesso!', 'success');
-    if (_sigOnSave) _sigOnSave(sig);
+    showToast(`Enviado para assinatura! Código: ${req.verifyCode}`, 'success', 5000);
+    return req.id;
 }
+
+function openSendForSignatureModal(docId) {
+    const doc = (app.state.clientDocuments || []).find(d => d.id === docId);
+    if (!doc) return;
+    const clients = (app.state.users || []).filter(u => u.role === 'cliente');
+    showModal(`📨 Enviar para assinatura — ${esc(doc.name)}`, `
+        <div class="form-grid">
+            <div class="field full-width"><label>Tipo de documento</label>
+                <select id="sreqDocType" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;">
+                    <option value="geral">Geral</option><option value="contrato">Contrato</option>
+                    <option value="proposta">Proposta</option><option value="sst">SST</option><option value="outros">Outros</option>
+                </select></div>
+            <div class="field full-width"><label>Signatários *</label>
+                ${clients.length===0 ? '<p class="text-muted" style="font-size:0.85rem;">Nenhum cliente com portal.</p>' :
+                  clients.map(u => `<label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;">
+                    <input type="checkbox" data-signer="${u.id}" style="width:14px;height:14px;">
+                    ${esc(u.name)} <small style="color:var(--text-soft);">${esc(u.email)}</small></label>`).join('')}
+            </div>
+            <div class="field"><label>Prazo para assinar</label>
+                <select id="sreqExpiry" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg);width:100%;">
+                    <option value="7">7 dias</option><option value="15" selected>15 dias</option><option value="30">30 dias</option>
+                </select></div>
+        </div>
+        <div id="sreqErr" class="error-text" style="margin-top:8px;"></div>
+        <div class="actions" style="margin-top:14px;">
+            <button class="primary-btn" onclick="submitSendForSignature('${docId}')">📨 Enviar</button>
+            <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        </div>
+    `);
+}
+
+function submitSendForSignature(docId) {
+    const docType   = document.getElementById('sreqDocType')?.value || 'geral';
+    const expiry    = parseInt(document.getElementById('sreqExpiry')?.value) || 15;
+    const signerIds = Array.from(document.querySelectorAll('[data-signer]:checked')).map(el => el.dataset.signer);
+    const errEl     = document.getElementById('sreqErr');
+    if (signerIds.length === 0) { if (errEl) errEl.textContent = 'Selecione pelo menos um signatário.'; return; }
+    const doc = (app.state.clientDocuments || []).find(d => d.id === docId);
+    createSignatureRequest(doc?.name || 'Documento', docType, signerIds, expiry, docId);
+    closeModal();
+}
+
+function openDocumentSignModal(requestId) {
+    const req = (app.state.signatureRequests || []).find(r => r.id === requestId);
+    if (!req) return;
+    openFullSignatureModal({ userId: app.currentUser?.id, requestId, docName: req.docName, docType: req.docType });
+}
+
+async function _finishDocSign(requestId, userId, sigData) {
+    const req    = (app.state.signatureRequests || []).find(r => r.id === requestId);
+    if (!req) return;
+    const signer = req.signers.find(s => s.userId === userId);
+    if (!signer) return;
+    const u    = (app.state.users||[]).find(x => x.id === userId) || app.currentUser;
+    const hash = await sha256Hash(req.docId + req.docName + userId + Date.now());
+    signer.status      = 'assinado';
+    signer.signedAt    = new Date().toISOString();
+    signer.sigType     = sigData.type;
+    signer.sigImageData = sigData.imageData;
+    signer.signerName  = sigData.type==='font' ? sigData.fontText : sigData.type==='a1' ? sigData.a1Name : u?.name||'';
+    signer.ip          = getSimIP();
+    signer.docHash     = hash;
+    signer.a1Data      = sigData.type==='a1' ? { name: sigData.a1Name, cpf: sigData.a1Cpf } : null;
+    const allSigned = req.signers.every(s => s.status === 'assinado');
+    req.status = allSigned ? 'completo' : req.signers.some(s => s.status === 'recusado') ? 'recusado' : 'parcial';
+    const requester = (app.state.users||[]).find(x => x.id === req.requestedBy);
+    if (requester) addNotification(requester.id, 'sig_signed', `✅ ${u?.name} assinou "${req.docName}"!`, null);
+    saveState(); closeModal();
+    showToast('✅ Documento assinado com sucesso!', 'success');
+    window._currentLibSig = null;
+    if (app.currentUser?.role === 'cliente') showClientePortal(); else renderAppViews();
+}
+
+function rejectDocSignature(requestId, userId) {
+    const reason = prompt('Motivo da recusa (opcional):') || 'Sem motivo informado';
+    const req    = (app.state.signatureRequests||[]).find(r => r.id === requestId);
+    if (!req) return;
+    const signer = req.signers.find(s => s.userId === userId);
+    if (!signer) return;
+    signer.status = 'recusado'; signer.rejectedAt = todayISO(); signer.rejectionReason = reason;
+    req.status = 'recusado';
+    const requester = (app.state.users||[]).find(x => x.id === req.requestedBy);
+    if (requester) addNotification(requester.id, 'sig_rejected', `❌ ${signer.userName} recusou "${req.docName}": ${reason}`, null);
+    saveState(); closeModal();
+    showToast('Recusa registrada.', 'warning');
+}
+
+function checkSignatureExpiry() {
+    const today = todayISO();
+    let changed = false;
+    (app.state.signatureRequests || []).forEach(req => {
+        if ((req.status === 'aguardando' || req.status === 'parcial') && req.expiresAt && req.expiresAt < today) {
+            req.status = 'expirado';
+            req.signers.filter(s => s.status === 'aguardando').forEach(s => s.status = 'expirado');
+            changed = true;
+        }
+    });
+    if (changed) saveState();
+}
+
+// ── SIGNATURE CERTIFICATE ─────────────────────────────────────────
+
+function renderSigCertificate(requestId) {
+    const req = (app.state.signatureRequests||[]).find(r => r.id === requestId);
+    if (!req) { showToast('Solicitação não encontrada.', 'error'); return; }
+    const rows = req.signers.filter(s => s.status === 'assinado').map(s => `
+        <tr>
+            <td style="padding:6px 8px;"><strong>${esc(s.signerName||s.userName)}</strong></td>
+            <td style="padding:6px 8px;">${esc(s.userEmail)}</td>
+            <td style="padding:6px 8px;white-space:nowrap;">${s.signedAt ? new Date(s.signedAt).toLocaleString('pt-BR') : '—'}</td>
+            <td style="padding:6px 8px;">${s.ip||'—'}</td>
+            <td style="padding:6px 8px;">${sigTypeLabel(s.sigType||'drawn')}${s.a1Data?`<br><small>CPF: ${esc(s.a1Data.cpf)}</small>`:''}</td>
+            <td style="padding:6px 8px;font-family:monospace;font-size:0.68rem;word-break:break-all;">${(s.docHash||'').slice(0,32)}…</td>
+        </tr>`).join('');
+    showModal('📄 Certificado de Assinatura', `
+        <div id="sigCertContent" style="font-family:Arial,sans-serif;">
+            <div style="text-align:center;padding:20px 0 16px;border-bottom:3px solid #1a2e4a;margin-bottom:16px;">
+                <div style="font-size:1.8rem;margin-bottom:6px;">✍️</div>
+                <h2 style="margin:0;color:#1a2e4a;font-size:1.2rem;">CERTIFICADO DE ASSINATURA ELETRÔNICA</h2>
+                <p style="margin:4px 0;color:#475569;font-size:0.82rem;">Assinado eletronicamente conforme MP 2.200-2/2001 e Lei nº 14.063/2020</p>
+            </div>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:0.85rem;">
+                <tr><td style="padding:5px 0;color:#475569;width:38%;">Documento:</td><td style="font-weight:700;">${esc(req.docName)}</td></tr>
+                <tr><td style="padding:5px 0;color:#475569;">Solicitado por:</td><td>${esc(req.requestedByName)}</td></tr>
+                <tr><td style="padding:5px 0;color:#475569;">Data da solicitação:</td><td>${formatDate(req.requestedAt)}</td></tr>
+                <tr><td style="padding:5px 0;color:#475569;">Código de verificação:</td><td><strong style="font-family:monospace;letter-spacing:2px;font-size:1rem;">${req.verifyCode}</strong></td></tr>
+                <tr><td style="padding:5px 0;color:#475569;">Status:</td><td>${req.status==='completo'?'<span style="color:green;font-weight:700;">✅ Assinado Completo</span>':esc(req.status)}</td></tr>
+            </table>
+            <h4 style="color:#1a2e4a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin:0 0 10px;">Registro de assinaturas</h4>
+            <table style="width:100%;border-collapse:collapse;font-size:0.78rem;margin-bottom:16px;">
+                <thead style="background:#f0f4f8;">
+                    <tr><th style="padding:7px 8px;text-align:left;">Nome</th><th style="padding:7px 8px;text-align:left;">E-mail</th><th style="padding:7px 8px;text-align:left;">Data/Hora</th><th style="padding:7px 8px;text-align:left;">IP</th><th style="padding:7px 8px;text-align:left;">Tipo</th><th style="padding:7px 8px;text-align:left;">Hash SHA-256</th></tr>
+                </thead>
+                <tbody>${rows || '<tr><td colspan="6" style="padding:10px;color:#888;">Nenhuma assinatura coletada ainda.</td></tr>'}</tbody>
+            </table>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;font-size:0.75rem;color:#475569;text-align:center;">
+                Certificado gerado pelo sistema Tracktiv Portal. Autenticidade verificável pelo código <strong>${req.verifyCode}</strong>.
+            </div>
+        </div>
+        <div class="actions" style="margin-top:14px;">
+            <button class="primary-btn" onclick="window.print()">🖨 Imprimir / PDF</button>
+            <button class="secondary-btn" onclick="closeModal()">Fechar</button>
+        </div>
+    `);
+}
+
+// ── CLIENTE: portal assinaturas ───────────────────────────────────
 
 function renderClienteAssinaturas() {
-    const u    = app.currentUser;
-    const el   = document.getElementById('clientePageContent');
+    const u  = app.currentUser;
+    const el = document.getElementById('clientePageContent');
     if (!el) return;
-    const sigs = (app.state.clientSignatures || {})[u?.id] || [];
+    const lib      = getSigLibrary(u?.id);
+    const propSigs = (app.state.proposalSignatures||[]).filter(s => s.clientUserId === u.id).sort((a,b)=>(b.sentAt||'').localeCompare(a.sentAt||''));
+    const reqSigs  = (app.state.signatureRequests||[]).filter(r => r.signers?.some(s => s.userId === u.id)).sort((a,b)=>(b.requestedAt||'').localeCompare(a.requestedAt||''));
+
     el.innerHTML = `
         <div class="section-header" style="margin-bottom:20px;">
-            <div><h2>✍️ Assinaturas Digitais</h2><p>Documentos e termos assinados por você.</p></div>
-            <button class="primary-btn" onclick="openSignatureModal('Termo de aceite de serviços Tracktiv', null)">+ Nova assinatura</button>
+            <div><h2>✍️ Assinaturas Digitais</h2><p>Gerencie sua biblioteca de assinaturas e documentos.</p></div>
+            <button class="primary-btn" onclick="openSigLibraryModal('${u?.id}')">📚 Minha Biblioteca</button>
         </div>
-        ${sigs.length === 0
-            ? `<div class="card" style="text-align:center;padding:40px;color:var(--text-soft);">
-                <div style="font-size:2rem;margin-bottom:10px;">✍️</div>
-                <p>Nenhuma assinatura registrada ainda.</p></div>`
-            : sigs.slice().reverse().map(s => `
-                <div class="card" style="margin-bottom:12px;">
-                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                        <div>
-                            <div style="font-weight:700;">${esc(s.label)}</div>
-                            <div class="sig-stamp">✅ Assinado por ${esc(s.signerName)} em ${formatDate(s.signedAt)}</div>
-                        </div>
-                    </div>
-                    <img src="${s.imageData}" style="max-width:200px;margin-top:10px;border:1px solid var(--border);border-radius:8px;" alt="assinatura">
+
+        ${lib.length > 0 ? `
+        <div class="card" style="margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h3 style="margin:0;">📚 Minhas assinaturas salvas (${lib.length})</h3>
+                <button class="small-btn" onclick="openFullSignatureModal({userId:'${u?.id}'})">+ Nova</button>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                ${lib.slice(0,4).map(s=>`
+                    <div class="sig-lib-card-mini">
+                        ${s.imageData ? `<img src="${s.imageData}" style="max-height:36px;max-width:90px;object-fit:contain;">` :
+                          s.type==='font' ? `<span style="font-family:'${esc(s.fontFamily)}',cursive;font-size:22px;">${esc((s.fontText||'').slice(0,12))}</span>` :
+                          `<span style="font-size:0.8rem;font-weight:700;">🔐 A1</span>`}
+                        <div style="font-size:0.68rem;color:var(--text-soft);margin-top:3px;">${esc(s.name)}</div>
+                        ${s.isDefault?'<div style="font-size:0.62rem;color:var(--accent);">⭐ Padrão</div>':''}
+                    </div>`).join('')}
+            </div>
+        </div>` : `
+        <div class="card" style="margin-bottom:16px;text-align:center;padding:24px;">
+            <div style="font-size:1.5rem;margin-bottom:8px;">✍️</div>
+            <p style="margin:0 0 12px;color:var(--text-soft);">Crie sua biblioteca de assinaturas para assinar documentos rapidamente.</p>
+            <button class="primary-btn" onclick="openFullSignatureModal({userId:'${u?.id}'})">Criar primeira assinatura</button>
+        </div>`}
+
+        ${renderAssinaturaCards(u?.id)}
+
+        ${[...propSigs.filter(s=>s.status!=='enviada'), ...reqSigs.filter(r=>!r.signers?.some(s=>s.userId===u.id&&s.status==='aguardando'))].length > 0 ? `
+        <div class="card">
+            <h3 style="margin:0 0 14px;">📋 Histórico</h3>
+            ${propSigs.filter(s=>s.status!=='enviada').map(s=>`
+                <div class="extrato-item" style="margin-bottom:8px;">
+                    <div><strong>Proposta — ${esc(s.plan)}</strong>
+                    <small style="display:block;color:var(--text-soft);">R$ ${formatCurrency(s.fee)}/mês · ${formatDate(s.sentAt)}</small></div>
+                    <span class="badge ${s.status==='assinada'?'badge-active':'badge-danger'}">${s.status==='assinada'?'✅ Assinada':'❌ Recusada'}</span>
                 </div>`).join('')}
-    `;
+            ${reqSigs.filter(r=>!r.signers?.some(s=>s.userId===u.id&&s.status==='aguardando')).map(r=>{
+                const mySig = r.signers?.find(s=>s.userId===u.id);
+                return `<div class="extrato-item" style="margin-bottom:8px;">
+                    <div><strong>${esc(r.docName)}</strong>
+                    <small style="display:block;color:var(--text-soft);">${esc(r.requestedByName)} · ${formatDate(r.requestedAt)}</small>
+                    ${mySig?.signedAt?`<small style="color:var(--success);">Assinado em ${new Date(mySig.signedAt).toLocaleString('pt-BR')}</small>`:''}</div>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        ${getReqStatusHtml(r)}
+                        ${r.status==='completo'?`<button class="small-btn" onclick="renderSigCertificate('${r.id}')">📄 Cert.</button>`:''}
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>` : ''}`;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -17369,7 +17951,7 @@ function renderGestorTecnicoFormHistory() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   FEATURE 1: ASSINATURA DIGITAL DE PROPOSTAS
+   FEATURE 1: ASSINATURA DIGITAL DE PROPOSTAS + DOCUMENTOS
 ═══════════════════════════════════════════════════════════════════ */
 
 function sendPropostaForSignature(clientId) {
@@ -17404,69 +17986,38 @@ function sendPropostaForSignature(clientId) {
 }
 
 function openClienteSignModal(sigId) {
-    const s = (app.state.proposalSignatures || []).find(x => x.id === sigId);
+    const s = (app.state.proposalSignatures||[]).find(x => x.id === sigId);
     if (!s) return;
-    showModal(`✍️ Assinatura Digital`, `
-        <div style="background:#f8fafc;border-radius:12px;padding:16px;margin-bottom:16px;font-size:0.85rem;">
-            <div style="font-weight:700;margin-bottom:8px;font-size:0.9rem;">PROPOSTA A ASSINAR</div>
-            <div style="display:grid;gap:5px;">
-                <div>📋 Plano: <strong>${esc(s.plan)}</strong></div>
-                <div>💰 Mensalidade: <strong style="color:var(--accent);">R$ ${formatCurrency(s.fee)}/mês</strong></div>
-                <div>📅 Gerada em: <strong>${formatDate(s.proposalDate)}</strong></div>
-            </div>
-        </div>
-        <div class="field" style="margin-bottom:12px;">
-            <label>Seu nome completo *</label>
-            <input id="sig_name" type="text" placeholder="Digite seu nome completo para assinar">
-        </div>
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px;margin-bottom:14px;font-size:0.83rem;color:#166534;">
-            <p style="margin:0 0 6px;font-weight:600;">Ao assinar você declara que:</p>
-            <ul style="margin:0;padding-left:18px;line-height:1.7;">
-                <li>Leu e compreendeu as condições desta proposta</li>
-                <li>Autoriza a Tracktiv a realizar a instalação do rastreador</li>
-                <li>Concorda com os valores e formas de pagamento</li>
-            </ul>
-        </div>
-        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:14px;">
-            <input type="checkbox" id="sig_accept" style="margin-top:3px;width:16px;height:16px;flex-shrink:0;">
-            <span style="font-size:0.85rem;">Li e aceito os termos desta proposta comercial.</span>
-        </label>
-        <div id="sig_err" class="error-text" style="margin-bottom:8px;"></div>
-        <div class="actions">
-            <button class="primary-btn" onclick="saveClienteSignature('${sigId}')">✍️ Confirmar Assinatura</button>
-            <button class="secondary-btn" onclick="rejectClienteSignature('${sigId}')">✗ Recusar proposta</button>
-        </div>
-    `);
+    openFullSignatureModal({
+        userId: app.currentUser?.id,
+        docName: `Proposta — Plano ${s.plan} · R$ ${formatCurrency(s.fee)}/mês`,
+        docType: 'proposta',
+        proposalSigId: sigId,
+        onConfirm: (sigData) => {
+            const u   = app.currentUser;
+            const ip  = getSimIP();
+            const now = new Date().toLocaleString('pt-BR');
+            const signerName = sigData.type==='font' ? sigData.fontText : sigData.type==='a1' ? sigData.a1Name : u?.name||'Assinante';
+            s.status = 'assinada'; s.signedAt = todayISO();
+            s.signature = { name: signerName||u?.name||'Assinante', datetime: now, ip, accepted: true, sigType: sigData.type, imageData: sigData.imageData };
+            const c = (app.state.clients||[]).find(x => x.id === s.clientId);
+            if (c?.proposalHistory) { const ph = c.proposalHistory.find(p => p.date === s.proposalDate); if (ph) ph.signatureStatus = 'assinada'; }
+            if (s.consultorId) addNotification(s.consultorId, 'success', `✅ ${s.clientName} assinou a proposta! Plano ${s.plan} · R$ ${formatCurrency(s.fee)}/mês`, null);
+            const gestor = (app.state.users||[]).find(u => u.role === 'gestor');
+            if (gestor) addNotification(gestor.id, 'success', `✅ Proposta assinada: ${s.clientName} — ${s.plan}`, null);
+            saveState();
+            showToast('✅ Proposta assinada com sucesso!', 'success');
+            showClientePortal();
+        }
+    });
 }
 
-function saveClienteSignature(sigId) {
-    const s = (app.state.proposalSignatures || []).find(x => x.id === sigId);
-    if (!s) return;
-    const name   = document.getElementById('sig_name')?.value.trim();
-    const accept = document.getElementById('sig_accept')?.checked;
-    const errEl  = document.getElementById('sig_err');
-    if (!name)   { if (errEl) errEl.textContent = 'Digite seu nome completo.'; return; }
-    if (!accept) { if (errEl) errEl.textContent = 'Você precisa aceitar os termos para assinar.'; return; }
-    const ip  = `187.${Math.floor(Math.random()*253)+1}.${Math.floor(Math.random()*253)+1}.${Math.floor(Math.random()*253)+1}`;
-    const now = new Date().toLocaleString('pt-BR');
-    s.status = 'assinada'; s.signedAt = todayISO();
-    s.signature = { name, datetime: now, ip, accepted: true };
-    const c = (app.state.clients || []).find(x => x.id === s.clientId);
-    if (c?.proposalHistory) { const ph = c.proposalHistory.find(p => p.date === s.proposalDate); if (ph) ph.signatureStatus = 'assinada'; }
-    if (s.consultorId) addNotification(s.consultorId, 'success', `✅ ${s.clientName} assinou a proposta! Plano ${s.plan} · R$ ${formatCurrency(s.fee)}/mês`, null);
-    const gestor = (app.state.users || []).find(u => u.role === 'gestor');
-    if (gestor) addNotification(gestor.id, 'success', `✅ Proposta assinada: ${s.clientName} — ${s.plan}`, null);
-    saveState(); closeModal();
-    showToast('✅ Proposta assinada com sucesso!', 'success');
-    showClientePortal();
-}
-
-function rejectClienteSignature(sigId) {
-    const s = (app.state.proposalSignatures || []).find(x => x.id === sigId);
+function _rejectProposal(sigId) {
+    const s = (app.state.proposalSignatures||[]).find(x => x.id === sigId);
     if (!s) return;
     if (!confirm('Tem certeza que deseja recusar esta proposta?')) return;
     s.status = 'recusada'; s.rejectedAt = todayISO();
-    const c = (app.state.clients || []).find(x => x.id === s.clientId);
+    const c = (app.state.clients||[]).find(x => x.id === s.clientId);
     if (c?.proposalHistory) { const ph = c.proposalHistory.find(p => p.date === s.proposalDate); if (ph) ph.signatureStatus = 'recusada'; }
     if (s.consultorId) addNotification(s.consultorId, 'warning', `❌ ${s.clientName} recusou a proposta — ${s.plan}.`, null);
     saveState(); closeModal();
@@ -17474,24 +18025,37 @@ function rejectClienteSignature(sigId) {
     showClientePortal();
 }
 
+function saveClienteSignature(sigId)  { openClienteSignModal(sigId); }
+function rejectClienteSignature(sigId) { _rejectProposal(sigId); }
+
 function renderAssinaturaCards(userId) {
-    // Returns HTML for pending signature cards (used in cliente portal)
-    const sigs = (app.state.proposalSignatures || []).filter(s => s.clientUserId === userId && s.status === 'enviada');
-    if (!sigs.length) return '';
+    const propSigs = (app.state.proposalSignatures||[]).filter(s => s.clientUserId === userId && s.status === 'enviada');
+    const reqSigs  = (app.state.signatureRequests||[]).filter(r => r.signers?.some(s => s.userId === userId && s.status === 'aguardando') && r.status !== 'expirado');
+    if (!propSigs.length && !reqSigs.length) return '';
     return `<div style="margin-bottom:16px;">
-        <h3 style="font-size:0.95rem;margin-bottom:8px;">✍️ Propostas aguardando assinatura</h3>
-        ${sigs.map(s => `
+        <h3 style="font-size:0.95rem;margin-bottom:8px;">✍️ Documentos aguardando sua assinatura</h3>
+        ${propSigs.map(s => `
         <div style="background:#fffbeb;border:2px solid #fbbf24;border-radius:12px;padding:14px;margin-bottom:10px;">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                <div>
-                    <div style="font-weight:700;">📄 Plano ${esc(s.plan)}</div>
-                    <div style="font-size:0.8rem;color:var(--text-soft);">Enviada em ${formatDate(s.sentAt)}</div>
-                </div>
-                <span class="badge badge-warn" style="font-size:0.72rem;">⏳ Aguardando assinatura</span>
+                <div><div style="font-weight:700;">📄 Plano ${esc(s.plan)}</div>
+                <div style="font-size:0.8rem;color:var(--text-soft);">Enviada em ${formatDate(s.sentAt)}</div></div>
+                <span class="badge badge-warn">⏳ Aguardando assinatura</span>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
                 <div style="font-size:1.1rem;font-weight:800;color:var(--accent);">R$ ${formatCurrency(s.fee)}<span style="font-size:0.75rem;font-weight:400;color:var(--text-soft);">/mês</span></div>
                 <button class="primary-btn" style="font-size:0.85rem;" onclick="openClienteSignModal('${s.id}')">✍️ Assinar Digitalmente</button>
+            </div>
+        </div>`).join('')}
+        ${reqSigs.map(r => `
+        <div style="background:#f0f9ff;border:2px solid #7dd3fc;border-radius:12px;padding:14px;margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                <div><div style="font-weight:700;">📄 ${esc(r.docName)}</div>
+                <div style="font-size:0.8rem;color:var(--text-soft);">Por ${esc(r.requestedByName)} · Prazo: ${formatDate(r.expiresAt)}</div></div>
+                <span class="badge badge-warn">⏳ Aguardando assinatura</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                <div style="font-size:0.82rem;color:var(--text-soft);">Código: <strong style="letter-spacing:2px;font-family:monospace;">${r.verifyCode}</strong></div>
+                <button class="primary-btn" style="font-size:0.85rem;" onclick="openDocumentSignModal('${r.id}')">✍️ Assinar Documento</button>
             </div>
         </div>`).join('')}
     </div>`;
@@ -17500,66 +18064,94 @@ function renderAssinaturaCards(userId) {
 function renderGestorAssinaturas() {
     const el = document.getElementById('dynamicContent');
     if (!el) return;
-    const sigs = (app.state.proposalSignatures || []).sort((a,b) => b.sentAt.localeCompare(a.sentAt));
-    const statusLabel = { enviada: '⏳ Aguardando', assinada: '✅ Assinada', recusada: '❌ Recusada' };
-    const statusCls   = { enviada: 'badge-warn', assinada: 'badge-active', recusada: 'badge-danger' };
-    const pendentes   = sigs.filter(s => s.status === 'enviada').length;
+    checkSignatureExpiry();
+    const propSigs = (app.state.proposalSignatures||[]).sort((a,b)=>b.sentAt.localeCompare(a.sentAt));
+    const reqSigs  = (app.state.signatureRequests||[]).sort((a,b)=>b.requestedAt.localeCompare(a.requestedAt));
+    const statusLabel = { enviada:'⏳ Aguardando', assinada:'✅ Assinada', recusada:'❌ Recusada' };
+    const statusCls   = { enviada:'badge-warn', assinada:'badge-active', recusada:'badge-danger' };
+    const pendentes   = propSigs.filter(s=>s.status==='enviada').length + reqSigs.filter(r=>r.status==='aguardando'||r.status==='parcial').length;
+
     el.innerHTML = `
         <div class="section-header" style="margin-bottom:24px;">
-            <div><h2>✍️ Assinaturas Digitais</h2><p>${pendentes > 0 ? `<strong style="color:var(--warning);">${pendentes} proposta${pendentes>1?'s':''} aguardando assinatura</strong>` : 'Todas as propostas assinadas.'}</p></div>
+            <div><h2>✍️ Assinaturas Digitais</h2><p>${pendentes>0?`<strong style="color:var(--warning);">${pendentes} pendente${pendentes>1?'s':''}</strong>`:'Todas as solicitações processadas.'}</p></div>
         </div>
-        ${sigs.length === 0
-            ? `<div class="card" style="text-align:center;padding:48px;"><div style="font-size:2rem;margin-bottom:12px;">✍️</div><p class="text-muted">Nenhuma proposta enviada para assinatura ainda.</p></div>`
-            : `<div class="card" style="overflow-x:auto;">
-                <table>
-                    <thead><tr><th>Cliente</th><th>Plano</th><th>Mensalidade</th><th>Enviado</th><th>Status</th><th>Assinatura</th></tr></thead>
-                    <tbody>
-                    ${sigs.map(s => `<tr>
-                        <td><strong>${esc(s.clientName)}</strong></td>
-                        <td>${esc(s.plan)}</td>
-                        <td>R$ ${formatCurrency(s.fee)}</td>
-                        <td>${formatDate(s.sentAt)}</td>
-                        <td><span class="badge ${statusCls[s.status]||''}">${statusLabel[s.status]||s.status}</span></td>
-                        <td style="font-size:0.8rem;">${s.signature
-                            ? `<strong>${esc(s.signature.name)}</strong><br><span style="color:var(--text-soft);">${s.signature.datetime}<br>IP: ${s.signature.ip}</span>`
-                            : s.status === 'recusada' ? `<span style="color:var(--danger);">Recusada em ${formatDate(s.rejectedAt)}</span>` : '—'}</td>
-                    </tr>`).join('')}
-                    </tbody>
-                </table>
-            </div>`}`;
+
+        ${reqSigs.length > 0 ? `
+        <div class="card" style="overflow-x:auto;margin-bottom:20px;">
+            <h3 style="margin:0 0 14px;">📄 Solicitações de assinatura</h3>
+            <table><thead><tr><th>Documento</th><th>Signatários</th><th>Enviado</th><th>Expira</th><th>Status</th><th>Ação</th></tr></thead>
+            <tbody>${reqSigs.map(r=>`<tr>
+                <td><strong>${esc(r.docName)}</strong><br><small style="color:var(--text-soft);">Por ${esc(r.requestedByName)}</small></td>
+                <td style="font-size:0.82rem;">${r.signers.map(s=>`${esc(s.userName)} <span style="color:${s.status==='assinado'?'var(--success)':s.status==='recusado'?'var(--danger)':'var(--warning)'};">(${s.status})</span>`).join('<br>')}</td>
+                <td>${formatDate(r.requestedAt)}</td><td>${formatDate(r.expiresAt)}</td>
+                <td>${getReqStatusHtml(r)}</td>
+                <td>${r.status==='completo'?`<button class="small-btn" onclick="renderSigCertificate('${r.id}')">📄 Cert.</button>`:''}</td>
+            </tr>`).join('')}</tbody></table>
+        </div>` : ''}
+
+        ${propSigs.length > 0 ? `
+        <div class="card" style="overflow-x:auto;">
+            <h3 style="margin:0 0 14px;">📋 Propostas</h3>
+            <table><thead><tr><th>Cliente</th><th>Plano</th><th>Mensalidade</th><th>Enviado</th><th>Status</th><th>Assinatura</th></tr></thead>
+            <tbody>${propSigs.map(s=>`<tr>
+                <td><strong>${esc(s.clientName)}</strong></td><td>${esc(s.plan)}</td><td>R$ ${formatCurrency(s.fee)}</td>
+                <td>${formatDate(s.sentAt)}</td>
+                <td><span class="badge ${statusCls[s.status]||''}">${statusLabel[s.status]||s.status}</span></td>
+                <td style="font-size:0.8rem;">${s.signature?`<strong>${esc(s.signature.name)}</strong><br><span style="color:var(--text-soft);">${s.signature.datetime}<br>IP: ${s.signature.ip}${s.signature.sigType?`<br>${sigTypeLabel(s.signature.sigType)}`:''}</span>`:s.status==='recusada'?`<span style="color:var(--danger);">Recusada em ${formatDate(s.rejectedAt)}</span>`:'—'}</td>
+            </tr>`).join('')}</tbody></table>
+        </div>` : ''}
+
+        ${reqSigs.length===0&&propSigs.length===0 ? `<div class="card" style="text-align:center;padding:48px;"><div style="font-size:2rem;margin-bottom:12px;">✍️</div><p class="text-muted">Nenhuma solicitação de assinatura ainda.</p></div>` : ''}
+    `;
     showSection('dynamicContent');
 }
 
 function renderConsultorAssinaturas() {
-    const el = document.getElementById('dynamicContent');
+    const el  = document.getElementById('dynamicContent');
     if (!el) return;
     const uid = app.currentUser.id;
-    const sigs = (app.state.proposalSignatures || [])
-        .filter(s => s.consultorId === uid)
-        .sort((a,b) => b.sentAt.localeCompare(a.sentAt));
-    const statusLabel = { enviada: '⏳ Aguardando', assinada: '✅ Assinada', recusada: '❌ Recusada' };
-    const statusCls   = { enviada: 'badge-warn', assinada: 'badge-active', recusada: 'badge-danger' };
+    checkSignatureExpiry();
+    const propSigs = (app.state.proposalSignatures||[]).filter(s=>s.consultorId===uid).sort((a,b)=>b.sentAt.localeCompare(a.sentAt));
+    const reqSigs  = (app.state.signatureRequests||[]).filter(r=>r.requestedBy===uid).sort((a,b)=>b.requestedAt.localeCompare(a.requestedAt));
+    const statusLabel = { enviada:'⏳ Aguardando', assinada:'✅ Assinada', recusada:'❌ Recusada' };
+    const statusCls   = { enviada:'badge-warn', assinada:'badge-active', recusada:'badge-danger' };
+
     el.innerHTML = `
         <div class="section-header" style="margin-bottom:24px;">
-            <div><h2>✍️ Assinaturas Digitais</h2><p>Propostas que você enviou para assinatura digital.</p></div>
+            <div><h2>✍️ Assinaturas Digitais</h2><p>Gerencie suas solicitações de assinatura.</p></div>
+            <button class="primary-btn" onclick="openSigLibraryModal('${uid}')">📚 Minha Biblioteca</button>
         </div>
-        ${sigs.length === 0
-            ? `<div class="card" style="text-align:center;padding:48px;"><div style="font-size:2rem;margin-bottom:12px;">✍️</div><p class="text-muted">Nenhuma proposta enviada para assinatura ainda.<br>Vá em <strong>Propostas → Gerar Proposta</strong> e clique em "Enviar para Assinatura Digital".</p></div>`
-            : `<div class="card" style="overflow-x:auto;">
-                <table>
-                    <thead><tr><th>Cliente</th><th>Plano</th><th>Mensalidade</th><th>Enviado</th><th>Status</th><th>Assinatura</th></tr></thead>
-                    <tbody>
-                    ${sigs.map(s => `<tr>
-                        <td><strong>${esc(s.clientName)}</strong></td>
-                        <td>${esc(s.plan)}</td>
-                        <td>R$ ${formatCurrency(s.fee)}</td>
-                        <td>${formatDate(s.sentAt)}</td>
-                        <td><span class="badge ${statusCls[s.status]||''}">${statusLabel[s.status]||s.status}</span></td>
-                        <td style="font-size:0.8rem;">${s.signature ? `✅ ${esc(s.signature.name)}<br><span style="color:var(--text-soft);">${s.signature.datetime}</span>` : s.status === 'recusada' ? `<span style="color:var(--danger);">Recusada</span>` : '—'}</td>
-                    </tr>`).join('')}
-                    </tbody>
-                </table>
-            </div>`}`;
+
+        ${reqSigs.length > 0 ? `
+        <div class="card" style="overflow-x:auto;margin-bottom:20px;">
+            <h3 style="margin:0 0 14px;">📄 Documentos enviados para assinatura</h3>
+            <table><thead><tr><th>Documento</th><th>Signatários</th><th>Enviado</th><th>Expira</th><th>Status</th><th>Ação</th></tr></thead>
+            <tbody>${reqSigs.map(r=>`<tr>
+                <td><strong>${esc(r.docName)}</strong></td>
+                <td style="font-size:0.82rem;">${r.signers.map(s=>esc(s.userName)).join(', ')}</td>
+                <td>${formatDate(r.requestedAt)}</td><td>${formatDate(r.expiresAt)}</td>
+                <td>${getReqStatusHtml(r)}</td>
+                <td>${r.status==='completo'?`<button class="small-btn" onclick="renderSigCertificate('${r.id}')">📄 Cert.</button>`:''}</td>
+            </tr>`).join('')}</tbody></table>
+        </div>` : ''}
+
+        ${propSigs.length > 0 ? `
+        <div class="card" style="overflow-x:auto;">
+            <h3 style="margin:0 0 14px;">📋 Propostas</h3>
+            <table><thead><tr><th>Cliente</th><th>Plano</th><th>Mensalidade</th><th>Enviado</th><th>Status</th><th>Detalhe</th></tr></thead>
+            <tbody>${propSigs.map(s=>`<tr>
+                <td><strong>${esc(s.clientName)}</strong></td><td>${esc(s.plan)}</td><td>R$ ${formatCurrency(s.fee)}</td>
+                <td>${formatDate(s.sentAt)}</td>
+                <td><span class="badge ${statusCls[s.status]||''}">${statusLabel[s.status]||s.status}</span></td>
+                <td style="font-size:0.8rem;">${s.signature?`✅ ${esc(s.signature.name)}<br><span style="color:var(--text-soft);">${s.signature.datetime}</span>`:s.status==='recusada'?`<span style="color:var(--danger);">Recusada</span>`:'—'}</td>
+            </tr>`).join('')}</tbody></table>
+        </div>` : ''}
+
+        ${reqSigs.length===0&&propSigs.length===0 ? `
+        <div class="card" style="text-align:center;padding:48px;">
+            <div style="font-size:2rem;margin-bottom:12px;">✍️</div>
+            <p class="text-muted">Nenhuma solicitação ainda.<br>Vá em <strong>Propostas</strong> e clique em "Enviar para Assinatura Digital".</p>
+        </div>` : ''}`;
     showSection('dynamicContent');
 }
 
