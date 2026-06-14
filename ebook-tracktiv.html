@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ebook — Tracktiv Portal do Vendedor</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #1a2e4a;
+    --accent: #f5820d;
+    --success: #10b981;
+    --info: #3b82f6;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --purple: #8b5cf6;
+    --text: #0f172a;
+    --text-soft: #475569;
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text); background: #fff; font-size: 15px; line-height: 1.7; }
+
+  /* COVER */
+  .cover {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0f1c2e 0%, #1a2e4a 40%, #2d4a6e 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 60px 40px; position: relative; overflow: hidden;
+    page-break-after: always;
+  }
+  .cover::before {
+    content: ''; position: absolute; top: -100px; right: -100px;
+    width: 500px; height: 500px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(245,130,13,.18) 0%, transparent 70%);
+  }
+  .cover::after {
+    content: ''; position: absolute; bottom: -80px; left: -80px;
+    width: 400px; height: 400px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(59,130,246,.12) 0%, transparent 70%);
+  }
+  .cover-badge { background: rgba(245,130,13,.2); color: #f5820d; border: 1px solid rgba(245,130,13,.4); padding: 6px 20px; border-radius: 50px; font-size: .82rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 28px; display: inline-block; }
+  .cover h1 { font-size: 3.2rem; font-weight: 800; color: #fff; line-height: 1.15; margin-bottom: 16px; }
+  .cover h1 span { color: #f5820d; }
+  .cover p { font-size: 1.15rem; color: rgba(255,255,255,.7); max-width: 560px; margin: 0 auto 40px; }
+  .cover-divider { width: 80px; height: 3px; background: linear-gradient(90deg, #f5820d, #fbbf24); border-radius: 2px; margin: 0 auto 40px; }
+  .cover-meta { color: rgba(255,255,255,.5); font-size: .85rem; }
+  .cover-meta strong { color: rgba(255,255,255,.85); }
+  .cover-logo { font-size: 1.6rem; font-weight: 800; color: #f5820d; letter-spacing: -.02em; margin-bottom: 40px; }
+
+  /* TOC */
+  .toc-page { padding: 80px 80px; page-break-after: always; }
+  .toc-page h2 { font-size: 2rem; font-weight: 800; color: var(--primary); margin-bottom: 36px; padding-bottom: 14px; border-bottom: 3px solid var(--accent); }
+  .toc-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px dashed var(--border); font-size: .95rem; }
+  .toc-item .toc-num { background: var(--primary); color: #fff; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; flex-shrink: 0; }
+  .toc-item .toc-title { flex: 1; font-weight: 600; }
+  .toc-item .toc-dots { flex: 1; border-bottom: 1px dotted var(--border); margin: 0 8px; }
+  .toc-section { font-size: .8rem; color: var(--text-soft); background: var(--bg); padding: 2px 8px; border-radius: 4px; }
+
+  /* CHAPTER */
+  .chapter { padding: 80px 80px; page-break-after: always; }
+  .chapter-number { font-size: .78rem; font-weight: 700; color: var(--accent); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 8px; }
+  .chapter h2 { font-size: 2rem; font-weight: 800; color: var(--primary); margin-bottom: 10px; line-height: 1.2; }
+  .chapter-lead { font-size: 1.08rem; color: var(--text-soft); margin-bottom: 36px; padding-bottom: 28px; border-bottom: 2px solid var(--bg); }
+  .chapter h3 { font-size: 1.2rem; font-weight: 700; color: var(--primary); margin: 30px 0 12px; }
+  .chapter h4 { font-size: 1rem; font-weight: 700; color: var(--text); margin: 20px 0 8px; }
+  .chapter p { margin-bottom: 14px; }
+  .chapter ul, .chapter ol { margin: 10px 0 16px 20px; }
+  .chapter li { margin-bottom: 6px; }
+
+  /* COMPONENTS */
+  .highlight-box {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border-left: 4px solid var(--info);
+    padding: 18px 22px; border-radius: 0 12px 12px 0;
+    margin: 20px 0; font-size: .93rem;
+  }
+  .highlight-box.orange { background: linear-gradient(135deg, #fff7ed, #fed7aa); border-left-color: var(--accent); }
+  .highlight-box.green  { background: linear-gradient(135deg, #f0fdf4, #bbf7d0); border-left-color: var(--success); }
+  .highlight-box.purple { background: linear-gradient(135deg, #faf5ff, #ede9fe); border-left-color: var(--purple); }
+  .highlight-box.red    { background: linear-gradient(135deg, #fef2f2, #fecaca); border-left-color: var(--danger); }
+  .highlight-box strong { display: block; font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; opacity: .7; }
+
+  .cards-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 20px 0; }
+  .card-item { background: var(--bg); border-radius: 12px; padding: 18px; border: 1px solid var(--border); }
+  .card-item .card-icon { font-size: 1.8rem; margin-bottom: 8px; }
+  .card-item h4 { font-size: .95rem; font-weight: 700; margin-bottom: 6px; color: var(--primary); }
+  .card-item p { font-size: .85rem; color: var(--text-soft); margin: 0; }
+
+  .role-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+  .role-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .role-badge { padding: 6px 14px; border-radius: 20px; font-size: .78rem; font-weight: 700; color: #fff; }
+  .role-card h4 { font-size: 1rem; font-weight: 700; margin: 0; }
+  .role-card ul { margin: 0 0 0 18px; }
+  .role-card li { font-size: .88rem; margin-bottom: 4px; }
+
+  .feature-tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .75rem; font-weight: 600; margin: 2px; }
+  .tag-new     { background: #dcfce7; color: #166534; }
+  .tag-ai      { background: #ede9fe; color: #5b21b6; }
+  .tag-doc     { background: #dbeafe; color: #1e40af; }
+  .tag-sales   { background: #fff7ed; color: #9a3412; }
+
+  .step { display: flex; gap: 14px; margin-bottom: 18px; }
+  .step-num { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem; flex-shrink: 0; margin-top: 2px; }
+  .step-body h4 { font-size: .95rem; font-weight: 700; margin-bottom: 4px; }
+  .step-body p  { font-size: .87rem; color: var(--text-soft); margin: 0; }
+
+  .table-styled { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .9rem; }
+  .table-styled th { background: var(--primary); color: #fff; padding: 10px 14px; text-align: left; font-size: .82rem; font-weight: 600; }
+  .table-styled td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .table-styled tr:nth-child(even) td { background: var(--bg); }
+
+  .plan-card { border: 2px solid var(--border); border-radius: 14px; padding: 22px; text-align: center; }
+  .plan-card.featured { border-color: var(--accent); background: linear-gradient(180deg, #fff7ed 0%, #fff 100%); }
+  .plan-price { font-size: 2rem; font-weight: 800; color: var(--primary); }
+  .plan-price span { font-size: .9rem; font-weight: 400; color: var(--text-soft); }
+
+  .signal-item { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
+  .signal-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+
+  /* PAGE BREAK */
+  .page-break { page-break-after: always; }
+
+  /* FOOTER */
+  .chapter-footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--border); font-size: .8rem; color: var(--text-soft); display: flex; justify-content: space-between; }
+
+  /* PRINT */
+  @media print {
+    .cover { min-height: 100vh; }
+    .chapter, .toc-page { padding: 60px; }
+    body { font-size: 13px; }
+    .chapter h2 { font-size: 1.7rem; }
+  }
+  @media (max-width: 768px) {
+    .chapter, .toc-page { padding: 30px 20px; }
+    .cover h1 { font-size: 2rem; }
+    .cards-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ CAPA ═══════════════ -->
+<div class="cover">
+  <div class="cover-logo">TRACKTIV</div>
+  <div class="cover-badge">Documentação Completa</div>
+  <h1>Portal do <span>Vendedor</span><br>& Parceiros</h1>
+  <div class="cover-divider"></div>
+  <p>Guia completo de todas as funcionalidades, módulos e perfis do sistema SaaS de gestão comercial da Tracktiv.</p>
+  <div class="cover-meta">
+    <strong>Versão 3.0</strong> &nbsp;·&nbsp; Design System v3 &nbsp;·&nbsp; 2026
+  </div>
+</div>
+
+<!-- ═══════════════ SUMÁRIO ═══════════════ -->
+<div class="toc-page">
+  <h2>Sumário</h2>
+
+  <div class="toc-item"><div class="toc-num">1</div><span class="toc-title">Sobre a Tracktiv</span><span class="toc-dots"></span><span class="toc-section">Visão Geral</span></div>
+  <div class="toc-item"><div class="toc-num">2</div><span class="toc-title">Arquitetura do Sistema</span><span class="toc-dots"></span><span class="toc-section">Técnico</span></div>
+  <div class="toc-item"><div class="toc-num">3</div><span class="toc-title">Perfis de Usuário</span><span class="toc-dots"></span><span class="toc-section">Roles</span></div>
+  <div class="toc-item"><div class="toc-num">4</div><span class="toc-title">Dashboards Inteligentes</span><span class="toc-dots"></span><span class="toc-section">Feature</span></div>
+  <div class="toc-item"><div class="toc-num">5</div><span class="toc-title">CRM & Funil de Vendas</span><span class="toc-dots"></span><span class="toc-section">Feature</span></div>
+  <div class="toc-item"><div class="toc-num">6</div><span class="toc-title">Motor de Churn Preditivo</span><span class="toc-dots"></span><span class="toc-section">IA</span></div>
+  <div class="toc-item"><div class="toc-num">7</div><span class="toc-title">Gerador de Propostas PDF</span><span class="toc-dots"></span><span class="toc-section">Feature</span></div>
+  <div class="toc-item"><div class="toc-num">8</div><span class="toc-title">Re-engajamento de Leads Perdidos</span><span class="toc-dots"></span><span class="toc-section">Automação</span></div>
+  <div class="toc-item"><div class="toc-num">9</div><span class="toc-title">Central de Upsell Inteligente</span><span class="toc-dots"></span><span class="toc-section">IA</span></div>
+  <div class="toc-item"><div class="toc-num">10</div><span class="toc-title">Kit de Recuperação de Veículo</span><span class="toc-dots"></span><span class="toc-section">Feature</span></div>
+  <div class="toc-item"><div class="toc-num">11</div><span class="toc-title">Sistema de Assinatura Digital</span><span class="toc-dots"></span><span class="toc-section">Feature</span></div>
+  <div class="toc-item"><div class="toc-num">12</div><span class="toc-title">Portal de Parceiros</span><span class="toc-dots"></span><span class="toc-section">Feature</span></div>
+  <div class="toc-item"><div class="toc-num">13</div><span class="toc-title">Mural de Performance & Desafios</span><span class="toc-dots"></span><span class="toc-section">Gamificação</span></div>
+  <div class="toc-item"><div class="toc-num">14</div><span class="toc-title">Link de Cadastro Público</span><span class="toc-dots"></span><span class="toc-section">Feature</span></div>
+  <div class="toc-item"><div class="toc-num">15</div><span class="toc-title">Controle de Documentos & Armazenamento</span><span class="toc-dots"></span><span class="toc-section">Feature</span></div>
+  <div class="toc-item"><div class="toc-num">16</div><span class="toc-title">Planos & Preços</span><span class="toc-dots"></span><span class="toc-section">Comercial</span></div>
+  <div class="toc-item"><div class="toc-num">17</div><span class="toc-title">Dados de Acesso Demo</span><span class="toc-dots"></span><span class="toc-section">Referência</span></div>
+</div>
+
+<!-- ═══════════════ CAP 1: SOBRE ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 01</div>
+  <h2>Sobre a Tracktiv</h2>
+  <p class="chapter-lead">A Tracktiv é uma empresa especializada em rastreamento veicular que desenvolveu um portal SaaS completo para gestão comercial, parceiros e clientes — tudo em uma única plataforma integrada.</p>
+
+  <h3>O que é o Portal do Vendedor?</h3>
+  <p>O Portal do Vendedor & Parceiros da Tracktiv é um sistema web completo que centraliza toda a operação comercial da empresa. Consultores, gestores, parceiros instaladores, indicadores, técnicos, clientes e a presidência têm acesso a painéis personalizados conforme seu perfil.</p>
+
+  <div class="highlight-box orange">
+    <strong>Missão do Sistema</strong>
+    Transformar a gestão comercial de rastreamento veicular em uma experiência digital fluida, automatizada e inteligente — do lead até o pós-venda.
+  </div>
+
+  <h3>Proposta de Valor</h3>
+  <div class="cards-grid">
+    <div class="card-item">
+      <div class="card-icon">📊</div>
+      <h4>Visibilidade Total</h4>
+      <p>KPIs em tempo real para cada perfil, do consultor à presidência. Dados sempre atualizados e dashboards visuais.</p>
+    </div>
+    <div class="card-item">
+      <div class="card-icon">🤖</div>
+      <h4>Inteligência Automática</h4>
+      <p>Motor preditivo de churn, detecção de upsell, re-engajamento automático de leads perdidos.</p>
+    </div>
+    <div class="card-item">
+      <div class="card-icon">🔗</div>
+      <h4>Ecossistema Completo</h4>
+      <p>Do lead captado pelo consultor até a instalação pelo parceiro, assinatura de documentos e suporte técnico.</p>
+    </div>
+    <div class="card-item">
+      <div class="card-icon">📱</div>
+      <h4>Totalmente Responsivo</h4>
+      <p>Acesso em qualquer dispositivo — desktop, tablet ou smartphone — sem perda de funcionalidade.</p>
+    </div>
+  </div>
+
+  <h3>Produtos Rastreados</h3>
+  <p>A Tracktiv oferece soluções de rastreamento veicular para pessoa física e jurídica, com planos mensais recorrentes. O portal gerencia todo o ciclo: prospecção → venda → instalação → suporte → renovação.</p>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 1 — Sobre</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 2: ARQUITETURA ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 02</div>
+  <h2>Arquitetura do Sistema</h2>
+  <p class="chapter-lead">O portal é uma Single Page Application (SPA) construída com tecnologias web puras, sem dependências externas — garantindo máxima portabilidade e zero overhead de build.</p>
+
+  <h3>Stack Tecnológico</h3>
+  <table class="table-styled">
+    <thead><tr><th>Componente</th><th>Tecnologia</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><strong>index.html</strong></td><td>HTML5</td><td>Estrutura completa — todas as seções e modais declarados</td></tr>
+      <tr><td><strong>styles.css</strong></td><td>CSS3 (Design System v3)</td><td>Variáveis CSS, componentes, animações, responsividade</td></tr>
+      <tr><td><strong>app.js</strong></td><td>JavaScript ES6+</td><td>~20.000 linhas — estado, navegação, CRUD, renders, IA</td></tr>
+      <tr><td><strong>Persistência</strong></td><td>localStorage</td><td>Chave: <code>tracktiv_v2</code> — estado global serializado</td></tr>
+      <tr><td><strong>Fontes</strong></td><td>Google Fonts CDN</td><td>Plus Jakarta Sans, Dancing Script, Great Vibes, Pacifico</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Arquitetura Central</h3>
+  <div class="highlight-box">
+    <strong>Fluxo de dados</strong>
+    <strong>app.state</strong> → objeto global com todo o estado da aplicação. Carregado com <code>loadState()</code> do localStorage ao iniciar. Salvo com <code>saveState()</code> após cada mutação. Renderização disparada por <code>renderAppViews()</code>.
+  </div>
+
+  <h3>Sistema de Navegação (NAV_TREE)</h3>
+  <p>Cada role possui uma árvore de navegação declarativa. Os itens podem ser de três tipos:</p>
+  <ul>
+    <li><strong>section</strong> — mostra uma seção HTML fixa via <code>showSection()</code></li>
+    <li><strong>render</strong> — injeta conteúdo dinâmico em <code>#dynamicContent</code></li>
+    <li><strong>action</strong> — executa uma função (ex: abrir modal) sem trocar seção</li>
+    <li><strong>children</strong> — grupo expansível com subitens</li>
+  </ul>
+
+  <h3>Padrões de Renderização</h3>
+  <p>Todas as views dinâmicas seguem o padrão:</p>
+  <div class="highlight-box purple">
+    <strong>Padrão de render dinâmico</strong>
+    Cada função de renderização escreve diretamente em <code>document.getElementById('dynamicContent').innerHTML</code> ou na seção HTML correspondente. Não há DOM virtual nem reatividade — é renderização imperativa direta.
+  </div>
+
+  <h3>Migrações de Estado</h3>
+  <p>O sistema tem um mecanismo de migração automática: ao carregar o estado salvo, campos novos são adicionados se ausentes. Isso permite evolução do schema sem quebrar dados existentes.</p>
+
+  <h3>Design System v3</h3>
+  <p>O CSS usa variáveis CSS customizadas para todo o design system, garantindo consistência:</p>
+  <table class="table-styled">
+    <thead><tr><th>Variável</th><th>Valor</th><th>Uso</th></tr></thead>
+    <tbody>
+      <tr><td><code>--primary</code></td><td>#1a2e4a</td><td>Sidebar, headers, textos principais</td></tr>
+      <tr><td><code>--accent</code></td><td>#f5820d</td><td>Botões CTA, destaques, ícones ativos</td></tr>
+      <tr><td><code>--success</code></td><td>#10b981</td><td>Status positivo, metas atingidas</td></tr>
+      <tr><td><code>--danger</code></td><td>#ef4444</td><td>Alertas críticos, churn alto</td></tr>
+      <tr><td><code>--warning</code></td><td>#f59e0b</td><td>Atenção, pendências</td></tr>
+      <tr><td><code>--info</code></td><td>#3b82f6</td><td>Informações, links</td></tr>
+    </tbody>
+  </table>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 2 — Arquitetura</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 3: PERFIS ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 03</div>
+  <h2>Perfis de Usuário</h2>
+  <p class="chapter-lead">O sistema possui 8 perfis distintos, cada um com navegação, dashboards e funcionalidades exclusivas. O acesso é controlado pelo campo <code>role</code> do usuário.</p>
+
+  <div class="role-card">
+    <div class="role-card-header">
+      <div class="role-badge" style="background:#1a2e4a;">👑 Presidente</div>
+      <h4>Visão Executiva da Operação</h4>
+    </div>
+    <p style="font-size:.88rem;color:var(--text-soft);margin-bottom:10px;">Acesso total à visão financeira consolidada. Gerencia múltiplas empresas, visualiza KPIs macro, configura limites de armazenamento e acompanha projeções.</p>
+    <ul>
+      <li>Dashboard com MRR, margem, churn e projeção 3 meses</li>
+      <li>Dimensionamento financeiro e simulador de margem</li>
+      <li>Gestão de múltiplas empresas (multi-tenant)</li>
+      <li>Configuração de limites de armazenamento por empresa</li>
+      <li>Visão de performance por gestor</li>
+    </ul>
+  </div>
+
+  <div class="role-card">
+    <div class="role-card-header">
+      <div class="role-badge" style="background:#3b82f6;">🎯 Gestor</div>
+      <h4>Gestão da Equipe Comercial</h4>
+    </div>
+    <p style="font-size:.88rem;color:var(--text-soft);margin-bottom:10px;">Supervisiona consultores, instaladores e técnicos. Aprova vendas, configura metas, monitora churn e gerencia clientes do portal.</p>
+    <ul>
+      <li>Dashboard com funil visual, ranking e alertas</li>
+      <li>Aprovação de contratos e clientes</li>
+      <li>Configuração de metas individuais e globais</li>
+      <li>Gestão de cupons de desconto</li>
+      <li>Portal de clientes corporativos</li>
+      <li>Configuração do Mural de Performance</li>
+    </ul>
+  </div>
+
+  <div class="role-card">
+    <div class="role-card-header">
+      <div class="role-badge" style="background:#10b981;">💼 Consultor</div>
+      <h4>Gestão de Carteira e Vendas</h4>
+    </div>
+    <p style="font-size:.88rem;color:var(--text-soft);margin-bottom:10px;">O coração da operação. Gerencia leads, faz o acompanhamento pelo funil, gera propostas, agenda follow-ups e acompanha sua comissão.</p>
+    <ul>
+      <li>CRM completo com funil de vendas visual (Kanban)</li>
+      <li>Gerador de propostas PDF com envio via WhatsApp</li>
+      <li>Central de upsell com scripts personalizados</li>
+      <li>Link de cadastro público para captação de leads</li>
+      <li>Mural de performance e desafios</li>
+      <li>Calendário de follow-ups com histórico</li>
+    </ul>
+  </div>
+
+  <div class="role-card">
+    <div class="role-card-header">
+      <div class="role-badge" style="background:#f59e0b;color:#000;">🔧 Técnico</div>
+      <h4>Suporte Técnico e Operacional</h4>
+    </div>
+    <p style="font-size:.88rem;color:var(--text-soft);margin-bottom:10px;">Gerencia chamados técnicos, documentos dos clientes, formulários de vistoria e controle de armazenamento de arquivos.</p>
+    <ul>
+      <li>Dashboard com chamados urgentes e SLA</li>
+      <li>Gestão de documentos por cliente com validade</li>
+      <li>Formulários de vistoria e preenchimento pelo cliente</li>
+      <li>Controle de armazenamento operacional</li>
+      <li>Clientes sem interação há +15 dias</li>
+    </ul>
+  </div>
+
+  <div class="role-card">
+    <div class="role-card-header">
+      <div class="role-badge" style="background:#f5820d;">🔩 Parceiro Instalador</div>
+      <h4>Instalações e Recorrência</h4>
+    </div>
+    <p style="font-size:.88rem;color:var(--text-soft);margin-bottom:10px;">Gerencia instalações de rastreadores, acompanha comissões por instalação e por recorrência da base de clientes da sua loja.</p>
+    <ul>
+      <li>Dashboard com instalações pendentes e agendadas</li>
+      <li>CRM de clientes da loja parceira</li>
+      <li>Extrato detalhado de comissões</li>
+      <li>Galeria de fotos de instalações (evidências)</li>
+      <li>Mural de performance e desafios</li>
+    </ul>
+  </div>
+
+  <div class="role-card">
+    <div class="role-card-header">
+      <div class="role-badge" style="background:#8b5cf6;">🤝 Parceiro Indicador</div>
+      <h4>Programa de Indicações</h4>
+    </div>
+    <p style="font-size:.88rem;color:var(--text-soft);margin-bottom:10px;">Perfil simplificado para parceiros que indicam leads. Acompanha status das indicações, taxa de conversão e comissão acumulada.</p>
+    <ul>
+      <li>Dashboard com status: em negociação / fechadas / perdidas</li>
+      <li>Formulário de nova indicação</li>
+      <li>Extrato de comissões por indicação fechada</li>
+      <li>Taxa de conversão e gráfico mensal</li>
+    </ul>
+  </div>
+
+  <div class="role-card">
+    <div class="role-card-header">
+      <div class="role-badge" style="background:#0f172a;">📊 Parceiro Executivo</div>
+      <h4>Gestão de Carteira com Lucro</h4>
+    </div>
+    <p style="font-size:.88rem;color:var(--text-soft);margin-bottom:10px;">Perfil híbrido: pode acumular carteira de clientes gerando comissão % sobre o lucro, além de comissão por vendas diretas e recorrência.</p>
+    <ul>
+      <li>Dashboard com comissão composta (carteira + vendas + recorrência)</li>
+      <li>Controle de pagamentos: pago / pendente / atrasado</li>
+      <li>Gráfico de comissão dos últimos 6 meses</li>
+      <li>Simulador de comissão por cliente</li>
+    </ul>
+  </div>
+
+  <div class="role-card">
+    <div class="role-card-header">
+      <div class="role-badge" style="background:#06b6d4;">👤 Cliente</div>
+      <h4>Portal de Autoatendimento</h4>
+    </div>
+    <p style="font-size:.88rem;color:var(--text-soft);margin-bottom:10px;">Portal de acesso do cliente final. Assina documentos, preenche formulários, indica novos clientes, acumula pontos e aciona o Kit de Recuperação.</p>
+    <ul>
+      <li>Dashboard com serviços contratados e alertas</li>
+      <li>Assinatura digital de documentos e propostas</li>
+      <li>Checklist de documentos necessários</li>
+      <li>Programa de indicações com pontos</li>
+      <li>Kit de Recuperação de Veículo emergencial</li>
+    </ul>
+  </div>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 3 — Perfis</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 4: DASHBOARDS ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 04</div>
+  <h2>Dashboards Inteligentes v2</h2>
+  <p class="chapter-lead">Cada perfil possui um dashboard personalizado com KPIs em tempo real, gráficos de barras, progress bars animados, contadores numéricos e alertas semânticos por cores.</p>
+
+  <h3>Características Visuais</h3>
+  <div class="cards-grid">
+    <div class="card-item">
+      <div class="card-icon">💎</div>
+      <h4>KPI Cards com Gradiente</h4>
+      <p>4 cards por dashboard com gradientes escuros/coloridos, ícone grande, valor animado e subtítulo contextual.</p>
+    </div>
+    <div class="card-item">
+      <div class="card-icon">📊</div>
+      <h4>Gráfico de Barras</h4>
+      <p>Últimos 6 meses de dados reais do sistema. Barra do mês atual destacada com cor cheia, demais com opacidade.</p>
+    </div>
+    <div class="card-item">
+      <div class="card-icon">🎯</div>
+      <h4>Progress Bars Animados</h4>
+      <p>Barras de progresso com transição CSS .7s. Cor muda conforme performance: verde ≥100%, laranja ≥70%, vermelho &lt;70%.</p>
+    </div>
+    <div class="card-item">
+      <div class="card-icon">🔢</div>
+      <h4>Contadores Animados</h4>
+      <p>Números incrementam do zero até o valor real com easing ease-out cúbico em 700ms ao carregar o dashboard.</p>
+    </div>
+  </div>
+
+  <h3>Alertas Semânticos</h3>
+  <p>Os dashboards incluem painéis de alertas com cores semânticas:</p>
+  <ul>
+    <li><strong style="color:var(--danger);">🔴 Vermelho</strong> — Urgente: churn alto, chamados críticos, docs vencendo</li>
+    <li><strong style="color:var(--warning);">🟡 Amarelo</strong> — Atenção: follow-ups atrasados, formulários pendentes</li>
+    <li><strong style="color:var(--success);">🟢 Verde</strong> — OK: tudo em dia, metas atingidas</li>
+    <li><strong style="color:var(--info);">🔵 Azul</strong> — Informação: chamados em andamento, processos ativos</li>
+  </ul>
+
+  <h3>Responsividade</h3>
+  <p>O layout de 4 colunas (KPIs) e 2 colunas (gráficos) adapta automaticamente:</p>
+  <ul>
+    <li><strong>Desktop (≥769px):</strong> 4 KPIs em linha + grids 2 colunas</li>
+    <li><strong>Tablet (≤768px):</strong> 2 KPIs por linha + 1 coluna</li>
+    <li><strong>Mobile (≤480px):</strong> 1 KPI por linha, fontes menores</li>
+  </ul>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 4 — Dashboards</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 5: CRM ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 05</div>
+  <h2>CRM & Funil de Vendas</h2>
+  <p class="chapter-lead">O CRM é o módulo central para consultores e instaladores. Organiza todos os leads e clientes em um funil visual com drag-and-drop, histórico completo e integração com todas as features inteligentes.</p>
+
+  <h3>Etapas do Funil</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 24px;">
+    <div style="flex:1;min-width:90px;background:var(--bg);border-radius:10px;padding:12px;text-align:center;border-top:3px solid #64748b;">
+      <div style="font-size:1.3rem;">🆕</div>
+      <div style="font-size:.82rem;font-weight:700;margin-top:4px;">Novo Lead</div>
+    </div>
+    <div style="flex:1;min-width:90px;background:var(--bg);border-radius:10px;padding:12px;text-align:center;border-top:3px solid var(--info);">
+      <div style="font-size:1.3rem;">📞</div>
+      <div style="font-size:.82rem;font-weight:700;margin-top:4px;">Contato Feito</div>
+    </div>
+    <div style="flex:1;min-width:90px;background:var(--bg);border-radius:10px;padding:12px;text-align:center;border-top:3px solid var(--warning);">
+      <div style="font-size:1.3rem;">🎤</div>
+      <div style="font-size:.82rem;font-weight:700;margin-top:4px;">Apresentação</div>
+    </div>
+    <div style="flex:1;min-width:90px;background:var(--bg);border-radius:10px;padding:12px;text-align:center;border-top:3px solid var(--purple);">
+      <div style="font-size:1.3rem;">📋</div>
+      <div style="font-size:.82rem;font-weight:700;margin-top:4px;">Proposta</div>
+    </div>
+    <div style="flex:1;min-width:90px;background:var(--bg);border-radius:10px;padding:12px;text-align:center;border-top:3px solid var(--success);">
+      <div style="font-size:1.3rem;">✅</div>
+      <div style="font-size:.82rem;font-weight:700;margin-top:4px;">Fechado</div>
+    </div>
+    <div style="flex:1;min-width:90px;background:var(--bg);border-radius:10px;padding:12px;text-align:center;border-top:3px solid var(--danger);">
+      <div style="font-size:1.3rem;">❌</div>
+      <div style="font-size:.82rem;font-weight:700;margin-top:4px;">Perdido</div>
+    </div>
+  </div>
+
+  <h3>Funcionalidades do CRM</h3>
+  <ul>
+    <li><strong>Visualização Kanban</strong> — cards por etapa com drag-and-drop</li>
+    <li><strong>Perfil completo do cliente</strong> — histórico, documentos, chamados, propostas, assinaturas</li>
+    <li><strong>Badges de churn</strong> — indicador visual de risco diretamente nos cards</li>
+    <li><strong>Filtros e busca</strong> — por nome, plano, consultor, etapa, score</li>
+    <li><strong>Score de propensão</strong> — algoritmo que pontua leads de 0 a 100</li>
+    <li><strong>Histórico de contatos</strong> — cada interação registrada com data e tipo</li>
+  </ul>
+
+  <h3>Calendário de Follow-ups</h3>
+  <p>Os consultores podem agendar follow-ups com tipo (Ligação, WhatsApp, Email, Visita), data e observação. O sistema alerta sobre follow-ups vencidos diretamente no dashboard.</p>
+
+  <div class="highlight-box green">
+    <strong>Automação de notificações</strong>
+    Quando um lead fica 3+ dias sem follow-up, o sistema gera um alerta no dashboard do gestor. Quando um lead é movido para "Perdido", é ativado automaticamente o módulo de Re-engajamento.
+  </div>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 5 — CRM</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 6: CHURN ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 06</div>
+  <h2>Motor de Churn Preditivo</h2>
+  <p class="chapter-lead">Sistema de inteligência que calcula continuamente o risco de cancelamento de cada cliente ativo, com base em 5 sinais comportamentais ponderados, e dispara alertas automáticos.</p>
+
+  <div class="highlight-box purple">
+    <strong>Tecnologia</strong>
+    Função <code>calculateChurnScore(client)</code> — retorna score de 0 a 100. Acima de 70 = Alto Risco. Exibido como badge em toda a interface.
+  </div>
+
+  <h3>Os 5 Sinais do Algoritmo</h3>
+
+  <div class="signal-item">
+    <div class="signal-dot" style="background:var(--danger);"></div>
+    <div>
+      <strong>1. Gap de Follow-up (peso alto)</strong>
+      <p style="font-size:.88rem;color:var(--text-soft);margin:4px 0 0;">Tempo desde o último contato registrado. Quanto maior o gap, maior o score de risco.</p>
+    </div>
+  </div>
+  <div class="signal-item">
+    <div class="signal-dot" style="background:var(--warning);"></div>
+    <div>
+      <strong>2. Chamados Abertos</strong>
+      <p style="font-size:.88rem;color:var(--text-soft);margin:4px 0 0;">Quantidade de chamados sem resolução. Clientes com problemas não resolvidos têm maior risco.</p>
+    </div>
+  </div>
+  <div class="signal-item">
+    <div class="signal-dot" style="background:var(--info);"></div>
+    <div>
+      <strong>3. Tempo no Plano Atual</strong>
+      <p style="font-size:.88rem;color:var(--text-soft);margin:4px 0 0;">Clientes que ficam muito tempo no mesmo plano sem upgrade têm risco elevado.</p>
+    </div>
+  </div>
+  <div class="signal-item">
+    <div class="signal-dot" style="background:var(--purple);"></div>
+    <div>
+      <strong>4. Histórico de Contato</strong>
+      <p style="font-size:.88rem;color:var(--text-soft);margin:4px 0 0;">Frequência e recência das interações registradas no CRM.</p>
+    </div>
+  </div>
+  <div class="signal-item">
+    <div class="signal-dot" style="background:var(--success);"></div>
+    <div>
+      <strong>5. Score Original de Propensão</strong>
+      <p style="font-size:.88rem;color:var(--text-soft);margin:4px 0 0;">Score inicial do lead invertido — leads que chegaram com baixa propensão têm maior risco.</p>
+    </div>
+  </div>
+
+  <h3>Badges de Risco</h3>
+  <table class="table-styled">
+    <thead><tr><th>Score</th><th>Classificação</th><th>Cor</th><th>Ação Recomendada</th></tr></thead>
+    <tbody>
+      <tr><td>0 – 39</td><td>🟢 Baixo Risco</td><td>Verde</td><td>Manutenção de relacionamento normal</td></tr>
+      <tr><td>40 – 69</td><td>🟡 Médio Risco</td><td>Amarelo</td><td>Follow-up proativo em 48h</td></tr>
+      <tr><td>70 – 100</td><td>🔴 Alto Risco</td><td>Vermelho</td><td>Contato urgente + oferta de retenção</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Seção "Clientes em Risco"</h3>
+  <p>Disponível no CRM do consultor e no painel de Vendas do gestor. Lista todos os clientes ativos com score ≥70, com botão para abrir o modal de detalhes (breakdown por sinal + ações rápidas).</p>
+
+  <h3>Alertas Automáticos</h3>
+  <div class="highlight-box red">
+    <strong>Notificação automática</strong>
+    Quando um cliente cruza o limiar de 70 pontos, o sistema notifica automaticamente o consultor responsável via sistema de notificações interno. O envio é controlado por <code>app.state.churnAlertsSent</code> para evitar spam.
+  </div>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 6 — Churn Preditivo</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 7: PROPOSTA ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 07</div>
+  <h2>Gerador de Propostas PDF</h2>
+  <p class="chapter-lead">Gera propostas comerciais profissionais com layout completo, detalhamento de plano e features, prontas para envio por WhatsApp, email ou impressão/PDF.</p>
+
+  <h3>Como Funciona</h3>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h4>Seleção do Cliente</h4>
+      <p>Acesse via perfil do cliente, tabela de clientes ou botão "Gerar Proposta" no menu. A proposta é gerada automaticamente com base nos dados do CRM.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h4>Proposta Gerada</h4>
+      <p>Modal com proposta completa: cabeçalho Tracktiv, dados do cliente, plano recomendado, lista de features do plano (PLAN_FEATURES), valores e condições.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h4>Distribuição</h4>
+      <p>Três opções: <strong>Imprimir/PDF</strong> (via @media print), <strong>WhatsApp</strong> (deeplink com mensagem pré-preenchida) ou <strong>Email</strong> (abre cliente de email).</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <h4>Histórico</h4>
+      <p>Cada proposta gerada é salva em <code>client.proposalHistory[]</code> com data, versão e status de assinatura.</p>
+    </div>
+  </div>
+
+  <h3>Features por Plano (PLAN_FEATURES)</h3>
+  <div class="cards-grid">
+    <div class="card-item">
+      <h4>Essencial — R$ 44,90/mês</h4>
+      <ul style="font-size:.85rem;margin-top:8px;">
+        <li>Rastreamento em tempo real</li>
+        <li>Histórico de 30 dias</li>
+        <li>Alertas de velocidade</li>
+        <li>Suporte por email</li>
+      </ul>
+    </div>
+    <div class="card-item">
+      <h4>Profissional — R$ 54,90/mês</h4>
+      <ul style="font-size:.85rem;margin-top:8px;">
+        <li>Tudo do Essencial</li>
+        <li>Histórico de 90 dias</li>
+        <li>Cerca virtual</li>
+        <li>Bloqueio remoto</li>
+        <li>Suporte por WhatsApp</li>
+      </ul>
+    </div>
+    <div class="card-item">
+      <h4>Controle Total — R$ 64,90/mês</h4>
+      <ul style="font-size:.85rem;margin-top:8px;">
+        <li>Tudo do Profissional</li>
+        <li>Histórico ilimitado</li>
+        <li>Relatórios avançados</li>
+        <li>Múltiplos usuários</li>
+        <li>Suporte prioritário 24h</li>
+      </ul>
+    </div>
+    <div class="card-item">
+      <h4>Empresas — Sob Consulta</h4>
+      <ul style="font-size:.85rem;margin-top:8px;">
+        <li>Frota ilimitada</li>
+        <li>API de integração</li>
+        <li>Relatórios personalizados</li>
+        <li>Gerente de conta dedicado</li>
+        <li>SLA garantido em contrato</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 7 — Propostas</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 8: RE-ENGAJAMENTO ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 08</div>
+  <h2>Re-engajamento de Leads Perdidos</h2>
+  <p class="chapter-lead">Sistema automático que identifica leads marcados como "Perdido" e os inclui em uma fila de re-engajamento temporizada, com mensagens personalizadas conforme o motivo da perda.</p>
+
+  <h3>Fluxo de Automação</h3>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h4>Trigger: Lead Movido para "Perdido"</h4>
+      <p>Ao arrastar um card para a coluna "Perdido", o sistema intercepta a ação e abre um modal de re-engajamento.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h4>Configuração do Re-engajamento</h4>
+      <p>O consultor informa o motivo da perda e seleciona o timer: 30, 60 ou 90 dias para o próximo contato.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h4>Fila Automática</h4>
+      <p>O lead entra em <code>app.state.reengagementQueue[]</code>. Na data configurada, o sistema cria automaticamente um follow-up de "Reativação".</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <h4>Seção "Leads para Reativar"</h4>
+      <p>No CRM do consultor, uma seção dedicada lista todos os leads prontos para reabordagem, com o motivo original e a mensagem sugerida.</p>
+    </div>
+  </div>
+
+  <h3>Mensagens Personalizadas (REENGAGEMENT_MSGS)</h3>
+  <p>O sistema possui mensagens pré-definidas para cada motivo de perda:</p>
+  <ul>
+    <li><strong>Preço alto</strong> — foco em custo-benefício e ROI do rastreamento</li>
+    <li><strong>Sem urgência</strong> — caso de uso específico (furto no bairro, etc.)</li>
+    <li><strong>Já tem concorrente</strong> — diferencial Tracktiv vs. concorrência</li>
+    <li><strong>Sem decisão</strong> — oferta de trial ou condição especial</li>
+    <li><strong>Outros</strong> — mensagem genérica de retomada de contato</li>
+  </ul>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 8 — Re-engajamento</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 9: UPSELL ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 09</div>
+  <h2>Central de Upsell Inteligente</h2>
+  <p class="chapter-lead">Motor de detecção automática de oportunidades de upgrade e cross-sell em toda a base de clientes ativos, com scripts de abordagem personalizados por sinal identificado.</p>
+
+  <h3>Sinais Detectados Automaticamente</h3>
+
+  <div class="cards-grid">
+    <div class="card-item">
+      <div class="card-icon">🏢</div>
+      <h4>Cliente CNPJ</h4>
+      <p>Pessoa jurídica no plano Essencial ou Profissional. Sinal de oportunidade para upgrade para Empresas ou pacote frota.</p>
+    </div>
+    <div class="card-item">
+      <div class="card-icon">🚗</div>
+      <h4>Múltiplos Veículos</h4>
+      <p>Cliente com mais de 1 veículo registrado. Oportunidade de migração para plano família ou desconto multi-veículo.</p>
+    </div>
+    <div class="card-item">
+      <div class="card-icon">⏰</div>
+      <h4>Tempo Sem Upgrade</h4>
+      <p>Cliente há 6+ meses no mesmo plano sem evolução. Momento ideal para apresentar os benefícios do próximo nível.</p>
+    </div>
+    <div class="card-item">
+      <div class="card-icon">🔓</div>
+      <h4>Plano Sem Bloqueio</h4>
+      <p>Cliente no Essencial sem o recurso de bloqueio remoto. Alta propensão a perceber o valor do upgrade para Profissional.</p>
+    </div>
+  </div>
+
+  <h3>Scripts de Abordagem (getUpsellScript)</h3>
+  <p>Para cada sinal detectado, o sistema gera automaticamente um script de venda personalizado que o consultor pode usar diretamente na abordagem ou copiar para o WhatsApp.</p>
+
+  <h3>Interface do Consultor</h3>
+  <ul>
+    <li>Cards de oportunidade com sinal identificado, cliente e script expansível</li>
+    <li>Deeplink direto para WhatsApp com mensagem pré-preenchida</li>
+    <li>Botão "Copiar script" para colar em qualquer canal</li>
+    <li>Estimativa de receita adicional mensal se o upsell fechar</li>
+  </ul>
+
+  <h3>Visão do Gestor</h3>
+  <p>O gestor tem acesso a uma tabela consolidada com todas as oportunidades de upsell de toda a equipe, permitindo priorizar abordagens e definir estratégias coletivas.</p>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 9 — Upsell</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 10: RECOVERY KIT ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 10</div>
+  <h2>Kit de Recuperação de Veículo</h2>
+  <p class="chapter-lead">Funcionalidade emergencial disponível no portal do cliente para casos de furto ou roubo. Gera um documento de recuperação completo com dados do veículo, localização GPS simulada e contatos de emergência.</p>
+
+  <h3>Como Funcionar</h3>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h4>Card Pulsante no Portal</h4>
+      <p>Clientes com stage="Fechado" veem um card vermelho pulsante no dashboard: "🚨 Kit de Recuperação de Veículo".</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h4>Confirmação em 2 Etapas</h4>
+      <p>Para evitar acionamentos acidentais, o cliente confirma a situação em dois passos: intenção + confirmação final.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h4>Documento de Recuperação</h4>
+      <p>Gerado com: dados do titular, dados do veículo, localização GPS (simulada), protocolo único, contatos de emergência Tracktiv e instruções para a polícia.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <h4>Notificação Automática</h4>
+      <p>O gestor é notificado automaticamente via sistema de notificações. O acionamento é registrado em <code>app.state.recoveryHistory[]</code>.</p>
+    </div>
+  </div>
+
+  <div class="highlight-box red">
+    <strong>Suporte a impressão</strong>
+    O documento de recuperação tem suporte completo a @media print — sidebar, topbar e botões são ocultados, gerando um documento limpo para apresentar à autoridade policial.
+  </div>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 10 — Recovery Kit</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 11: ASSINATURA ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 11</div>
+  <h2>Sistema de Assinatura Digital v2</h2>
+  <p class="chapter-lead">Sistema completo de assinatura eletrônica com 4 tipos de assinatura, biblioteca pessoal, fluxo de solicitação com metadados legais, certificado e validade jurídica baseada nas leis brasileiras.</p>
+
+  <h3>Tipos de Assinatura Suportados</h3>
+
+  <div class="cards-grid">
+    <div class="card-item">
+      <div class="card-icon">✍️</div>
+      <h4>Desenhada (Canvas)</h4>
+      <p>Assinatura manuscrita desenhada com mouse ou toque diretamente no canvas. Capturada como imagem base64.</p>
+    </div>
+    <div class="card-item">
+      <div class="card-icon">🖼️</div>
+      <h4>Imagem (Upload)</h4>
+      <p>Upload de foto da assinatura. Remoção automática de fundo branco via manipulação de pixels no canvas.</p>
+    </div>
+    <div class="card-item">
+      <div class="card-icon">🖋️</div>
+      <h4>Fonte Cursiva</h4>
+      <p>3 estilos: Dancing Script, Great Vibes, Pacifico. Texto digitado renderizado em canvas com a fonte selecionada.</p>
+    </div>
+    <div class="card-item">
+      <div class="card-icon">🔐</div>
+      <h4>Certificado A1</h4>
+      <p>Upload de arquivo .pfx/.p12. Validade jurídica ICP-Brasil nível mais alto. Dados do certificado exibidos.</p>
+    </div>
+  </div>
+
+  <h3>Biblioteca de Assinaturas</h3>
+  <p>Cada usuário tem uma biblioteca pessoal (máx. 10 assinaturas) salva em <code>app.state.signatureLibrary[userId][]</code>. As assinaturas podem ser:</p>
+  <ul>
+    <li>Nomeadas individualmente ("Assinatura Formal", "Rubrica", etc.)</li>
+    <li>Definidas como padrão por tipo de documento</li>
+    <li>Deletadas individualmente</li>
+    <li>Reutilizadas em múltiplos documentos</li>
+  </ul>
+
+  <h3>Fluxo de Solicitação de Assinatura</h3>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h4>Criar Solicitação</h4>
+      <p>Gestor ou consultor define: nome do documento, tipo, signatários, prazo de validade (7/15/30 dias).</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h4>Notificação</h4>
+      <p>Cada signatário recebe notificação interna. O documento fica em status "Pendente" até todos assinarem.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h4>Assinatura com Metadados</h4>
+      <p>Ao assinar, o sistema captura: IP simulado, data/hora, hash SHA-256 do documento, tipo de assinatura usada.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <h4>Certificado Final</h4>
+      <p>Documento PDF gerado com todas as assinaturas, metadados, código de verificação e rodapé legal.</p>
+    </div>
+  </div>
+
+  <h3>Validade Jurídica</h3>
+  <div class="highlight-box">
+    <strong>Base legal</strong>
+    O sistema menciona: <strong>MP 2.200-2/2001</strong> (assinatura eletrônica — nível simples e avançado) e <strong>Lei 14.063/2020</strong> (assinatura eletrônica gov.br). Certificados A1 têm validade ICP-Brasil.
+  </div>
+
+  <h3>Status de Documentos</h3>
+  <table class="table-styled">
+    <thead><tr><th>Status</th><th>Significado</th></tr></thead>
+    <tbody>
+      <tr><td>⏳ Pendente</td><td>Aguardando assinatura de um ou mais signatários</td></tr>
+      <tr><td>🔄 Parcial</td><td>Alguns signatários já assinaram, outros não</td></tr>
+      <tr><td>✅ Completo</td><td>Todos assinaram — documento válido</td></tr>
+      <tr><td>⌛ Expirado</td><td>Prazo de assinatura vencido</td></tr>
+      <tr><td>❌ Rejeitado</td><td>Um signatário recusou com motivo</td></tr>
+    </tbody>
+  </table>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 11 — Assinatura Digital</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 12: PARCEIROS ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 12</div>
+  <h2>Portal de Parceiros</h2>
+  <p class="chapter-lead">Módulo completo para gestão de dois tipos de parceiros de negócio: Parceiros Instaladores (instalam rastreadores) e Parceiros Indicadores (indicam leads e ganham comissão por fechamento).</p>
+
+  <h3>Parceiro Instalador</h3>
+  <p>Tem acesso ao portal completo com CRM próprio, gestão de instalações, controle de recorrência e extrato financeiro.</p>
+
+  <div class="highlight-box">
+    <strong>Comissão do Instalador</strong>
+    <ul style="margin-top:8px;padding-left:16px;">
+      <li><strong>Por instalação:</strong> valor fixo (R$ 60,00 por padrão)</li>
+      <li><strong>Recorrência:</strong> percentual fixo sobre mensalidades dos clientes da loja</li>
+    </ul>
+  </div>
+
+  <h3>Parceiro Indicador</h3>
+  <p>Portal simplificado com navegação reduzida. Foco em criar indicações, acompanhar o status e receber comissão quando a indicação fecha.</p>
+
+  <div class="highlight-box green">
+    <strong>Diferenciação técnica</strong>
+    Ambos os perfis usam <code>role: 'instalador'</code> mas são diferenciados pelo campo <code>partnerType: 'instalador' | 'indicador'</code>. O sistema carrega NAV_TREE_INDICADOR separado para indicadores.
+  </div>
+
+  <h3>Gestão pelo Gestor</h3>
+  <p>O gestor pode:</p>
+  <ul>
+    <li>Cadastrar parceiros com formulário (dropdown Instalador/Indicador)</li>
+    <li>Configurar comissão %, região de atuação</li>
+    <li>Visualizar tabela separada por tipo de parceiro</li>
+    <li>Acompanhar performance individual</li>
+  </ul>
+
+  <h3>Parceiro Executivo</h3>
+  <p>Perfil separado (<code>role: 'executivo'</code>) para parceiros de alto valor que gerenciam carteiras de clientes com modelo de comissão % sobre o lucro gerado por cada cliente vinculado.</p>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 12 — Parceiros</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 13: MURAL ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 13</div>
+  <h2>Mural de Performance & Desafios</h2>
+  <p class="chapter-lead">Sistema de gamificação que mantém a equipe engajada com rankings em tempo real, desafios com prêmios, feed de vendas ao vivo e controle total pelo gestor via toggles.</p>
+
+  <h3>Componentes do Mural</h3>
+
+  <div class="cards-grid">
+    <div class="card-item">
+      <div class="card-icon">🏆</div>
+      <h4>Ranking do Mês</h4>
+      <p>Classificação de consultores e instaladores por vendas e pontos. Atualização em tempo real a cada venda fechada.</p>
+    </div>
+    <div class="card-item">
+      <div class="card-icon">🎯</div>
+      <h4>Barra de Meta</h4>
+      <p>Progresso visual da meta mensal individual. Percentual, valor atual vs. meta e dias restantes.</p>
+    </div>
+    <div class="card-item">
+      <div class="card-icon">⚡</div>
+      <h4>Feed de Vendas</h4>
+      <p>Notificações em tempo real de cada venda fechada pela equipe. "🎉 Bruno fechou Auto Prime — Controle Total!"</p>
+    </div>
+    <div class="card-item">
+      <div class="card-icon">🏅</div>
+      <h4>Desafios</h4>
+      <p>Desafios criados pelo gestor com tipo, meta, prazo, prêmio e visibilidade pública/privada.</p>
+    </div>
+  </div>
+
+  <h3>Tipos de Desafio</h3>
+  <table class="table-styled">
+    <thead><tr><th>Tipo</th><th>Critério de Medição</th></tr></thead>
+    <tbody>
+      <tr><td>🏷️ Vendas</td><td>Quantidade de contratos fechados no período</td></tr>
+      <tr><td>👥 Clientes</td><td>Novos clientes adicionados à base</td></tr>
+      <tr><td>📚 Treinamentos</td><td>Módulos de treinamento concluídos</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Configuração pelo Gestor</h3>
+  <p>O gestor tem controle total por toggles individuais:</p>
+  <ul>
+    <li>Toggle geral (liga/desliga o mural inteiro)</li>
+    <li>Exibição do ranking</li>
+    <li>Exibição da meta</li>
+    <li>Feed de vendas</li>
+    <li>Seção de desafios</li>
+    <li>Seção de comissões</li>
+    <li>Ocultar nomes (privacidade — mostra só medalhas)</li>
+  </ul>
+
+  <h3>TRAK Tips</h3>
+  <p>Mensagens motivacionais automáticas inseridas nos cards de desafio, variando conforme o percentual de progresso do consultor no mês.</p>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 13 — Mural</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 14: LINK PÚBLICO ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 14</div>
+  <h2>Link de Cadastro Público</h2>
+  <p class="chapter-lead">Cada consultor possui um link único para captação de leads fora do sistema. O link direciona para um formulário público multi-step sem necessidade de login, onde o lead preenche seus dados diretamente.</p>
+
+  <h3>Como Funciona</h3>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h4>Geração do Link</h4>
+      <p>Em "Meu Link", o consultor visualiza sua URL única com código em Base64 do seu ID: <code>?cadastro=BASE64_ID</code></p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h4>Compartilhamento</h4>
+      <p>Botões de copiar link e compartilhar direto no WhatsApp com mensagem pré-preenchida. QR code gerado automaticamente.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h4>Formulário Público (3 Etapas)</h4>
+      <p><strong>Etapa 1:</strong> Dados pessoais (nome, email, telefone). <strong>Etapa 2:</strong> Dados do veículo. <strong>Etapa 3:</strong> Interesse e confirmação.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <h4>Lead Criado Automaticamente</h4>
+      <p>Ao enviar o formulário, o lead é criado em <code>app.state.clients</code> com <code>fromPublicForm: true</code>, <code>stage: 'Novo Lead'</code> e vinculado ao consultor. Notificação automática disparada.</p>
+    </div>
+  </div>
+
+  <h3>Rastreamento de Leads por Link</h3>
+  <p>Na seção "Meu Link", o consultor visualiza uma tabela com todos os leads que chegaram via formulário público: nome, data, veículo, status atual no funil.</p>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 14 — Link Público</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 15: DOCS & ARMAZENAMENTO ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 15</div>
+  <h2>Controle de Documentos & Armazenamento</h2>
+  <p class="chapter-lead">Módulo duplo: controle de validade de documentos dos clientes com alertas automáticos + controle hierárquico de armazenamento de arquivos do sistema.</p>
+
+  <h3>Controle de Validade de Documentos</h3>
+  <p>Cada documento de cliente pode ter data de vencimento configurada. O sistema monitora continuamente e dispara alertas nos dashboards conforme a proximidade do vencimento:</p>
+
+  <table class="table-styled">
+    <thead><tr><th>Prazo</th><th>Status</th><th>Cor</th></tr></thead>
+    <tbody>
+      <tr><td>30+ dias</td><td>OK — dentro do prazo</td><td>Verde</td></tr>
+      <tr><td>8–30 dias</td><td>Atenção — vencimento próximo</td><td>Amarelo</td></tr>
+      <tr><td>0–7 dias</td><td>Urgente — vencer em breve</td><td>Laranja</td></tr>
+      <tr><td>Vencido</td><td>Expirado — ação necessária</td><td>Vermelho</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Checklist de Documentos</h3>
+  <p>Para cada cliente, o técnico pode criar um checklist de documentos necessários. O cliente visualiza o checklist em seu portal e pode marcar documentos como entregues. O progresso (%) aparece no portal do cliente.</p>
+
+  <h3>Controle de Armazenamento (Hierárquico)</h3>
+  <div class="highlight-box orange">
+    <strong>Hierarquia de limites</strong>
+    <strong>Presidente</strong> define limite global da empresa → <strong>Gestor</strong> distribui entre setores → <strong>Técnico</strong> tem limite operacional dentro da sua cota. Cada nível respeita os limites superiores.
+  </div>
+
+  <ul>
+    <li>Presidente: configura limite por empresa (em GB/TB)</li>
+    <li>Gestor: visualiza uso atual e distribui cotas</li>
+    <li>Técnico: monitora uso operacional, recebe alertas ao se aproximar do limite</li>
+    <li>Alertas em 80% e 95% de uso</li>
+    <li>Dashboard de armazenamento com gráfico visual de uso</li>
+  </ul>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 15 — Documentos</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 16: PLANOS ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 16</div>
+  <h2>Planos & Preços</h2>
+  <p class="chapter-lead">A Tracktiv oferece 4 planos de rastreamento com cobrança mensal recorrente. Os planos são a base do modelo de comissão de toda a equipe comercial.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0;">
+    <div class="plan-card">
+      <div style="font-size:1.5rem;margin-bottom:8px;">📡</div>
+      <h4 style="font-size:.9rem;font-weight:700;margin-bottom:8px;">Essencial</h4>
+      <div class="plan-price">R$ 44<span>,90/mês</span></div>
+      <p style="font-size:.78rem;color:var(--text-soft);margin-top:8px;">Ideal para uso pessoal básico</p>
+    </div>
+    <div class="plan-card featured">
+      <div style="font-size:1.5rem;margin-bottom:8px;">⭐</div>
+      <div style="font-size:.7rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;">Mais Popular</div>
+      <h4 style="font-size:.9rem;font-weight:700;margin-bottom:8px;">Profissional</h4>
+      <div class="plan-price">R$ 54<span>,90/mês</span></div>
+      <p style="font-size:.78rem;color:var(--text-soft);margin-top:8px;">Com bloqueio e cerca virtual</p>
+    </div>
+    <div class="plan-card">
+      <div style="font-size:1.5rem;margin-bottom:8px;">🏆</div>
+      <h4 style="font-size:.9rem;font-weight:700;margin-bottom:8px;">Controle Total</h4>
+      <div class="plan-price">R$ 64<span>,90/mês</span></div>
+      <p style="font-size:.78rem;color:var(--text-soft);margin-top:8px;">Máxima proteção e relatórios</p>
+    </div>
+    <div class="plan-card">
+      <div style="font-size:1.5rem;margin-bottom:8px;">🏢</div>
+      <h4 style="font-size:.9rem;font-weight:700;margin-bottom:8px;">Empresas</h4>
+      <div class="plan-price" style="font-size:1.2rem;">Sob Consulta</div>
+      <p style="font-size:.78rem;color:var(--text-soft);margin-top:8px;">Frota ilimitada e API</p>
+    </div>
+  </div>
+
+  <h3>Modelo de Comissão</h3>
+  <table class="table-styled">
+    <thead><tr><th>Perfil</th><th>Base de Comissão</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td>Consultor</td><td>% sobre valor do contrato fechado</td><td>+ recorrência mensal da base</td></tr>
+      <tr><td>Instalador</td><td>R$ 60,00 por instalação</td><td>+ % recorrência da base da loja</td></tr>
+      <tr><td>Indicador</td><td>% por indicação convertida</td><td>Configurável pelo gestor</td></tr>
+      <tr><td>Executivo</td><td>% do lucro gerado por cliente</td><td>+ vendas + recorrência (opcional)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 16 — Planos</span>
+  </div>
+</div>
+
+<!-- ═══════════════ CAP 17: ACESSO DEMO ═══════════════ -->
+<div class="chapter">
+  <div class="chapter-number">Capítulo 17</div>
+  <h2>Dados de Acesso Demo</h2>
+  <p class="chapter-lead">O sistema vem pré-carregado com dados de demonstração e usuários de acesso para cada perfil, permitindo explorar todas as funcionalidades sem configuração adicional.</p>
+
+  <table class="table-styled">
+    <thead><tr><th>Perfil</th><th>Email</th><th>Senha</th><th>Nome</th></tr></thead>
+    <tbody>
+      <tr><td>👑 Presidente</td><td>presidente@tracktiv.com</td><td>Presidente123</td><td>—</td></tr>
+      <tr><td>🎯 Gestor</td><td>gestor@tracktiv.com</td><td>Gestor123</td><td>—</td></tr>
+      <tr><td>💼 Consultor</td><td>laura@tracktiv.com</td><td>Laura123</td><td>Laura Silva</td></tr>
+      <tr><td>💼 Consultor 2</td><td>bruno@tracktiv.com</td><td>Bruno123</td><td>Bruno Costa</td></tr>
+      <tr><td>🔩 Instalador</td><td>instalador@tracktiv.com</td><td>Instalador123</td><td>Carlos Pereira</td></tr>
+      <tr><td>🤝 Indicador</td><td>parceiro@tracktiv.com</td><td>Parceiro123</td><td>Fernanda Lima</td></tr>
+      <tr><td>🔧 Técnico</td><td>tecnico@tracktiv.com</td><td>Tecnico123</td><td>Rafael Santos</td></tr>
+      <tr><td>👤 Cliente</td><td>cliente@tracktiv.com</td><td>Cliente123</td><td>Auto Prime</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Dados de Amostra</h3>
+  <ul>
+    <li><strong>Cliente principal:</strong> Auto Prime (clientId: c1) — plano Controle Total, stage: Fechado</li>
+    <li><strong>Instalações:</strong> 3 instalações de amostra com diferentes status</li>
+    <li><strong>Chamados:</strong> 2 chamados abertos no sistema de amostra</li>
+    <li><strong>Documentos:</strong> Documentos com diferentes validades para demonstrar alertas</li>
+    <li><strong>Follow-ups:</strong> Follow-ups de diferentes datas para demonstrar o calendário</li>
+  </ul>
+
+  <h3>Resetar Demo</h3>
+  <p>Para resetar todos os dados para o estado inicial de demonstração, limpe o localStorage do navegador na chave <code>tracktiv_v2</code> e recarregue a página.</p>
+
+  <div class="highlight-box orange">
+    <strong>Modo Demo</strong>
+    O sistema possui um "Modo Demo" que pode ser ativado para apresentações. Exibe badge "🎭 Modo Demo" no painel do presidente e impede alterações destrutivas nos dados de amostra.
+  </div>
+
+  <div style="text-align:center;padding:48px 0 20px;">
+    <div style="font-size:2.5rem;margin-bottom:16px;">🚀</div>
+    <h3 style="font-size:1.4rem;color:var(--primary);margin-bottom:8px;">Pronto para começar?</h3>
+    <p style="color:var(--text-soft);">Abra o sistema em <strong>index.html</strong> e faça login com qualquer credencial acima.</p>
+    <div style="margin-top:24px;display:inline-block;background:linear-gradient(135deg,#1a2e4a,#2d4a6e);color:#fff;padding:14px 32px;border-radius:12px;font-weight:700;font-size:1rem;">
+      Tracktiv Portal do Vendedor v3.0
+    </div>
+  </div>
+
+  <div class="chapter-footer">
+    <span>Tracktiv — Portal do Vendedor v3.0</span>
+    <span>Capítulo 17 — Referência</span>
+  </div>
+</div>
+
+</body>
+</html>

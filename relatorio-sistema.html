@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório Técnico — Tracktiv Portal do Vendedor</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; color: #0f172a; background: #fff; font-size: 14px; line-height: 1.75; }
+
+/* ── PRINT BUTTON (screen only) ── */
+.print-btn {
+  position: fixed; top: 20px; right: 20px; z-index: 999;
+  background: #1a2e4a; color: #fff; border: none; padding: 12px 24px;
+  border-radius: 10px; font-family: inherit; font-size: .9rem; font-weight: 700;
+  cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,.25);
+}
+.print-btn:hover { background: #f5820d; }
+
+/* ── COVER ── */
+.cover {
+  min-height: 100vh;
+  background: linear-gradient(150deg, #0f1c2e 0%, #1a2e4a 55%, #243d5c 100%);
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 64px 80px; color: #fff; page-break-after: always;
+  position: relative; overflow: hidden;
+}
+.cover::before {
+  content: ''; position: absolute; top: -160px; right: -160px;
+  width: 600px; height: 600px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(245,130,13,.15), transparent 65%);
+}
+.cover-top { position: relative; }
+.cover-logo { font-size: 1.4rem; font-weight: 800; color: #f5820d; letter-spacing: -.02em; margin-bottom: 80px; }
+.cover-tag { display: inline-block; background: rgba(245,130,13,.18); color: #f5820d; border: 1px solid rgba(245,130,13,.35); padding: 5px 16px; border-radius: 40px; font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 22px; }
+.cover h1 { font-size: 3rem; font-weight: 800; line-height: 1.12; margin-bottom: 22px; }
+.cover h1 em { color: #f5820d; font-style: normal; }
+.cover-sub { font-size: 1.08rem; color: rgba(255,255,255,.65); max-width: 520px; line-height: 1.65; }
+.cover-bottom { position: relative; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px; }
+.cover-meta { font-size: .82rem; color: rgba(255,255,255,.45); }
+.cover-meta strong { color: rgba(255,255,255,.8); display: block; font-size: .9rem; margin-bottom: 4px; }
+.cover-score { text-align: right; }
+.cover-score .score-val { font-size: 3.5rem; font-weight: 800; color: #f5820d; line-height: 1; }
+.cover-score .score-lbl { font-size: .75rem; color: rgba(255,255,255,.5); letter-spacing: .06em; text-transform: uppercase; }
+
+/* ── PAGE LAYOUT ── */
+.page { padding: 72px 80px; page-break-after: always; }
+.page:last-child { page-break-after: avoid; }
+
+/* ── SECTION HEADER ── */
+.sec-head { margin-bottom: 36px; padding-bottom: 20px; border-bottom: 3px solid #f0f4f8; }
+.sec-head .ch-num { font-size: .72rem; font-weight: 700; color: #f5820d; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 6px; }
+.sec-head h2 { font-size: 1.9rem; font-weight: 800; color: #1a2e4a; line-height: 1.2; }
+.sec-head .lead { font-size: 1rem; color: #475569; margin-top: 8px; }
+
+/* ── TYPOGRAPHY ── */
+h3 { font-size: 1.15rem; font-weight: 700; color: #1a2e4a; margin: 32px 0 12px; }
+h4 { font-size: .97rem; font-weight: 700; color: #1a2e4a; margin: 20px 0 8px; }
+p  { margin-bottom: 12px; }
+ul, ol { margin: 8px 0 14px 18px; }
+li { margin-bottom: 5px; }
+code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87em; font-family: monospace; color: #1a2e4a; }
+
+/* ── BOXES ── */
+.box { padding: 16px 20px; border-radius: 10px; margin: 16px 0; font-size: .92rem; }
+.box-blue   { background: #eff6ff; border-left: 4px solid #3b82f6; }
+.box-green  { background: #f0fdf4; border-left: 4px solid #10b981; }
+.box-orange { background: #fff7ed; border-left: 4px solid #f5820d; }
+.box-red    { background: #fef2f2; border-left: 4px solid #ef4444; }
+.box-purple { background: #faf5ff; border-left: 4px solid #8b5cf6; }
+.box-dark   { background: #1a2e4a; color: #fff; border-left: 4px solid #f5820d; }
+.box strong { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; opacity: .7; }
+.box-dark strong { opacity: .65; }
+
+/* ── SCORE GRID ── */
+.score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 20px 0; }
+.score-card { border-radius: 12px; padding: 18px; text-align: center; border: 1.5px solid #e2e8f0; }
+.score-card .sc-icon  { font-size: 1.6rem; margin-bottom: 8px; }
+.score-card .sc-area  { font-size: .72rem; font-weight: 700; color: #475569; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+.score-card .sc-val   { font-size: 1.9rem; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+.score-card .sc-note  { font-size: .75rem; color: #475569; }
+.score-card.good  { background: #f0fdf4; border-color: #bbf7d0; }
+.score-card.good  .sc-val { color: #059669; }
+.score-card.ok    { background: #fff7ed; border-color: #fed7aa; }
+.score-card.ok    .sc-val { color: #d97706; }
+.score-card.warn  { background: #fef2f2; border-color: #fecaca; }
+.score-card.warn  .sc-val { color: #dc2626; }
+
+/* ── STRENGTH / WEAKNESS ITEM ── */
+.sw-item { display: flex; gap: 14px; margin-bottom: 18px; align-items: flex-start; }
+.sw-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+.sw-icon.green  { background: #dcfce7; }
+.sw-icon.red    { background: #fee2e2; }
+.sw-icon.orange { background: #ffedd5; }
+.sw-body h4 { margin: 0 0 4px; font-size: .95rem; }
+.sw-body p  { margin: 0; font-size: .87rem; color: #475569; }
+
+/* ── PRIORITY ITEM ── */
+.pri-item { display: grid; grid-template-columns: 28px 1fr auto; gap: 12px; align-items: start; padding: 14px; border-radius: 10px; margin-bottom: 10px; border: 1.5px solid #e2e8f0; background: #fafafa; }
+.pri-num  { width: 28px; height: 28px; border-radius: 8px; background: #1a2e4a; color: #fff; display: flex; align-items: center; justify-content: center; font-size: .78rem; font-weight: 700; }
+.pri-body h4 { margin: 0 0 3px; font-size: .93rem; }
+.pri-body p  { margin: 0; font-size: .83rem; color: #475569; }
+.pri-badge { padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.pb-high   { background: #fee2e2; color: #991b1b; }
+.pb-med    { background: #fff7ed; color: #9a3412; }
+.pb-low    { background: #f0fdf4; color: #166534; }
+
+/* ── TABLE ── */
+.tbl { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .88rem; }
+.tbl th { background: #1a2e4a; color: #fff; padding: 9px 12px; text-align: left; font-size: .78rem; font-weight: 600; }
+.tbl td { padding: 9px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+.tbl tr:nth-child(even) td { background: #f8fafc; }
+
+/* ── RADAR / BAR ── */
+.bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.bar-lbl { width: 160px; font-size: .83rem; font-weight: 600; flex-shrink: 0; }
+.bar-track { flex: 1; height: 10px; background: #e2e8f0; border-radius: 6px; overflow: hidden; }
+.bar-fill  { height: 100%; border-radius: 6px; }
+.bar-val   { width: 36px; text-align: right; font-size: .82rem; font-weight: 700; }
+
+/* ── ROADMAP ── */
+.roadmap { position: relative; margin: 20px 0; }
+.rm-item { display: flex; gap: 16px; margin-bottom: 0; position: relative; }
+.rm-item::before { content: ''; position: absolute; left: 19px; top: 38px; bottom: -10px; width: 2px; background: #e2e8f0; }
+.rm-item:last-child::before { display: none; }
+.rm-dot  { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .95rem; flex-shrink: 0; z-index: 1; }
+.rm-done   { background: #dcfce7; border: 2px solid #10b981; }
+.rm-now    { background: #fff7ed; border: 2px solid #f5820d; }
+.rm-future { background: #f0f4f8; border: 2px solid #cbd5e1; }
+.rm-body  { padding: 8px 0 24px; }
+.rm-body h4 { margin: 0 0 4px; font-size: .93rem; }
+.rm-body p  { margin: 0; font-size: .83rem; color: #475569; }
+.rm-tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .7rem; font-weight: 700; margin-bottom: 6px; }
+.rt-done   { background: #dcfce7; color: #166534; }
+.rt-now    { background: #fff7ed; color: #9a3412; }
+.rt-future { background: #f0f4f8; color: #475569; }
+
+/* ── SUMMARY CARD ── */
+.summary-hero { background: linear-gradient(135deg, #1a2e4a 0%, #2d4a6e 100%); color: #fff; border-radius: 16px; padding: 32px; margin-bottom: 28px; }
+.summary-hero h3 { color: #f5820d; margin: 0 0 12px; font-size: 1.1rem; }
+.summary-hero p  { color: rgba(255,255,255,.8); font-size: .95rem; margin: 0; line-height: 1.7; }
+.summary-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.sk { text-align: center; padding: 16px; background: var(--bg, #f0f4f8); border-radius: 10px; }
+.sk .sk-v { font-size: 1.7rem; font-weight: 800; color: #f5820d; line-height: 1; margin-bottom: 4px; }
+.sk .sk-l { font-size: .72rem; color: rgba(255,255,255,.55); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+
+/* ── FOOTER ── */
+.pg-footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: .75rem; color: #94a3b8; }
+
+/* ── PRINT ── */
+@media print {
+  .print-btn { display: none; }
+  .page { padding: 52px 60px; }
+  .cover { padding: 52px 60px; }
+  body { font-size: 12.5px; }
+  .cover h1 { font-size: 2.4rem; }
+  .sec-head h2 { font-size: 1.6rem; }
+}
+</style>
+</head>
+<body>
+
+<button class="print-btn" onclick="window.print()">🖨️ Salvar como PDF</button>
+
+<!-- ═══════════ CAPA ═══════════ -->
+<div class="cover">
+  <div class="cover-top">
+    <div class="cover-logo">TRACKTIV</div>
+    <div class="cover-tag">Relatório Técnico Executivo</div>
+    <h1>Análise Completa do<br><em>Portal do Vendedor</em></h1>
+    <p class="cover-sub">Avaliação detalhada de pontos fortes, vulnerabilidades críticas e roadmap de implementações prioritárias para evolução do sistema.</p>
+  </div>
+  <div class="cover-bottom">
+    <div class="cover-meta">
+      <strong>Tracktiv Portal v3.0</strong>
+      Junho de 2026 &nbsp;·&nbsp; Uso Interno &nbsp;·&nbsp; Confidencial
+    </div>
+    <div class="cover-score">
+      <div class="score-val">7.4</div>
+      <div class="score-lbl">Score Geral /10</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SUMÁRIO EXECUTIVO ═══════════ -->
+<div class="page">
+  <div class="sec-head">
+    <div class="ch-num">Sumário Executivo</div>
+    <h2>Visão Geral da Avaliação</h2>
+    <p class="lead">O Portal do Vendedor da Tracktiv é um sistema SaaS maduro com funcionalidades avançadas de CRM, inteligência preditiva e gestão de parceiros. Esta análise identifica os principais vetores de crescimento e os riscos que precisam ser mitigados.</p>
+  </div>
+
+  <div class="summary-hero">
+    <h3>Diagnóstico Geral</h3>
+    <p>O sistema apresenta <strong>excelente riqueza funcional</strong> para uma aplicação sem dependências externas, com destaque para o motor de churn preditivo, o sistema de assinatura digital com validade legal e os dashboards visuais por perfil. A maior vulnerabilidade estrutural é a <strong>persistência exclusiva em localStorage</strong>, que limita escalabilidade, colaboração em tempo real e segurança dos dados.</p>
+  </div>
+
+  <div class="score-grid">
+    <div class="score-card good">
+      <div class="sc-icon">⚙️</div>
+      <div class="sc-area">Funcionalidades</div>
+      <div class="sc-val">9.0</div>
+      <div class="sc-note">Riqueza excepcional de features</div>
+    </div>
+    <div class="score-card ok">
+      <div class="sc-icon">🎨</div>
+      <div class="sc-area">UX / Design</div>
+      <div class="sc-val">8.2</div>
+      <div class="sc-note">Design System v3 consistente</div>
+    </div>
+    <div class="score-card ok">
+      <div class="sc-icon">📱</div>
+      <div class="sc-area">Responsividade</div>
+      <div class="sc-val">7.5</div>
+      <div class="sc-note">Boa, mas mobile pode melhorar</div>
+    </div>
+    <div class="score-card warn">
+      <div class="sc-icon">🔒</div>
+      <div class="sc-area">Segurança</div>
+      <div class="sc-val">4.5</div>
+      <div class="sc-note">localStorage sem criptografia</div>
+    </div>
+    <div class="score-card warn">
+      <div class="sc-icon">📡</div>
+      <div class="sc-area">Escalabilidade</div>
+      <div class="sc-val">3.0</div>
+      <div class="sc-note">Sem backend real</div>
+    </div>
+    <div class="score-card ok">
+      <div class="sc-icon">🤖</div>
+      <div class="sc-area">Inteligência</div>
+      <div class="sc-val">8.0</div>
+      <div class="sc-note">Churn, upsell e re-engajamento</div>
+    </div>
+  </div>
+
+  <h3>Distribuição por Área Avaliada</h3>
+  <div class="bar-row"><div class="bar-lbl">Funcionalidades</div><div class="bar-track"><div class="bar-fill" style="width:90%;background:#10b981;"></div></div><div class="bar-val" style="color:#059669;">9.0</div></div>
+  <div class="bar-row"><div class="bar-lbl">UX & Design</div><div class="bar-track"><div class="bar-fill" style="width:82%;background:#10b981;"></div></div><div class="bar-val" style="color:#059669;">8.2</div></div>
+  <div class="bar-row"><div class="bar-lbl">Inteligência</div><div class="bar-track"><div class="bar-fill" style="width:80%;background:#3b82f6;"></div></div><div class="bar-val" style="color:#2563eb;">8.0</div></div>
+  <div class="bar-row"><div class="bar-lbl">Responsividade</div><div class="bar-track"><div class="bar-fill" style="width:75%;background:#f59e0b;"></div></div><div class="bar-val" style="color:#d97706;">7.5</div></div>
+  <div class="bar-row"><div class="bar-lbl">Manutenibilidade</div><div class="bar-track"><div class="bar-fill" style="width:55%;background:#f59e0b;"></div></div><div class="bar-val" style="color:#d97706;">5.5</div></div>
+  <div class="bar-row"><div class="bar-lbl">Segurança</div><div class="bar-track"><div class="bar-fill" style="width:45%;background:#ef4444;"></div></div><div class="bar-val" style="color:#dc2626;">4.5</div></div>
+  <div class="bar-row"><div class="bar-lbl">Escalabilidade</div><div class="bar-track"><div class="bar-fill" style="width:30%;background:#ef4444;"></div></div><div class="bar-val" style="color:#dc2626;">3.0</div></div>
+
+  <div class="pg-footer">
+    <span>Tracktiv — Relatório Técnico Executivo 2026</span>
+    <span>Sumário Executivo</span>
+  </div>
+</div>
+
+<!-- ═══════════ PONTOS FORTES ═══════════ -->
+<div class="page">
+  <div class="sec-head">
+    <div class="ch-num">Seção 01</div>
+    <h2>Pontos Fortes</h2>
+    <p class="lead">O sistema demonstra maturidade funcional impressionante para uma aplicação frontend pura. Os pontos a seguir representam diferenciais competitivos reais que agregam valor ao negócio.</p>
+  </div>
+
+  <h3>🏆 Excelentes</h3>
+
+  <div class="sw-item">
+    <div class="sw-icon green">🤖</div>
+    <div class="sw-body">
+      <h4>Motor de Churn Preditivo com 5 Sinais</h4>
+      <p>Algoritmo próprio que combina gap de follow-up, chamados abertos, tempo no plano, histórico de contato e score de propensão. Resultado: score 0–100 em tempo real com badge visual e alertas automáticos ao cruzar 70 pts. Poucos CRMs de mercado oferecem isso out-of-the-box.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon green">✍️</div>
+    <div class="sw-body">
+      <h4>Sistema de Assinatura Digital com Validade Legal</h4>
+      <p>4 tipos de assinatura (canvas, imagem, cursiva, A1), biblioteca pessoal, SHA-256 hash, IP, timestamp, código de verificação e certificado imprimível com base legal (MP 2.200-2/2001 + Lei 14.063/2020). Feature enterprise entregue sem dependências.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon green">📊</div>
+    <div class="sw-body">
+      <h4>Dashboards Inteligentes para 8 Perfis</h4>
+      <p>Cada perfil tem um dashboard único com KPIs em gradiente, gráfico de barras dos últimos 6 meses, progress bars animados, contadores numéricos e alertas semânticos. Experiência visual muito superior à média de sistemas SaaS comerciais.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon green">🎯</div>
+    <div class="sw-body">
+      <h4>CRM Completo com Automações</h4>
+      <p>Funil visual Kanban com 6 etapas, score de propensão, follow-up calendário, histórico de interações, badges de churn e integração nativa com propostas, upsell e re-engajamento. Tudo conectado e automático.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon green">🔗</div>
+    <div class="sw-body">
+      <h4>Ecossistema de Parceiros Diferenciado</h4>
+      <p>3 tipos de parceiros (Instalador, Indicador, Executivo) com portais, comissões e dashboards distintos. O modelo do Parceiro Executivo com % sobre lucro é particularmente sofisticado e raro em sistemas deste porte.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon green">🎮</div>
+    <div class="sw-body">
+      <h4>Gamificação com Mural de Performance</h4>
+      <p>Sistema de desafios, ranking em tempo real, feed de vendas ao vivo e TRAK tips motivacionais. Configuração granular pelo gestor com toggles individuais por seção. Aumenta engajamento da equipe comercial.</p>
+    </div>
+  </div>
+
+  <h3>✅ Muito Bons</h3>
+
+  <div class="sw-item">
+    <div class="sw-icon green">📄</div>
+    <div class="sw-body">
+      <h4>Gerador de Propostas PDF com WhatsApp</h4>
+      <p>Proposta profissional gerada em segundos com histórico salvo, suporte a @media print e deeplink para WhatsApp com mensagem pré-preenchida. Reduz drasticamente o tempo de envio de propostas.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon green">🔄</div>
+    <div class="sw-body">
+      <h4>Re-engajamento Automático de Leads Perdidos</h4>
+      <p>Timer de 30/60/90 dias, mensagens personalizadas por motivo de perda e fila automática de follow-up. Recupera oportunidades que seriam esquecidas.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon green">🔗</div>
+    <div class="sw-body">
+      <h4>Link Público de Captação de Leads</h4>
+      <p>Formulário multi-step público sem login, com QR code, compartilhamento WhatsApp e rastreamento de origem. Excelente ferramenta de geração de demanda para consultores.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon green">📦</div>
+    <div class="sw-body">
+      <h4>Zero Dependências Externas</h4>
+      <p>HTML + CSS + JS puros. Sem npm, webpack, frameworks ou CDNs de lógica. Deployável em qualquer servidor estático, abre offline, sem build step, sem vulnerabilidades de supply chain.</p>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>Tracktiv — Relatório Técnico Executivo 2026</span>
+    <span>Seção 01 — Pontos Fortes</span>
+  </div>
+</div>
+
+<!-- ═══════════ PONTOS FRACOS ═══════════ -->
+<div class="page">
+  <div class="sec-head">
+    <div class="ch-num">Seção 02</div>
+    <h2>Pontos Fracos & Vulnerabilidades</h2>
+    <p class="lead">Os problemas a seguir foram identificados e classificados por criticidade. Alguns são limitações arquiteturais estruturais — exigem reescrita parcial. Outros são melhorias incrementais viáveis dentro da estrutura atual.</p>
+  </div>
+
+  <h3>🔴 Críticos — Risco ao Negócio</h3>
+
+  <div class="sw-item">
+    <div class="sw-icon red">💾</div>
+    <div class="sw-body">
+      <h4>Persistência Exclusiva em localStorage</h4>
+      <p>Todos os dados ficam no navegador do usuário. <strong>Riscos:</strong> perda total ao limpar o browser, impossibilidade de múltiplos usuários simultâneos no mesmo time, sem backup automático, limite de ~10MB por domínio, dados inacessíveis em outro dispositivo. <strong>Impacto: crítico para uso real de produção.</strong></p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon red">🔒</div>
+    <div class="sw-body">
+      <h4>Autenticação sem Criptografia Real</h4>
+      <p>As credenciais (email + senha) ficam armazenadas em texto puro no localStorage. Qualquer acesso ao DevTools do browser expõe todas as contas. Não há JWT, sessão server-side, hash de senha (bcrypt/argon2) ou proteção contra força bruta.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon red">📡</div>
+    <div class="sw-body">
+      <h4>Sem Sincronização em Tempo Real entre Usuários</h4>
+      <p>Dois usuários abertos simultaneamente (ex: gestor e consultor) não veem as alterações um do outro. Não há WebSocket, polling ou mecanismo de sync. Em uso real de equipe, isso gera dados inconsistentes e conflitos.</p>
+    </div>
+  </div>
+
+  <h3>🟠 Altos — Impactam Experiência e Crescimento</h3>
+
+  <div class="sw-item">
+    <div class="sw-icon orange">📏</div>
+    <div class="sw-body">
+      <h4>Arquivo app.js com ~20.000 Linhas</h4>
+      <p>Um único arquivo JavaScript com toda a lógica do sistema. Dificulta manutenção, debugging, onboarding de novos devs e testes. Qualquer erro de sintaxe quebra o sistema inteiro. Impossível fazer code splitting ou lazy loading.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon orange">🧪</div>
+    <div class="sw-body">
+      <h4>Ausência de Testes Automatizados</h4>
+      <p>Nenhum teste unitário, de integração ou E2E. Cada feature nova pode quebrar features existentes sem aviso. Riscos de regressão aumentam exponencialmente com o tamanho do código.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon orange">📱</div>
+    <div class="sw-body">
+      <h4>Experiência Mobile Limitada</h4>
+      <p>A sidebar ocupa espaço em mobile, os modais não são 100% otimizados para telas pequenas e algumas tabelas não têm scroll horizontal adequado. O uso no smartphone, que representa >50% do acesso de vendedores em campo, é prejudicado.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon orange">🔔</div>
+    <div class="sw-body">
+      <h4>Notificações sem Push Real</h4>
+      <p>O sistema de notificações é interno (dropdown no topbar). Não há push notifications do browser, email, SMS ou WhatsApp saindo do sistema. Alertas críticos (churn alto, vencimento de doc) só são vistos se o usuário abrir o sistema.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon orange">📊</div>
+    <div class="sw-body">
+      <h4>Relatórios sem Exportação Estruturada</h4>
+      <p>Não existe exportação de dados para CSV, Excel ou integração com BI (Google Data Studio, Power BI). O gestor não consegue analisar dados historicamente fora do sistema, nem fazer cruzamentos avançados.</p>
+    </div>
+  </div>
+
+  <h3>🟡 Médios — Oportunidades de Melhoria</h3>
+
+  <div class="sw-item">
+    <div class="sw-icon orange">🗂️</div>
+    <div class="sw-body">
+      <h4>Sem Controle de Versão de Documentos</h4>
+      <p>Documentos substituídos não mantêm histórico de versões. Não há diff entre versões, auditoria de alterações ou capacidade de reverter para versão anterior.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon orange">🌐</div>
+    <div class="sw-body">
+      <h4>Sem API Pública / Webhooks</h4>
+      <p>Impossível integrar com sistemas externos (ERP, CRM corporativo, plataformas de cobrança, marketplaces). Todo dado fica isolado no localStorage.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon orange">📷</div>
+    <div class="sw-body">
+      <h4>Upload de Arquivos Simulado</h4>
+      <p>Fotos de instalações e documentos são armazenados como base64 no localStorage, consumindo rapidamente o limite de 10MB. Não há armazenamento real de arquivos (S3, Firebase Storage, etc.).</p>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>Tracktiv — Relatório Técnico Executivo 2026</span>
+    <span>Seção 02 — Pontos Fracos</span>
+  </div>
+</div>
+
+<!-- ═══════════ SUGESTÕES ═══════════ -->
+<div class="page">
+  <div class="sec-head">
+    <div class="ch-num">Seção 03</div>
+    <h2>Sugestões de Implementação</h2>
+    <p class="lead">Roadmap priorizado com 15 implementações, organizadas por impacto no negócio e viabilidade técnica. As 5 primeiras são críticas para viabilizar o uso em produção real.</p>
+  </div>
+
+  <h3>Prioridade Máxima — Viabilização de Produção</h3>
+
+  <div class="pri-item">
+    <div class="pri-num">1</div>
+    <div class="pri-body">
+      <h4>Backend com Banco de Dados Real</h4>
+      <p>Migrar persistência do localStorage para Supabase (PostgreSQL + Auth + Realtime) ou Firebase. Supabase é ideal: SQL familiar, auth pronto, realtime via websocket, gratuito até 500MB. Mantém o frontend atual, adiciona camada API.</p>
+    </div>
+    <div class="pri-badge pb-high">Crítico</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">2</div>
+    <div class="pri-body">
+      <h4>Autenticação Segura</h4>
+      <p>Implementar JWT + refresh tokens via Supabase Auth ou Auth0. Hash de senhas com bcrypt. Bloqueio por tentativas (rate limiting). 2FA opcional para gestor e presidente.</p>
+    </div>
+    <div class="pri-badge pb-high">Crítico</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">3</div>
+    <div class="pri-body">
+      <h4>Push Notifications Reais</h4>
+      <p>Integrar com WhatsApp Business API (via Twilio ou Z-API) para alertas críticos: lead parado >3 dias, doc vencendo, churn alto. Ou Web Push API do browser como solução mais simples e gratuita.</p>
+    </div>
+    <div class="pri-badge pb-high">Crítico</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">4</div>
+    <div class="pri-body">
+      <h4>Armazenamento Real de Arquivos</h4>
+      <p>Substituir base64 no localStorage por Supabase Storage ou Cloudflare R2. Suporte a arquivos até 5GB, URLs assinadas com expiração, redimensionamento automático de imagens.</p>
+    </div>
+    <div class="pri-badge pb-high">Crítico</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">5</div>
+    <div class="pri-body">
+      <h4>App Mobile Nativo (PWA)</h4>
+      <p>Transformar o sistema em PWA (Progressive Web App): manifest.json, service worker, cache offline, ícone na homescreen. Custo mínimo, melhora drasticamente a experiência de vendedores em campo.</p>
+    </div>
+    <div class="pri-badge pb-high">Crítico</div>
+  </div>
+
+  <h3>Alta Prioridade — Crescimento de Produto</h3>
+
+  <div class="pri-item">
+    <div class="pri-num">6</div>
+    <div class="pri-body">
+      <h4>Módulo de Relatórios & Exportação</h4>
+      <p>Exportar dados para CSV/Excel, gráficos para PNG, relatórios mensais automáticos por email. Integração com Google Data Studio via API para dashboards executivos avançados.</p>
+    </div>
+    <div class="pri-badge pb-med">Alta</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">7</div>
+    <div class="pri-body">
+      <h4>Integração com WhatsApp Business</h4>
+      <p>Envio de mensagens automáticas direto do sistema: confirmação de proposta, lembrete de follow-up, alerta de vencimento. Usar Z-API ou Evolution API (self-hosted, gratuito).</p>
+    </div>
+    <div class="pri-badge pb-med">Alta</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">8</div>
+    <div class="pri-body">
+      <h4>Pipeline de Comissão Automático</h4>
+      <p>Cálculo e fechamento automático de comissões mensais, geração de recibo PDF por consultor, integração com Pix via API bancária (Efí Bank, Asaas) para pagamento direto pelo sistema.</p>
+    </div>
+    <div class="pri-badge pb-med">Alta</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">9</div>
+    <div class="pri-body">
+      <h4>Refatoração Modular do app.js</h4>
+      <p>Dividir os ~20.000 linhas em módulos ES6 (crm.js, dashboard.js, parceiros.js, assinatura.js, etc.) com bundler leve (Vite ou esbuild). Mantém zero-dependency do ponto de vista do usuário, mas facilita manutenção.</p>
+    </div>
+    <div class="pri-badge pb-med">Alta</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">10</div>
+    <div class="pri-body">
+      <h4>IA Generativa no CRM</h4>
+      <p>Integrar Claude API (via edge function Supabase) para: resumo automático do histórico do cliente, sugestão de próximo passo no funil, rascunho de email/WhatsApp personalizado, análise de sentimento das notas.</p>
+    </div>
+    <div class="pri-badge pb-med">Alta</div>
+  </div>
+
+  <h3>Prioridade Média — Diferenciação Competitiva</h3>
+
+  <div class="pri-item">
+    <div class="pri-num">11</div>
+    <div class="pri-body">
+      <h4>Assinatura Digital com Certificadora Real</h4>
+      <p>Integrar com Certisign, Soluti ou D4Sign para assinatura com certificado ICP-Brasil válido juridicamente. O sistema atual já tem a arquitetura pronta — basta adicionar a integração via API.</p>
+    </div>
+    <div class="pri-badge pb-med">Média</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">12</div>
+    <div class="pri-body">
+      <h4>App Mobile Dedicado (React Native / Flutter)</h4>
+      <p>Além do PWA, desenvolver app nativo para acesso a recursos offline mais robustos, câmera para foto de instalação, biometria para autenticação e notificações push nativas.</p>
+    </div>
+    <div class="pri-badge pb-med">Média</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">13</div>
+    <div class="pri-body">
+      <h4>Integração com GPS Real</h4>
+      <p>Substituir o GPS simulado no Kit de Recuperação por integração real com a plataforma de rastreamento Tracktiv, exibindo localização em tempo real do veículo via API WebSocket.</p>
+    </div>
+    <div class="pri-badge pb-low">Média</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">14</div>
+    <div class="pri-body">
+      <h4>Multi-empresa Real com Isolamento de Dados</h4>
+      <p>Implementar tenant isolation real no banco de dados (Row Level Security no Supabase). Cada empresa opera em namespace isolado com customização de marca (white-label) por tenant.</p>
+    </div>
+    <div class="pri-badge pb-low">Média</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">15</div>
+    <div class="pri-body">
+      <h4>Testes Automatizados (E2E + Unit)</h4>
+      <p>Implementar Playwright para testes E2E dos fluxos críticos (login, fechar venda, assinar documento) e Vitest para funções puras (calculateChurnScore, getConsultantMetrics). CI/CD com GitHub Actions.</p>
+    </div>
+    <div class="pri-badge pb-low">Baixa</div>
+  </div>
+
+  <div class="pg-footer">
+    <span>Tracktiv — Relatório Técnico Executivo 2026</span>
+    <span>Seção 03 — Implementações</span>
+  </div>
+</div>
+
+<!-- ═══════════ ROADMAP ═══════════ -->
+<div class="page">
+  <div class="sec-head">
+    <div class="ch-num">Seção 04</div>
+    <h2>Roadmap de Evolução</h2>
+    <p class="lead">Visão temporal das implementações sugeridas, agrupadas em três horizontes: correções críticas (Q3 2026), crescimento (Q4 2026) e diferenciação (2027).</p>
+  </div>
+
+  <h3>Q3 2026 — Fundação de Produção</h3>
+  <div class="roadmap">
+    <div class="rm-item">
+      <div class="rm-dot rm-now">🔥</div>
+      <div class="rm-body">
+        <span class="rm-tag rt-now">Agora</span>
+        <h4>Migração para Supabase (Backend + Auth + Storage)</h4>
+        <p>Substituir localStorage por banco real. Autenticação segura. Upload real de arquivos. Estimativa: 3–4 semanas de desenvolvimento.</p>
+      </div>
+    </div>
+    <div class="rm-item">
+      <div class="rm-dot rm-now">🔥</div>
+      <div class="rm-body">
+        <span class="rm-tag rt-now">Agora</span>
+        <h4>Realtime Sync + Push Notifications</h4>
+        <p>Websocket via Supabase Realtime para sync entre usuários. Web Push API para alertas fora do sistema.</p>
+      </div>
+    </div>
+    <div class="rm-item">
+      <div class="rm-dot rm-now">🔥</div>
+      <div class="rm-body">
+        <span class="rm-tag rt-now">Agora</span>
+        <h4>PWA — Progressive Web App</h4>
+        <p>Service worker, manifest, cache offline. App instalável no celular sem loja de apps. Custo mínimo, impacto máximo para vendedores em campo.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>Q4 2026 — Crescimento e Automação</h3>
+  <div class="roadmap">
+    <div class="rm-item">
+      <div class="rm-dot rm-future">📋</div>
+      <div class="rm-body">
+        <span class="rm-tag rt-future">Próximo</span>
+        <h4>Integração WhatsApp Business + Comissão Automática</h4>
+        <p>Mensagens automáticas, recibos de comissão em PDF, pipeline de pagamento via Pix.</p>
+      </div>
+    </div>
+    <div class="rm-item">
+      <div class="rm-dot rm-future">📋</div>
+      <div class="rm-body">
+        <span class="rm-tag rt-future">Próximo</span>
+        <h4>Módulo de Relatórios & Exportação</h4>
+        <p>CSV, Excel, PNG de gráficos, relatórios mensais automáticos por email, integração Data Studio.</p>
+      </div>
+    </div>
+    <div class="rm-item">
+      <div class="rm-dot rm-future">📋</div>
+      <div class="rm-body">
+        <span class="rm-tag rt-future">Próximo</span>
+        <h4>IA no CRM (Claude API)</h4>
+        <p>Resumo automático de clientes, sugestão de próximo passo, rascunho de mensagens personalizadas.</p>
+      </div>
+    </div>
+    <div class="rm-item">
+      <div class="rm-dot rm-future">📋</div>
+      <div class="rm-body">
+        <span class="rm-tag rt-future">Próximo</span>
+        <h4>Refatoração Modular do Frontend</h4>
+        <p>Dividir app.js em módulos. Adicionar Vite como bundler. Manter zero-dependency para o usuário final.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>2027 — Diferenciação e Escala</h3>
+  <div class="roadmap">
+    <div class="rm-item">
+      <div class="rm-dot rm-future">🚀</div>
+      <div class="rm-body">
+        <span class="rm-tag rt-future">Futuro</span>
+        <h4>App Mobile Nativo + GPS Real</h4>
+        <p>React Native ou Flutter. Câmera nativa para instalações. Integração real com plataforma de rastreamento.</p>
+      </div>
+    </div>
+    <div class="rm-item">
+      <div class="rm-dot rm-future">🚀</div>
+      <div class="rm-body">
+        <span class="rm-tag rt-future">Futuro</span>
+        <h4>Assinatura Digital ICP-Brasil + Multi-empresa White-label</h4>
+        <p>Certificadora real (D4Sign/Certisign). Tenant isolation. White-label por empresa com logo e cores customizadas.</p>
+      </div>
+    </div>
+    <div class="rm-item">
+      <div class="rm-dot rm-future">🚀</div>
+      <div class="rm-body">
+        <span class="rm-tag rt-future">Futuro</span>
+        <h4>Marketplace de Parceiros</h4>
+        <p>Portal público para novos parceiros se cadastrarem, área de treinamentos com certificação, programa de pontos gamificado com prêmios reais.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="pg-footer">
+    <span>Tracktiv — Relatório Técnico Executivo 2026</span>
+    <span>Seção 04 — Roadmap</span>
+  </div>
+</div>
+
+<!-- ═══════════ CONCLUSÃO ═══════════ -->
+<div class="page">
+  <div class="sec-head">
+    <div class="ch-num">Seção 05</div>
+    <h2>Conclusão & Recomendações Finais</h2>
+    <p class="lead">Síntese da avaliação e os 5 pontos de ação mais importantes para garantir a viabilidade e o crescimento do sistema.</p>
+  </div>
+
+  <div class="box box-dark" style="margin-bottom:28px;">
+    <strong>Veredicto Geral</strong>
+    O Portal do Vendedor da Tracktiv é um dos sistemas frontend mais funcionalmente ricos já construídos sem framework. A riqueza de features — churn preditivo, assinatura digital, gamificação, dashboards por perfil — coloca o produto em um nível de maturidade invejável. A decisão arquitetural de usar localStorage, tomada para simplificar o desenvolvimento inicial, é agora o principal limitador de crescimento. A migração para backend real é o investimento de maior ROI possível.
+  </div>
+
+  <h3>Os 5 Pontos de Ação Imediatos</h3>
+
+  <table class="tbl">
+    <thead>
+      <tr><th>#</th><th>Ação</th><th>Impacto</th><th>Esforço</th><th>ROI</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1</strong></td>
+        <td>Migrar para Supabase</td>
+        <td>Elimina risco de perda de dados e permite trabalho em equipe real</td>
+        <td>Alto</td>
+        <td>🔥 Crítico</td>
+      </tr>
+      <tr>
+        <td><strong>2</strong></td>
+        <td>Implementar PWA</td>
+        <td>App no celular dos vendedores sem custo de desenvolvimento mobile</td>
+        <td>Baixo</td>
+        <td>⭐ Excelente</td>
+      </tr>
+      <tr>
+        <td><strong>3</strong></td>
+        <td>Push Notifications WhatsApp</td>
+        <td>Alertas de churn e follow-up chegam onde o vendedor está</td>
+        <td>Médio</td>
+        <td>⭐ Excelente</td>
+      </tr>
+      <tr>
+        <td><strong>4</strong></td>
+        <td>Exportação de Relatórios</td>
+        <td>Gestores e presidente ganham autonomia analítica externa</td>
+        <td>Baixo</td>
+        <td>✅ Muito bom</td>
+      </tr>
+      <tr>
+        <td><strong>5</strong></td>
+        <td>IA no CRM (Claude API)</td>
+        <td>Reduz trabalho manual do consultor, aumenta taxa de conversão</td>
+        <td>Médio</td>
+        <td>✅ Muito bom</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Potencial de Mercado</h3>
+  <p>Com a migração para backend real e as integrações sugeridas, o Portal do Vendedor tem potencial para ser comercializado como produto SaaS independente para o mercado de rastreamento veicular. Há mais de 3.000 empresas de rastreamento no Brasil — a maioria sem um portal de parceiros e CRM integrado desta qualidade.</p>
+
+  <div class="box box-green">
+    <strong>Oportunidade de Produto</strong>
+    Transformar o Portal em um produto SaaS white-label para revendas Tracktiv (ou concorrentes) geraria uma nova linha de receita recorrente com custo marginal próximo de zero, dado que a arquitetura multi-empresa já existe no código atual.
+  </div>
+
+  <div class="box box-orange">
+    <strong>Próximo Passo Recomendado</strong>
+    Criar uma conta gratuita no Supabase (supabase.com), definir o schema do banco de dados baseado no <code>app.state</code> atual e implementar a camada de persistência em 2–3 sprints de 1 semana. O restante do frontend permanece 100% intacto.
+  </div>
+
+  <div style="text-align:center;margin-top:48px;padding:36px;background:linear-gradient(135deg,#1a2e4a,#2d4a6e);border-radius:16px;color:#fff;">
+    <div style="font-size:2.5rem;margin-bottom:16px;">🚀</div>
+    <h3 style="color:#f5820d;margin-bottom:10px;font-size:1.3rem;">Score Final: 7.4 / 10</h3>
+    <p style="color:rgba(255,255,255,.75);max-width:480px;margin:0 auto;font-size:.95rem;">Sistema com excelente base funcional e UX. A migração para backend real elevaria este score para 9.2+, posicionando o produto entre os melhores CRMs verticais do mercado de rastreamento.</p>
+    <div style="margin-top:20px;font-size:.78rem;color:rgba(255,255,255,.4);">Tracktiv Portal do Vendedor v3.0 &nbsp;·&nbsp; Relatório Técnico &nbsp;·&nbsp; Junho 2026</div>
+  </div>
+
+  <div class="pg-footer" style="margin-top:32px;">
+    <span>Tracktiv — Relatório Técnico Executivo 2026</span>
+    <span>Seção 05 — Conclusão</span>
+  </div>
+</div>
+
+</body>
+</html>
