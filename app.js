@@ -6,6 +6,8 @@ const STORAGE_KEY = 'tracktiv_v3';
 const INSTALL_FEE = 60;
 const SALE_COMMISSION = 50;
 
+let supabaseClient = null;
+
 const NAV_ICONS = {
     gestorDashboard:'📊', gestorConsultores:'👥', gestorParceiros:'🤝',
     gestorCupons:'🏷️', gestorConfig:'⚙️', gestorClientesPortal:'🌐',
@@ -5277,18 +5279,15 @@ function renderSimulador() {
    AUTH
 ═══════════════════════════════════════════════════════════════════ */
 
-function handleLogin(e) {
-    e.preventDefault();
-    const email = document.getElementById('emailInput').value.trim().toLowerCase();
-    const pass  = document.getElementById('passwordInput').value.trim();
-    const errEl = document.getElementById('loginError');
-    errEl.textContent = '';
-    const VALID_ROLES = ['presidente', 'gestor', 'consultor', 'instalador', 'tecnico', 'cliente', 'executivo'];
-    const user = (app.state.users || []).find(u =>
-        u.email === email && u.password === pass && VALID_ROLES.includes(u.role)
-    );
-    if (!user) { errEl.textContent = 'E-mail ou senha incorretos.'; return; }
-    // Cópia defensiva para evitar mutação acidental
+function initSupabase() {
+    if (typeof supabase !== 'undefined' &&
+        typeof SUPABASE_URL !== 'undefined' &&
+        typeof SUPABASE_ANON_KEY !== 'undefined') {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+}
+
+function loginWithUser(user) {
     app.currentUser = { ...user };
     addAuditLog('login', { userId: user.id, name: user.name, role: user.role });
     if (app.currentUser.role === 'cliente') {
@@ -5299,6 +5298,62 @@ function handleLogin(e) {
             setTimeout(checkUrgentePopup, 400);
         }
     }
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('emailInput').value.trim().toLowerCase();
+    const pass  = document.getElementById('passwordInput').value.trim();
+    const errEl = document.getElementById('loginError');
+    errEl.textContent = '';
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Entrando…'; }
+
+    const VALID_ROLES = ['presidente', 'gestor', 'consultor', 'instalador', 'tecnico', 'cliente', 'executivo'];
+
+    // 1. Tenta Supabase Auth (usuários reais de produção)
+    if (supabaseClient) {
+        try {
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+            if (!error && data?.user) {
+                let user = (app.state.users || []).find(u =>
+                    (u.email || '').toLowerCase() === email && VALID_ROLES.includes(u.role)
+                );
+                if (!user) {
+                    const { data: profile } = await supabaseClient
+                        .from('profiles').select('*').eq('email', email).maybeSingle();
+                    if (profile && VALID_ROLES.includes(profile.role)) {
+                        user = {
+                            id: profile.id,
+                            name: profile.name,
+                            email: profile.email,
+                            role: profile.role,
+                            ...(profile.partner_type ? { partnerType: profile.partner_type } : {}),
+                            ...(typeof profile.data === 'object' && profile.data ? profile.data : {})
+                        };
+                        if (!app.state.users) app.state.users = [];
+                        if (!app.state.users.some(u => (u.email || '').toLowerCase() === email)) {
+                            app.state.users.push(user);
+                            saveState();
+                        }
+                    }
+                }
+                if (user) {
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entrar'; }
+                    loginWithUser(user);
+                    return;
+                }
+            }
+        } catch (_) { /* Supabase indisponível — continua para auth local */ }
+    }
+
+    // 2. Fallback: auth local (demo e usuários de localStorage)
+    const user = (app.state.users || []).find(u =>
+        u.email === email && u.password === pass && VALID_ROLES.includes(u.role)
+    );
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entrar'; }
+    if (!user) { errEl.textContent = 'E-mail ou senha incorretos.'; return; }
+    loginWithUser(user);
 }
 
 function handleDemo() {
@@ -10605,6 +10660,7 @@ function renderComunicadosMural() {
 ═══════════════════════════════════════════════════════════════════ */
 
 function init() {
+    initSupabase();
     loadState();
     applyBrandConfig();
 
@@ -10617,7 +10673,8 @@ function init() {
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
     document.getElementById('demoButton').addEventListener('click', handleDemo);
 
-    document.getElementById('logoutBtn').addEventListener('click', () => {
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        if (supabaseClient) await supabaseClient.auth.signOut().catch(() => {});
         if (app.demoMode) exitDemoMode();
         app.currentUser = null;
         app.demoMode = false;
@@ -10626,7 +10683,8 @@ function init() {
         document.getElementById('loginMessage').textContent = 'Use suas credenciais para acessar o portal. Clique em Demo para uma demonstração.';
     });
 
-    document.getElementById('clienteLogoutBtn').addEventListener('click', () => {
+    document.getElementById('clienteLogoutBtn').addEventListener('click', async () => {
+        if (supabaseClient) await supabaseClient.auth.signOut().catch(() => {});
         app.currentUser = null;
         document.getElementById('clientePortal').classList.add('hidden');
         document.getElementById('loginScreen').classList.remove('hidden');

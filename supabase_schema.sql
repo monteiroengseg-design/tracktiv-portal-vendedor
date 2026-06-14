@@ -4,16 +4,61 @@
 create extension if not exists "pgcrypto";
 
 -- ----------------------------------------------------------------
--- Seed auth.users if auth schema exists
+-- Seed auth.users with encrypted passwords
+-- Execute no SQL Editor do Supabase (requer pgcrypto)
 -- ----------------------------------------------------------------
 do $$
 begin
-  if exists (select 1 from pg_namespace n join pg_class c on n.oid = c.relnamespace where n.nspname = 'auth' and c.relname = 'users') then
-    insert into auth.users (id, email, aud, role, raw_user_meta, created_at)
-    values
-      ('00000000-0000-0000-0000-000000000001', 'presidente@tracktiv.com.br', 'authenticated', 'authenticated', '{"name":"Presidente Demo"}', now()),
-      ('00000000-0000-0000-0000-000000000002', 'gestor@tracktiv.com', 'authenticated', 'authenticated', '{"name":"Ricardo Almeida"}', now())
-    on conflict (id) do nothing;
+  if exists (
+    select 1 from pg_namespace n
+    join pg_class c on n.oid = c.relnamespace
+    where n.nspname = 'auth' and c.relname = 'users'
+  ) then
+    -- Presidente
+    insert into auth.users (
+      instance_id, id, aud, role, email,
+      encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data,
+      created_at, updated_at,
+      confirmation_token, recovery_token,
+      email_change_token_new, email_change
+    ) values (
+      '00000000-0000-0000-0000-000000000000',
+      '00000000-0000-0000-0000-000000000001',
+      'authenticated', 'authenticated',
+      'presidente@tracktiv.com.br',
+      crypt('Admin@2024', gen_salt('bf')),
+      now(),
+      '{"provider":"email","providers":["email"]}',
+      '{"name":"Presidente Demo"}',
+      now(), now(), '', '', '', ''
+    ) on conflict (id) do update set
+      encrypted_password = crypt('Admin@2024', gen_salt('bf')),
+      email_confirmed_at = coalesce(auth.users.email_confirmed_at, now()),
+      updated_at = now();
+
+    -- Gestor (produção)
+    insert into auth.users (
+      instance_id, id, aud, role, email,
+      encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data,
+      created_at, updated_at,
+      confirmation_token, recovery_token,
+      email_change_token_new, email_change
+    ) values (
+      '00000000-0000-0000-0000-000000000000',
+      '00000000-0000-0000-0000-000000000002',
+      'authenticated', 'authenticated',
+      'gestor@tracktiv.com.br',
+      crypt('Gestor@2024', gen_salt('bf')),
+      now(),
+      '{"provider":"email","providers":["email"]}',
+      '{"name":"Gestor Tracktiv"}',
+      now(), now(), '', '', '', ''
+    ) on conflict (id) do update set
+      encrypted_password = crypt('Gestor@2024', gen_salt('bf')),
+      email_confirmed_at = coalesce(auth.users.email_confirmed_at, now()),
+      updated_at = now();
   end if;
 end
 $$;
@@ -516,7 +561,7 @@ create policy app_state_entries_select_admin on public.app_state_entries
 insert into public.profiles (id, name, email, role, data, created_at)
 values
   ('00000000-0000-0000-0000-000000000001', 'Presidente Demo', 'presidente@tracktiv.com.br', 'presidente', '{}', now()),
-  ('00000000-0000-0000-0000-000000000002', 'Ricardo Almeida', 'gestor@tracktiv.com', 'gestor', '{}', now()),
+  ('00000000-0000-0000-0000-000000000002', 'Gestor Tracktiv', 'gestor@tracktiv.com.br', 'gestor', '{}', now()),
   ('11111111-1111-1111-1111-111111111111', 'Laura Mendes', 'consultor@tracktiv.com', 'consultor', '{"cpf":"312.456.789-04","address":"Rua das Orquídeas, 450 - São Paulo/SP","whatsapp":"(11) 91234-5678","pixKey":"laura.mendes@tracktiv.com"}', now()),
   ('22222222-2222-2222-2222-222222222222', 'Bruno Carvalho', 'bruno@tracktiv.com', 'consultor', '{"cpf":"987.654.321-09","address":"Av. Paulista, 1578 - São Paulo/SP","whatsapp":"(11) 97654-3210","pixKey":"bruno.carvalho@tracktiv.com"}', now()),
   ('33333333-3333-3333-3333-333333333333', 'Carlos Pereira', 'instalador@tracktiv.com', 'instalador', '{"partnerType":"instalador","cpf":"111.222.333-44","address":"Av. Industrial, 500 - Guarulhos/SP","whatsapp":"(11) 98888-7777","pixKey":"carlos.pereira@gmail.com","storeName":"AutoTech Guarulhos","region":"Guarulhos/SP"}', now()),
