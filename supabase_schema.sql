@@ -486,7 +486,7 @@ create policy clients_select_role_based on public.clients
     (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
     or consultant_id = auth.uid()
     or instalador_id = auth.uid()
-    or (select role from public.profiles where id = auth.uid()) = 'cliente' and linked_client_id = id
+    or (select linked_client_id from public.profiles where id = auth.uid()) = public.clients.id
   );
 create policy clients_insert_consultor_or_gestor on public.clients
   for insert with check (
