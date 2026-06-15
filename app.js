@@ -5287,10 +5287,59 @@ function renderSimulador() {
 ═══════════════════════════════════════════════════════════════════ */
 
 function initSupabase() {
-    if (typeof supabase !== 'undefined' &&
-        typeof SUPABASE_URL !== 'undefined' &&
-        typeof SUPABASE_ANON_KEY !== 'undefined') {
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    if (typeof supabase === 'undefined' ||
+        typeof SUPABASE_URL === 'undefined' ||
+        typeof SUPABASE_ANON_KEY === 'undefined') return;
+
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Restaura sessão ativa no page load e reage a mudanças futuras de auth
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user && !app.currentUser) {
+            const user = await _loginFromSupabaseSession(session.user.email);
+            if (user) loginWithUser(user);
+        } else if (event === 'SIGNED_OUT' && app.currentUser) {
+            // Sessão expirou externamente — força logout
+            app.currentUser = null;
+            document.getElementById('appScreen').classList.add('hidden');
+            document.getElementById('clientePortal').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+        }
+    });
+}
+
+// Busca perfil em public.profiles e atualiza cache local.
+// Retorna o objeto user ou null se não encontrado / desativado.
+async function _loginFromSupabaseSession(email) {
+    const VALID_ROLES = ['presidente', 'gestor', 'consultor', 'instalador', 'tecnico', 'cliente', 'executivo'];
+    try {
+        const { data: profile } = await supabaseClient
+            .from('profiles').select('*').eq('email', email.toLowerCase()).maybeSingle();
+        if (!profile || !VALID_ROLES.includes(profile.role)) return null;
+
+        const user = {
+            id: profile.id,
+            name: profile.name,
+            email: profile.email,
+            role: profile.role,
+            ...(profile.partner_type ? { partnerType: profile.partner_type } : {}),
+            ...(typeof profile.data === 'object' && profile.data ? profile.data : {})
+        };
+
+        if (user.active === false) return null;
+
+        // Atualiza / insere no cache local para fallback offline
+        if (!app.state.users) app.state.users = [];
+        const idx = app.state.users.findIndex(u => (u.email || '').toLowerCase() === email.toLowerCase());
+        if (idx >= 0) {
+            app.state.users[idx] = { ...app.state.users[idx], ...user };
+        } else {
+            app.state.users.push(user);
+        }
+        saveState();
+        return user;
+    } catch (_) {
+        return null;
     }
 }
 
@@ -5318,49 +5367,25 @@ async function handleLogin(e) {
 
     const VALID_ROLES = ['presidente', 'gestor', 'consultor', 'instalador', 'tecnico', 'cliente', 'executivo'];
 
-    // 1. Tenta Supabase Auth (usuários reais de produção)
+    // 1. Tenta Supabase Auth (usuários de produção)
     if (supabaseClient) {
         try {
             const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
             if (!error && data?.user) {
-                let user = (app.state.users || []).find(u =>
-                    (u.email || '').toLowerCase() === email && VALID_ROLES.includes(u.role)
-                );
-                if (!user) {
-                    const { data: profile } = await supabaseClient
-                        .from('profiles').select('*').eq('email', email).maybeSingle();
-                    if (profile && VALID_ROLES.includes(profile.role)) {
-                        user = {
-                            id: profile.id,
-                            name: profile.name,
-                            email: profile.email,
-                            role: profile.role,
-                            ...(profile.partner_type ? { partnerType: profile.partner_type } : {}),
-                            ...(typeof profile.data === 'object' && profile.data ? profile.data : {})
-                        };
-                        if (!app.state.users) app.state.users = [];
-                        if (!app.state.users.some(u => (u.email || '').toLowerCase() === email)) {
-                            app.state.users.push(user);
-                            saveState();
-                        }
-                    }
-                }
-                if (user) {
-                    if (user.active === false) {
-                        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entrar'; }
-                        errEl.textContent = 'Acesso desativado. Entre em contato com o administrador.';
-                        supabaseClient.auth.signOut().catch(() => {});
-                        return;
-                    }
-                    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entrar'; }
-                    loginWithUser(user);
-                    return;
-                }
+                const user = await _loginFromSupabaseSession(email);
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entrar'; }
+                if (user) { loginWithUser(user); return; }
+                // Auth OK mas perfil não existe no banco
+                await supabaseClient.auth.signOut().catch(() => {});
+                errEl.textContent = 'Perfil não encontrado. Contate o administrador.';
+                return;
             }
+            // "Invalid login credentials" = credenciais erradas no Supabase.
+            // Permite cair no fallback local para usuários demo que não estão no Supabase.
         } catch (_) { /* Supabase indisponível — continua para auth local */ }
     }
 
-    // 2. Fallback: auth local (demo e usuários de localStorage)
+    // 2. Fallback: auth local (usuários demo e usuários criados via localStorage)
     const user = (app.state.users || []).find(u =>
         u.email === email && u.password === pass && VALID_ROLES.includes(u.role)
     );
