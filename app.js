@@ -13945,40 +13945,78 @@ async function saveUserModal(id) {
         if (co) extra.company = co;
     }
 
-    const users = app.state.users || [];
+    const saveBtn = document.querySelector('#modalContent .primary-btn');
+    const users   = app.state.users || [];
 
     if (id) {
-        // EDITAR
+        // ── EDITAR ──────────────────────────────────────────────────────────
         const u = users.find(x => x.id === id);
         if (!u) { showToast('Usuário não encontrado.', 'error'); return; }
         const active = document.getElementById('um_active')?.checked ?? true;
         Object.assign(u, { name: nome, role, active, ...extra });
         if (pass) u.password = pass;
         addAuditLog('user_update', { id, name: nome, role });
+        saveState(); closeModal(); renderGerenciarUsuarios();
         showToast(`Usuário "${esc(nome)}" atualizado.`, 'success');
+
+        // Sincroniza profile no Supabase (fire-and-forget)
+        if (supabaseClient) {
+            supabaseClient.from('profiles').upsert({
+                id: u.id, name: nome, email: u.email, role,
+                partner_type: extra.partnerType || null,
+                data: { active, ...extra },
+            }).catch(err => console.warn('[Supabase] profile upsert failed:', err));
+        }
+
     } else {
-        // CRIAR
+        // ── CRIAR ────────────────────────────────────────────────────────────
         if (users.some(u => u.email === email)) { showToast('Este e-mail já está cadastrado.', 'error'); return; }
-        const newId   = `user_${Date.now()}`;
-        const newUser = { id: newId, name: nome, email, password: pass, role, active: true, createdAt: todayISO(), ...extra };
+
+        let userId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+            ? crypto.randomUUID() : `user_${Date.now()}`;
+        let supabaseMsg = '';
+
+        if (supabaseClient) {
+            if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Criando…'; }
+            try {
+                // 1. Cria no Supabase Auth — retorna o UUID real do usuário
+                const { data: authData, error: authErr } = await supabaseClient.auth.signUp({
+                    email, password: pass, options: { data: { name: nome } }
+                });
+
+                if (authErr) {
+                    console.warn('[Supabase] signUp error:', authErr.message);
+                    supabaseMsg = ` (Supabase Auth: ${authErr.message})`;
+                } else if (authData?.user) {
+                    userId = authData.user.id; // Usa o UUID gerado pelo Supabase
+
+                    // 2. Cria linha em public.profiles com o mesmo UUID
+                    const { error: profileErr } = await supabaseClient.from('profiles').upsert({
+                        id: userId, name: nome, email, role,
+                        partner_type: extra.partnerType || null,
+                        data: { active: true, ...extra },
+                    });
+                    if (profileErr) console.warn('[Supabase] profile insert failed:', profileErr.message);
+
+                    const confirmed = !!authData.user.email_confirmed_at;
+                    supabaseMsg = confirmed
+                        ? ' Conta ativa no Supabase.'
+                        : ` E-mail de confirmação enviado para ${email}.`;
+                }
+            } catch (e) {
+                console.warn('[Supabase] signUp exception:', e);
+            } finally {
+                if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvar'; }
+            }
+        }
+
+        const newUser = { id: userId, name: nome, email, password: pass, role, active: true, createdAt: todayISO(), ...extra };
         if (!app.state.users) app.state.users = [];
         app.state.users.push(newUser);
-        addAuditLog('user_create', { id: newId, name: nome, role });
-
-        // Tenta criar no Supabase Auth em background (sem bloquear o fluxo)
-        if (supabaseClient) {
-            supabaseClient.auth.signUp({ email, password: pass, options: { data: { name: nome } } })
-                .then(({ error }) => {
-                    if (!error) showToast(`Conta criada! Verifique se e-mail de confirmação foi enviado para ${email}.`, 'info', 6000);
-                })
-                .catch(() => {});
-        }
-        showToast(`Usuário "${esc(nome)}" criado com sucesso!`, 'success');
+        addAuditLog('user_create', { id: userId, name: nome, role });
+        saveState(); closeModal(); renderGerenciarUsuarios();
+        showToast(`Usuário "${esc(nome)}" criado.${supabaseMsg}`, 'success', 6000);
     }
-
-    saveState();
-    closeModal();
-    renderGerenciarUsuarios();
 }
 
 function toggleUserActive(id) {
@@ -13991,6 +14029,21 @@ function toggleUserActive(id) {
     saveState();
     showToast(`Acesso de "${esc(u.name)}" ${u.active ? 'ativado' : 'desativado'}.`, u.active ? 'success' : 'info');
     renderGerenciarUsuarios();
+
+    // Sincroniza active no Supabase via campo data (fire-and-forget)
+    if (supabaseClient) {
+        const { password: _pw, createdAt: _ca, ...rest } = u;
+        const profileData = { active: u.active, ...Object.fromEntries(
+            ['whatsapp','cpf','pixKey','region','partnerType','storeName','commissionPct','company']
+                .filter(k => u[k] !== undefined && u[k] !== '')
+                .map(k => [k, u[k]])
+        )};
+        supabaseClient.from('profiles').upsert({
+            id, name: u.name, email: u.email, role: u.role,
+            partner_type: u.partnerType || null,
+            data: profileData,
+        }).catch(err => console.warn('[Supabase] toggleActive upsert failed:', err));
+    }
 }
 
 function renderPresidenteGestores() {
