@@ -4832,10 +4832,15 @@ function handleClientSave(e) {
         const c = app.state.clients.find(c => c.id === app.editingClientId);
         Object.assign(c, fields);
         addAuditLog('client_update', { id: app.editingClientId, name: fields.name });
+        saveState(); closeModal(); renderAppViews();
+        _sbUpsertClient(c);
         showToast(`Dados de "${fields.name}" atualizados.`, 'success');
     } else {
+        const newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : `client_${Date.now()}`;
         const newClient = {
-            id: `client_${Date.now()}`,
+            id: newId,
             consultantId: null,
             instaladorId: null,
             stage: 'Novo Lead',
@@ -4848,9 +4853,10 @@ function handleClientSave(e) {
             newClient.consultantId = app.currentUser.id;
         }
         app.state.clients.push(newClient);
+        saveState(); closeModal(); renderAppViews();
+        _sbUpsertClient(newClient);
         showToast(`Cliente "${fields.name}" cadastrado com sucesso!`, 'success');
     }
-    saveState(); closeModal(); renderAppViews();
 }
 
 function moveStage(id, dir) {
@@ -4880,6 +4886,7 @@ function updateClientStage(id, stage) {
         addToSalesFeed(c, _feedUser);
     } else { delete c.closedDate; delete c.awaitingApproval; }
     saveState(); renderAppViews();
+    _sbUpsertClient(c);
     // Feature 3: Re-engajamento ao marcar como Perdido
     if (stage === 'Perdido' && prevStage !== 'Perdido') {
         openReengagementModal(id);
@@ -4892,6 +4899,7 @@ function deleteClient(id) {
     const nome = c.name;
     app.state.clients = app.state.clients.filter(c => c.id !== id);
     saveState(); renderAppViews();
+    _sbDeleteClient(id);
     showToast(`Cliente "${nome}" removido.`, 'info');
 }
 
@@ -5308,6 +5316,177 @@ function initSupabase() {
     });
 }
 
+// ─── Mapeamento app (camelCase) ↔ Supabase (snake_case) ─────────────────────
+
+function _mapClientFromSB(row) {
+    return {
+        id:           row.id,
+        consultantId: row.consultant_id  || null,
+        instaladorId: row.instalador_id  || null,
+        name:         row.name,
+        phone:        row.phone          || '',
+        isWhatsapp:   row.is_whatsapp    || false,
+        email:        row.email          || '',
+        cpf:          row.cpf            || '',
+        rg:           row.rg             || '',
+        address:      row.address        || '',
+        product:      row.product        || '',
+        plan:         row.plan           || '',
+        monthlyFee:   row.monthly_fee    || null,
+        plates:       row.plates         || '',
+        paymentDate:  row.payment_date   || null,
+        need:         row.need           || '',
+        origins:      row.origins        || [],
+        coupon:       row.coupon         || '',
+        notes:        row.notes          || '',
+        stage:        row.stage          || 'Novo Lead',
+        closedDate:   row.closed_date    || null,
+        createdAt:    row.created_at ? row.created_at.substring(0, 10) : todayISO(),
+    };
+}
+
+function _mapClientToSB(c) {
+    return {
+        id:            c.id,
+        consultant_id: c.consultantId  || null,
+        instalador_id: c.instaladorId  || null,
+        name:          c.name,
+        phone:         c.phone         || '',
+        is_whatsapp:   c.isWhatsapp    || false,
+        email:         c.email         || '',
+        cpf:           c.cpf           || '',
+        rg:            c.rg            || '',
+        address:       c.address       || '',
+        product:       c.product       || '',
+        plan:          c.plan          || '',
+        monthly_fee:   c.monthlyFee    || null,
+        plates:        c.plates        || '',
+        payment_date:  c.paymentDate   || null,
+        need:          c.need          || '',
+        origins:       c.origins       || [],
+        coupon:        c.coupon        || '',
+        notes:         c.notes         || '',
+        stage:         c.stage         || 'Novo Lead',
+        closed_date:   c.closedDate    || null,
+        created_at:    c.createdAt     || todayISO(),
+    };
+}
+
+function _mapProfileFromSB(row) {
+    return {
+        id:    row.id,
+        name:  row.name,
+        email: row.email || '',
+        role:  row.role,
+        active: true,
+        ...(row.partner_type ? { partnerType: row.partner_type } : {}),
+        ...(typeof row.data === 'object' && row.data ? row.data : {}),
+    };
+}
+
+function _mapInstallFromSB(row) {
+    return {
+        id:           row.id,
+        instaladorId: row.instalador_id || null,
+        clientId:     row.client_id     || null,
+        clientName:   row.client_name   || '',
+        plate:        row.plate         || '',
+        date:         row.date          || '',
+        notes:        row.notes         || '',
+        createdAt:    row.created_at ? row.created_at.substring(0, 10) : todayISO(),
+    };
+}
+
+function _mapChamadoFromSB(row) {
+    return {
+        id:          row.id,
+        clientId:    row.client_id   || null,
+        tecnicoId:   row.tecnico_id  || null,
+        title:       row.title       || '',
+        description: row.description || '',
+        priority:    row.priority    || 'Normal',
+        status:      row.status      || 'Aberto',
+        createdAt:   row.created_at ? row.created_at.substring(0, 10) : todayISO(),
+        updatedAt:   row.updated_at  ? row.updated_at.substring(0, 10) : todayISO(),
+        messages:    Array.isArray(row.messages) ? row.messages : (typeof row.messages === 'string' ? JSON.parse(row.messages) : []),
+    };
+}
+
+function _mapComunicadoFromSB(row) {
+    return {
+        id:         row.id,
+        autorId:    row.autor_id  || null,
+        titulo:     row.titulo    || '',
+        mensagem:   row.mensagem  || '',
+        prioridade: row.prioridade || 'normal',
+        criadoEm:   row.criado_em || '',
+        lidos:      row.lidos     || [],
+    };
+}
+
+function _mapNotifFromSB(row) {
+    return {
+        id:        row.id,
+        userId:    row.user_id || null,
+        type:      row.type    || '',
+        message:   row.message || '',
+        link:      row.link    || '',
+        seen:      row.seen    || false,
+        createdAt: row.created_at || '',
+    };
+}
+
+// Busca dados frescos do Supabase e hidrata app.state.
+// Chamado em background após login — não bloqueia a UI.
+async function loadSupabaseData(user) {
+    if (!supabaseClient || app.demoMode) return;
+    try {
+        const [clientsRes, profilesRes, installRes, chamadosRes, comunicadosRes, notifsRes] = await Promise.all([
+            supabaseClient.from('clients').select('*'),
+            supabaseClient.from('profiles').select('*'),
+            supabaseClient.from('installations').select('*'),
+            supabaseClient.from('chamados').select('*'),
+            supabaseClient.from('comunicados').select('*').order('criado_em', { ascending: false }),
+            supabaseClient.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
+        ]);
+
+        if (clientsRes.data)    app.state.clients       = clientsRes.data.map(_mapClientFromSB);
+        if (installRes.data)    app.state.installations = installRes.data.map(_mapInstallFromSB);
+        if (chamadosRes.data)   app.state.chamados      = chamadosRes.data.map(_mapChamadoFromSB);
+        if (comunicadosRes.data) app.state.comunicados  = comunicadosRes.data.map(_mapComunicadoFromSB);
+        if (notifsRes.data)     app.state.notifications = notifsRes.data.map(_mapNotifFromSB);
+
+        if (profilesRes.data) {
+            const prodUsers = profilesRes.data.map(_mapProfileFromSB);
+            const prodIds   = new Set(prodUsers.map(u => u.id));
+            // Mantém usuários demo (têm password) que não vieram do Supabase
+            const demoOnly  = (app.state.users || []).filter(u => u.password && !prodIds.has(u.id));
+            app.state.users = [...prodUsers, ...demoOnly];
+        }
+
+        saveState();
+        renderAppViews();
+    } catch (err) {
+        console.warn('[Supabase] loadSupabaseData falhou, usando cache local:', err);
+    }
+}
+
+// ─── Helpers de write-through ─────────────────────────────────────────────────
+
+function _sbUpsertClient(c) {
+    if (!supabaseClient || app.demoMode) return;
+    supabaseClient.from('clients').upsert(_mapClientToSB(c))
+        .catch(err => console.warn('[Supabase] upsert client falhou:', err));
+}
+
+function _sbDeleteClient(id) {
+    if (!supabaseClient || app.demoMode) return;
+    supabaseClient.from('clients').delete().eq('id', id)
+        .catch(err => console.warn('[Supabase] delete client falhou:', err));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Busca perfil em public.profiles e atualiza cache local.
 // Retorna o objeto user ou null se não encontrado / desativado.
 async function _loginFromSupabaseSession(email) {
@@ -5354,6 +5533,8 @@ function loginWithUser(user) {
             setTimeout(checkUrgentePopup, 400);
         }
     }
+    // Sincroniza dados frescos do Supabase em background sem bloquear a UI
+    loadSupabaseData(user);
 }
 
 async function handleLogin(e) {
