@@ -23,8 +23,8 @@ begin
       confirmation_token, recovery_token,
       email_change_token_new, email_change
     ) values (
-      '00000000-0000-0000-0000-000000000000',
-      '00000000-0000-0000-0000-000000000001',
+      gen_random_uuid(),
+      gen_random_uuid(),
       'authenticated', 'authenticated',
       'presidente@tracktiv.com.br',
       crypt('Admin@2024', gen_salt('bf')),
@@ -32,7 +32,7 @@ begin
       '{"provider":"email","providers":["email"]}',
       '{"name":"Presidente Demo"}',
       now(), now(), '', '', '', ''
-    ) on conflict (id) do update set
+    ) on conflict (email) do update set
       encrypted_password = crypt('Admin@2024', gen_salt('bf')),
       email_confirmed_at = coalesce(auth.users.email_confirmed_at, now()),
       updated_at = now();
@@ -46,8 +46,8 @@ begin
       confirmation_token, recovery_token,
       email_change_token_new, email_change
     ) values (
-      '00000000-0000-0000-0000-000000000000',
-      '00000000-0000-0000-0000-000000000002',
+      gen_random_uuid(),
+      gen_random_uuid(),
       'authenticated', 'authenticated',
       'gestor@tracktiv.com.br',
       crypt('Gestor@2024', gen_salt('bf')),
@@ -55,7 +55,7 @@ begin
       '{"provider":"email","providers":["email"]}',
       '{"name":"Gestor Tracktiv"}',
       now(), now(), '', '', '', ''
-    ) on conflict (id) do update set
+    ) on conflict (email) do update set
       encrypted_password = crypt('Gestor@2024', gen_salt('bf')),
       email_confirmed_at = coalesce(auth.users.email_confirmed_at, now()),
       updated_at = now();
