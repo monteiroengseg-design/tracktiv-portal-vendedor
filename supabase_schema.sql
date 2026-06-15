@@ -64,28 +64,13 @@ end
 $$;
 
 -- ----------------------------------------------------------------
--- Profiles
--- ----------------------------------------------------------------
-create table if not exists public.profiles (
-  id uuid primary key,
-  name text not null,
-  email text,
-  role text not null,
-  partner_type text,
-  linked_client_id uuid references public.clients(id),
-  data jsonb default '{}'::jsonb,
-  created_at timestamptz default now()
-);
-
-create unique index if not exists profiles_email_idx on public.profiles(email);
-
--- ----------------------------------------------------------------
--- Clients
+-- Clients (criado antes de profiles para evitar referência circular)
+-- FKs para profiles serão adicionadas via ALTER TABLE após profiles ser criada
 -- ----------------------------------------------------------------
 create table if not exists public.clients (
   id uuid primary key,
-  consultant_id uuid references public.profiles(id),
-  instalador_id uuid references public.profiles(id),
+  consultant_id uuid,
+  instalador_id uuid,
   name text not null,
   phone text,
   is_whatsapp boolean default false,
@@ -109,6 +94,42 @@ create table if not exists public.clients (
 
 create index if not exists idx_clients_consultant on public.clients (consultant_id);
 create index if not exists idx_clients_instalador on public.clients (instalador_id);
+
+-- ----------------------------------------------------------------
+-- Profiles (referencia clients via linked_client_id — funciona agora)
+-- ----------------------------------------------------------------
+create table if not exists public.profiles (
+  id uuid primary key,
+  name text not null,
+  email text,
+  role text not null,
+  partner_type text,
+  linked_client_id uuid references public.clients(id),
+  data jsonb default '{}'::jsonb,
+  created_at timestamptz default now()
+);
+
+create unique index if not exists profiles_email_idx on public.profiles(email);
+
+-- Adiciona FKs de clients para profiles (agora que profiles existe)
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'clients_consultant_id_fkey'
+  ) then
+    alter table public.clients
+      add constraint clients_consultant_id_fkey
+      foreign key (consultant_id) references public.profiles(id);
+  end if;
+  if not exists (
+    select 1 from pg_constraint where conname = 'clients_instalador_id_fkey'
+  ) then
+    alter table public.clients
+      add constraint clients_instalador_id_fkey
+      foreign key (instalador_id) references public.profiles(id);
+  end if;
+end
+$$;
 
 -- ----------------------------------------------------------------
 -- Installations
@@ -213,12 +234,12 @@ create table if not exists public.doc_slots (
 create table if not exists public.doc_checklists (
   id uuid primary key,
   client_key text,
-  label text,
-  required boolean default false,
+  "label" text,
+  "required" boolean default false,
   category text,
   instruction text,
-  done boolean default false,
-  status text,
+  "done" boolean default false,
+  "status" text,
   deadline date,
   added_by text,
   added_by_id uuid references public.profiles(id),
@@ -654,12 +675,12 @@ values
   ('70000000-0000-0000-0000-000000000003', 'cliente_demo', 'Autorização de Rastreamento', 'rastreamento', null, null, null)
 on conflict (id) do nothing;
 
-insert into public.doc_checklists (id, client_key, label, required, category, instruction, done, status, deadline, added_by, added_by_id, added_at, completed_at, uploaded_doc_id)
+insert into public.doc_checklists (id, client_key, "label", "required", category, instruction, "done", "status", deadline, added_by, added_by_id, added_at, completed_at, uploaded_doc_id)
 values
   ('80000000-0000-0000-0000-000000000001', 'cliente_demo', 'RG e CPF', true, 'geral', 'Envie cópia de RG e CPF do titular do contrato.', true, 'concluido', null, 'Rafael Santos', '55555555-5555-5555-5555-555555555555', '2026-05-01', '2026-05-10', null),
-  ('80000000-0000-0000-0000-000000000002', 'cliente_demo', 'Comprovante de endereço', true, 'geral', 'Comprovante recente (até 3 meses). Pode ser conta de luz, água ou telefone fixo.', false, 'aguardando', '2026-06-30', 'Rafael Santos', '55555555-5555-5555-5555-555555555555', '2026-05-01', null, null),
-  ('80000000-0000-0000-0000-000000000003', 'cliente_demo', 'Contrato assinado', true, 'rastreamento', 'Contrato de prestação de serviços devidamente assinado em todas as páginas.', true, 'concluido', null, 'Rafael Santos', '55555555-5555-5555-5555-555555555555', '2026-05-01', '2026-05-15', null),
-  ('80000000-0000-0000-0000-000000000004', 'cliente_demo', 'Autorização de instalação', true, 'rastreamento', 'Formulário de autorização para instalação do rastreador no veículo. Assine e devolva digitalizado.', false, 'enviado', '2026-06-15', 'Rafael Santos', '55555555-5555-5555-5555-555555555555', '2026-05-01', null, null)
+  ('80000000-0000-0000-0000-000000000002', 'cliente_demo', 'Comprovante de endereço', true, 'geral', 'Comprovante recente (ate 3 meses). Pode ser conta de luz, agua ou telefone fixo.', false, 'aguardando', '2026-06-30', 'Rafael Santos', '55555555-5555-5555-5555-555555555555', '2026-05-01', null, null),
+  ('80000000-0000-0000-0000-000000000003', 'cliente_demo', 'Contrato assinado', true, 'rastreamento', 'Contrato de prestacao de servicos devidamente assinado em todas as paginas.', true, 'concluido', null, 'Rafael Santos', '55555555-5555-5555-5555-555555555555', '2026-05-01', '2026-05-15', null),
+  ('80000000-0000-0000-0000-000000000004', 'cliente_demo', 'Autorização de instalação', true, 'rastreamento', 'Formulario de autorizacao para instalacao do rastreador no veiculo. Assine e devolva digitalizado.', false, 'enviado', '2026-06-15', 'Rafael Santos', '55555555-5555-5555-5555-555555555555', '2026-05-01', null, null)
 on conflict (id) do nothing;
 
 -- ----------------------------------------------------------------
@@ -667,9 +688,9 @@ on conflict (id) do nothing;
 -- ----------------------------------------------------------------
 insert into public.comunicados (id, autor_id, titulo, mensagem, prioridade, criado_em, lidos)
 values
-  ('90000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'Bem-vindo ao Portal Tracktiv!', 'Olá, equipe! O portal do vendedor Tracktiv está disponível para toda a equipe. Aqui você gerencia clientes, acompanha comissões, acessa treinamentos e muito mais. Qualquer dúvida ou sugestão, fale diretamente com o gestor pelo chat interno. Bom trabalho!', 'normal', '2026-05-01', '{}'),
-  ('90000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', '🚀 Meta de junho: 12 contratos fechados!', 'Equipe, a meta de junho é de 12 contratos fechados por consultor. Quem atingir a meta recebe bônus de R$ 300 + certificado de Top Vendedor. Foque nos clientes em etapa "Proposta" — eles estão a um passo do fechamento! Use o simulador de ganhos para acompanhar sua progressão. Vamos com tudo!', 'importante', '2026-06-01', '{}'),
-  ('90000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', '⚠️ Novo fluxo de aprovação de vendas', 'A partir de agora, todas as vendas do plano "Empresas" precisam de aprovação do gestor antes da instalação. Isso garante que o contrato seja revisado antes do técnico ir ao cliente. O processo de aprovação leva no máximo 24h úteis. Qualquer dúvida, entre em contato.', 'urgente', '2026-06-02', '{}')
+  ('90000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'Bem-vindo ao Portal Tracktiv!', 'Ola, equipe! O portal do vendedor Tracktiv esta disponivel para toda a equipe. Aqui voce gerencia clientes, acompanha comissoes, acessa treinamentos e muito mais. Qualquer duvida ou sugestao, fale diretamente com o gestor pelo chat interno. Bom trabalho!', 'normal', '2026-05-01', '{}'),
+  ('90000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', 'Meta de junho: 12 contratos fechados!', 'Equipe, a meta de junho e de 12 contratos fechados por consultor. Quem atingir a meta recebe bonus de R$ 300 + certificado de Top Vendedor. Foque nos clientes em etapa "Proposta" - eles estao a um passo do fechamento! Use o simulador de ganhos para acompanhar sua progressao. Vamos com tudo!', 'importante', '2026-06-01', '{}'),
+  ('90000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', 'Novo fluxo de aprovacao de vendas', 'A partir de agora, todas as vendas do plano "Empresas" precisam de aprovacao do gestor antes da instalacao. Isso garante que o contrato seja revisado antes do tecnico ir ao cliente. O processo de aprovacao leva no maximo 24h uteis. Qualquer duvida, entre em contato.', 'urgente', '2026-06-02', '{}')
 on conflict (id) do nothing;
 
 -- ----------------------------------------------------------------
@@ -677,31 +698,31 @@ on conflict (id) do nothing;
 -- ----------------------------------------------------------------
 insert into public.products (id, name, category, description, status, featured, icon, signup_fee, monthly_fee, payment_options, discount_annual, special_conditions, payment_personalized, card_installments, visibility, commission)
 values
-  ('a0000000-0000-0000-0000-000000000001', 'Rastreador Veicular', 'rastreamento', 'Monitoramento 24/7, alertas em tempo real e proteção completa para veículos pessoais e frotas empresariais.', 'ativo', true, '📡', 60, 44.90, array['pix','boleto','cartao'], 10, '', '', 12, array['consultor','instalador'], '{"tipo":"fixo","valor":50,"recorrencia":10}'),
-  ('a0000000-0000-0000-0000-000000000002', 'Segurança do Trabalho', 'sst', 'Documentação NR, treinamentos obrigatórios e consultoria para conformidade com o MTE.', 'ativo', false, '🦺', 0, 149.90, array['pix','boleto','cartao'], 15, '', '', 6, array['consultor'], '{"tipo":"percentual","valor":15,"recorrencia":8}'),
-  ('a0000000-0000-0000-0000-000000000003', 'Chatbot de Atendimento', 'chatbot', 'Automação via WhatsApp, Instagram e outros canais. Qualificação de leads 24h sem intervenção humana.', 'ativo', false, '🤖', 200, 89.90, array['pix','cartao'], 10, '', '', 12, array['consultor'], '{"tipo":"percentual","valor":20,"recorrencia":10}'),
-  ('a0000000-0000-0000-0000-000000000004', 'Consultoria Contábil', 'contabilidade', 'Apoio fiscal, tributário e contábil completo para micro e pequenas empresas.', 'ativo', false, '📊', 0, 199.90, array['pix','boleto','cartao','transferencia'], 20, '', '', 3, array['consultor'], '{"tipo":"percentual","valor":12,"recorrencia":7}'),
-  ('a0000000-0000-0000-0000-000000000005', 'Sites e Marketing Digital', 'marketing', 'Landing pages, gestão de redes sociais e campanhas para atrair e converter leads.', 'ativo', false, '🌐', 500, 299.90, array['pix','cartao','boleto'], 10, '', '', 6, array['consultor'], '{"tipo":"percentual","valor":10,"recorrencia":5}')
+  ('a0000000-0000-0000-0000-000000000001', 'Rastreador Veicular', 'rastreamento', 'Monitoramento 24/7, alertas em tempo real e protecao completa para veiculos pessoais e frotas empresariais.', 'ativo', true, '', 60, 44.90, array['pix','boleto','cartao'], 10, '', '', 12, array['consultor','instalador'], '{"tipo":"fixo","valor":50,"recorrencia":10}'),
+  ('a0000000-0000-0000-0000-000000000002', 'Seguranca do Trabalho', 'sst', 'Documentacao NR, treinamentos obrigatorios e consultoria para conformidade com o MTE.', 'ativo', false, '', 0, 149.90, array['pix','boleto','cartao'], 15, '', '', 6, array['consultor'], '{"tipo":"percentual","valor":15,"recorrencia":8}'),
+  ('a0000000-0000-0000-0000-000000000003', 'Chatbot de Atendimento', 'chatbot', 'Automacao via WhatsApp, Instagram e outros canais. Qualificacao de leads 24h sem intervencao humana.', 'ativo', false, '', 200, 89.90, array['pix','cartao'], 10, '', '', 12, array['consultor'], '{"tipo":"percentual","valor":20,"recorrencia":10}'),
+  ('a0000000-0000-0000-0000-000000000004', 'Consultoria Contabil', 'contabilidade', 'Apoio fiscal, tributario e contabil completo para micro e pequenas empresas.', 'ativo', false, '', 0, 199.90, array['pix','boleto','cartao','transferencia'], 20, '', '', 3, array['consultor'], '{"tipo":"percentual","valor":12,"recorrencia":7}'),
+  ('a0000000-0000-0000-0000-000000000005', 'Sites e Marketing Digital', 'marketing', 'Landing pages, gestao de redes sociais e campanhas para atrair e converter leads.', 'ativo', false, '', 500, 299.90, array['pix','cartao','boleto'], 10, '', '', 6, array['consultor'], '{"tipo":"percentual","valor":10,"recorrencia":5}')
 on conflict (id) do nothing;
 
 insert into public.product_plans (id, product_id, name, value, description, items)
 values
-  ('b0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'Essencial', 44.90, 'Ideal para uso pessoal básico', array['Localização em tempo real','Histórico 30 dias','Alertas de ignição','App mobile']),
-  ('b0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'Profissional', 54.90, 'Para autônomos e financiados', array['Tudo do Essencial','Bloqueio remoto','Histórico 90 dias','Alerta bateria fraca']),
-  ('b0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'Controle Total', 64.90, 'Para famílias e controle avançado', array['Tudo do Profissional','Múltiplos usuários','Relatórios avançados','Suporte prioritário']),
-  ('b0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', 'Empresas', null, 'Para frotas — orçamento personalizado', array['Tudo do Controle Total','Gerente de conta','API de integração','SLA garantido']),
-  ('b0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000002', 'Básico', 149.90, 'Até 5 funcionários', array['PCMSO','PGR','ASO','Suporte básico']),
-  ('b0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000002', 'Avançado', 249.90, 'Até 20 funcionários', array['Tudo do Básico','e-Social','Treinamentos NR','Consultoria mensal']),
-  ('b0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000002', 'Empresarial', null, '20+ funcionários', array['Tudo do Avançado','Assessoria jurídica','Auditorias','SLA 24h']),
-  ('b0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000003', 'Starter', 89.90, 'Para pequenos negócios', array['1 canal','Até 500 conversas/mês','Templates básicos','Relatórios simples']),
-  ('b0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000003', 'Business', 149.90, 'Para médios negócios', array['3 canais','Conversas ilimitadas','Agendamento automático','CRM integrado']),
-  ('b0000000-0000-0000-0000-00000000000a', 'a0000000-0000-0000-0000-000000000003', 'Enterprise', null, 'Personalizado', array['Canais ilimitados','IA avançada','Integração API','Suporte dedicado']),
+  ('b0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'Essencial', 44.90, 'Ideal para uso pessoal basico', array['Localizacao em tempo real','Historico 30 dias','Alertas de ignicao','App mobile']),
+  ('b0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'Profissional', 54.90, 'Para autonomos e financiados', array['Tudo do Essencial','Bloqueio remoto','Historico 90 dias','Alerta bateria fraca']),
+  ('b0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', 'Controle Total', 64.90, 'Para familias e controle avancado', array['Tudo do Profissional','Multiplos usuarios','Relatorios avancados','Suporte prioritario']),
+  ('b0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', 'Empresas', null, 'Para frotas - orcamento personalizado', array['Tudo do Controle Total','Gerente de conta','API de integracao','SLA garantido']),
+  ('b0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000002', 'Basico', 149.90, 'Ate 5 funcionarios', array['PCMSO','PGR','ASO','Suporte basico']),
+  ('b0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000002', 'Avancado', 249.90, 'Ate 20 funcionarios', array['Tudo do Basico','e-Social','Treinamentos NR','Consultoria mensal']),
+  ('b0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000002', 'Empresarial', null, '20+ funcionarios', array['Tudo do Avancado','Assessoria juridica','Auditorias','SLA 24h']),
+  ('b0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000003', 'Starter', 89.90, 'Para pequenos negocios', array['1 canal','Ate 500 conversas/mes','Templates basicos','Relatorios simples']),
+  ('b0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000003', 'Business', 149.90, 'Para medios negocios', array['3 canais','Conversas ilimitadas','Agendamento automatico','CRM integrado']),
+  ('b0000000-0000-0000-0000-00000000000a', 'a0000000-0000-0000-0000-000000000003', 'Enterprise', null, 'Personalizado', array['Canais ilimitados','IA avancada','Integracao API','Suporte dedicado']),
   ('b0000000-0000-0000-0000-00000000000b', 'a0000000-0000-0000-0000-000000000004', 'MEI/ME', 199.90, 'Para MEI e ME', array['DAS mensal','DEFIS','NF-e ilimitadas','Suporte WhatsApp']),
-  ('b0000000-0000-0000-0000-00000000000c', 'a0000000-0000-0000-0000-000000000004', 'Empresarial', 349.90, 'Para EPP e Ltda', array['Tudo do MEI/ME','Folha de pagamento','eSocial','Planejamento tributário']),
-  ('b0000000-0000-0000-0000-00000000000d', 'a0000000-0000-0000-0000-000000000004', 'Premium', null, 'Personalizado', array['Tudo do Empresarial','BPO financeiro','Assessoria jurídica','Gerente exclusivo']),
-  ('b0000000-0000-0000-0000-00000000000e', 'a0000000-0000-0000-0000-000000000005', 'Presença', 299.90, 'Presença digital básica', array['Site landing page','2 redes sociais','4 posts/semana','Google Meu Negócio']),
-  ('b0000000-0000-0000-0000-00000000000f', 'a0000000-0000-0000-0000-000000000005', 'Crescimento', 499.90, 'Para crescer online', array['Tudo do Presença','Google Ads','Meta Ads','Relatório mensal']),
-  ('b0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000005', 'Dominância', null, 'Resultado máximo', array['Tudo do Crescimento','SEO avançado','Funil de vendas','Gerente de marketing'])
+  ('b0000000-0000-0000-0000-00000000000c', 'a0000000-0000-0000-0000-000000000004', 'Empresarial', 349.90, 'Para EPP e Ltda', array['Tudo do MEI/ME','Folha de pagamento','eSocial','Planejamento tributario']),
+  ('b0000000-0000-0000-0000-00000000000d', 'a0000000-0000-0000-0000-000000000004', 'Premium', null, 'Personalizado', array['Tudo do Empresarial','BPO financeiro','Assessoria juridica','Gerente exclusivo']),
+  ('b0000000-0000-0000-0000-00000000000e', 'a0000000-0000-0000-0000-000000000005', 'Presenca', 299.90, 'Presenca digital basica', array['Site landing page','2 redes sociais','4 posts/semana','Google Meu Negocio']),
+  ('b0000000-0000-0000-0000-00000000000f', 'a0000000-0000-0000-0000-000000000005', 'Crescimento', 499.90, 'Para crescer online', array['Tudo do Presenca','Google Ads','Meta Ads','Relatorio mensal']),
+  ('b0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000005', 'Dominancia', null, 'Resultado maximo', array['Tudo do Crescimento','SEO avancado','Funil de vendas','Gerente de marketing'])
 on conflict (id) do nothing;
 
 -- ----------------------------------------------------------------
@@ -713,7 +734,7 @@ on conflict (id) do nothing;
 
 insert into public.challenges (id, title, description, type, goal, start_date, end_date, prize, prize_visible, visibility, status, created_at)
 values
-  ('c0000000-0000-0000-0000-000000000001', '🚀 Sprint de Vendas — Junho', 'Feche 3 contratos no mês e ganhe o prêmio!', 'vendas', 3, '2026-06-01', '2026-06-30', 'Jantar para 2 + R$ 200 em crédito Tracktiv', true, 'publico', 'ativo', '2026-06-01')
+  ('c0000000-0000-0000-0000-000000000001', 'Sprint de Vendas - Junho', 'Feche 3 contratos no mes e ganhe o premio!', 'vendas', 3, '2026-06-01', '2026-06-30', 'Jantar para 2 + R$ 200 em credito Tracktiv', true, 'publico', 'ativo', '2026-06-01')
 on conflict (id) do nothing;
 
 insert into public.sales_feed (id, consultor_id, consultor_name, client_name, plan, date, timestamp)
@@ -727,7 +748,7 @@ on conflict (id) do nothing;
 -- ----------------------------------------------------------------
 insert into public.executive_clients (id, executive_id, client_id, monthly_revenue, payment_day, operational_cost, profit_comm_pct, start_date, notes)
 values
-  ('e0000000-0000-0000-0000-000000000001', '66666666-6666-6666-6666-666666666666', '10000000-0000-0000-0000-000000000001', 5000, 10, 1500, 50, '2026-05-01', 'Contrato anual renovável.'),
+  ('e0000000-0000-0000-0000-000000000001', '66666666-6666-6666-6666-666666666666', '10000000-0000-0000-0000-000000000001', 5000, 10, 1500, 50, '2026-05-01', 'Contrato anual renovavel.'),
   ('e0000000-0000-0000-0000-000000000002', '66666666-6666-6666-6666-666666666666', '10000000-0000-0000-0000-000000000002', 3500, 15, 900, 40, '2026-04-01', '')
 on conflict (id) do nothing;
 
@@ -740,7 +761,7 @@ on conflict (id) do nothing;
 
 insert into public.executive_sales (id, executive_id, client_name, plan_name, plan_value, comm_type, comm_value, sale_date, month, commission_status, commission_paid_at, notes)
 values
-  ('f0000000-0000-0000-0000-000000000004', '66666666-6666-6666-6666-666666666666', 'Nova Logística Ltda', 'Profissional', 54.90, 'fixed', 50, '2026-05-10', '2026-05', 'pago', '2026-05-15', '')
+  ('f0000000-0000-0000-0000-000000000004', '66666666-6666-6666-6666-666666666666', 'Nova Logistica Ltda', 'Profissional', 54.90, 'fixed', 50, '2026-05-10', '2026-05', 'pago', '2026-05-15', '')
 on conflict (id) do nothing;
 
 -- ----------------------------------------------------------------
