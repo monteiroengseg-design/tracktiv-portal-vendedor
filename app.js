@@ -103,7 +103,8 @@ const NAV_TREE = {
             { id: 'g_cfg_forms',    label: 'Editor de Formulários', icon: '🔧', render: () => renderGestorFormEditor() },
             { id: 'g_cfg_modulos',  label: 'Módulos',               icon: '🧩', render: () => renderModulosConfig('gestor') },
             { id: 'g_cfg_trein',    label: 'Criar Treinamento',     icon: '🎓', render: () => renderGestorCustomTrainings() },
-            { id: 'g_cfg_armazenamento', label: 'Armazenamento',    icon: '💾', render: () => renderGestorArmazenamento() }
+            { id: 'g_cfg_armazenamento', label: 'Armazenamento',    icon: '💾', render: () => renderGestorArmazenamento() },
+            { id: 'g_cfg_usuarios',      label: 'Usuários e Acessos',icon: '🔐', render: () => renderGerenciarUsuarios() }
         ]},
         { id: 'g_produtos_cfg', label: 'Produtos',        icon: '📦', render: () => renderGestorProdutos() },
         { id: 'g_mural',       label: 'Mural e Desafios',icon: '🏆', render: () => renderGestorMuralConfig() },
@@ -207,6 +208,7 @@ const NAV_TREE_PRESIDENTE = [
     { id: 'p_planos',     label: 'Planos e Produtos',        icon: '📦', render: () => renderPresidentePlanos() },
     { id: 'p_recorr',     label: 'Recorrência',              icon: '🔄', render: () => renderPresidenteRecorrencia() },
     { id: 'p_gestores',   label: 'Gestores',                 icon: '👔', render: () => renderPresidenteGestores() },
+    { id: 'p_usuarios',   label: 'Usuários e Acessos',       icon: '🔐', render: () => renderGerenciarUsuarios() },
     { id: 'p_executivos', label: 'Parceiros Executivos',     icon: '🤝', render: () => renderPresidenteExecutivos() },
     { id: 'p_empresas',   label: 'Multi-empresa',            icon: '🏢', render: () => renderPresidenteEmpresas() },
     { id: 'p_relatorios', label: 'Relatórios',               icon: '📊', render: () => renderPresidenteRelatorios() },
@@ -2115,6 +2117,11 @@ function loadState() {
             if (!app.state.indicadorReferrals) app.state.indicadorReferrals = [];
             (app.state.users || []).forEach(u => {
                 if (u.role === 'instalador' && !u.partnerType) u.partnerType = 'instalador';
+            });
+            // Migração: gerenciamento de usuários — campos active e createdAt
+            (app.state.users || []).forEach(u => {
+                if (u.active === undefined) u.active = true;
+                if (!u.createdAt) u.createdAt = '';
             });
             // Migração: Mural e Desafios / Link de Cadastro
             if (!app.state.muralConfig) app.state.muralConfig = { enabled: true, showRanking: true, showMeta: true, showFeed: true, showChallenges: true, showComissions: false, hideFeedNames: false, metaValue: 10 };
@@ -5339,6 +5346,12 @@ async function handleLogin(e) {
                     }
                 }
                 if (user) {
+                    if (user.active === false) {
+                        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entrar'; }
+                        errEl.textContent = 'Acesso desativado. Entre em contato com o administrador.';
+                        supabaseClient.auth.signOut().catch(() => {});
+                        return;
+                    }
                     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entrar'; }
                     loginWithUser(user);
                     return;
@@ -5353,6 +5366,7 @@ async function handleLogin(e) {
     );
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entrar'; }
     if (!user) { errEl.textContent = 'E-mail ou senha incorretos.'; return; }
+    if (user.active === false) { errEl.textContent = 'Acesso desativado. Entre em contato com o administrador.'; return; }
     loginWithUser(user);
 }
 
@@ -13446,6 +13460,333 @@ function saveRecurrenceRules() {
 }
 
 // ── ABA 6: GESTÃO DE GESTORES ───────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════
+   GERENCIAMENTO DE USUÁRIOS E ACESSOS
+═══════════════════════════════════════════════════════════════════ */
+
+const USER_ROLE_INFO = {
+    presidente: { label: 'Presidente',         color: '#7c3aed', bg: '#ede9fe' },
+    gestor:     { label: 'Gestor',             color: '#1a2e4a', bg: '#dbeafe' },
+    consultor:  { label: 'Consultor',          color: '#0369a1', bg: '#e0f2fe' },
+    instalador: { label: 'Parceiro Instalador',color: '#15803d', bg: '#dcfce7' },
+    indicador:  { label: 'Parceiro Indicador', color: '#0d9488', bg: '#ccfbf1' },
+    tecnico:    { label: 'Técnico',            color: '#92400e', bg: '#fef3c7' },
+    cliente:    { label: 'Cliente',            color: '#be185d', bg: '#fce7f3' },
+    executivo:  { label: 'Parceiro Executivo', color: '#0f766e', bg: '#ccfbf1' }
+};
+
+function _userRoleKey(u) {
+    return (u.role === 'instalador' && u.partnerType === 'indicador') ? 'indicador' : u.role;
+}
+
+function _userRoleBadge(u) {
+    const key  = _userRoleKey(u);
+    const info = USER_ROLE_INFO[key] || { label: u.role, color: '#475569', bg: '#f1f5f9' };
+    return `<span style="background:${info.bg};color:${info.color};padding:3px 10px;border-radius:20px;font-size:.76rem;font-weight:600;white-space:nowrap;">${info.label}</span>`;
+}
+
+function renderGerenciarUsuarios() {
+    const el = document.getElementById('dynamicContent');
+    if (!el) return;
+
+    const isPresidente = app.currentUser?.role === 'presidente';
+    const all = (app.state.users || []);
+    const visible = isPresidente ? all : all.filter(u => u.role !== 'presidente');
+
+    const total    = visible.length;
+    const ativos   = visible.filter(u => u.active !== false).length;
+    const inativos = total - ativos;
+
+    const roleCounts = {};
+    visible.forEach(u => { const k = _userRoleKey(u); roleCounts[k] = (roleCounts[k]||0)+1; });
+
+    el.innerHTML = `
+    <div class="section-header">
+        <h2>🔐 Usuários e Acessos</h2>
+        <button class="primary-btn" onclick="openUserModal()">+ Novo usuário</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-bottom:20px;">
+        <div class="card" style="padding:14px;text-align:center;">
+            <div style="font-size:1.6rem;font-weight:800;">${total}</div>
+            <div style="font-size:.75rem;color:var(--text-soft);margin-top:2px;">Total</div>
+        </div>
+        <div class="card" style="padding:14px;text-align:center;">
+            <div style="font-size:1.6rem;font-weight:800;color:var(--success);">${ativos}</div>
+            <div style="font-size:.75rem;color:var(--text-soft);margin-top:2px;">Ativos</div>
+        </div>
+        ${inativos > 0 ? `<div class="card" style="padding:14px;text-align:center;">
+            <div style="font-size:1.6rem;font-weight:800;color:var(--danger);">${inativos}</div>
+            <div style="font-size:.75rem;color:var(--text-soft);margin-top:2px;">Desativados</div>
+        </div>` : ''}
+        ${Object.entries(roleCounts).map(([k, n]) => {
+            const info = USER_ROLE_INFO[k] || { label: k, color: '#475569' };
+            return `<div class="card" style="padding:14px;text-align:center;">
+                <div style="font-size:1.6rem;font-weight:800;color:${info.color};">${n}</div>
+                <div style="font-size:.75rem;color:var(--text-soft);margin-top:2px;">${info.label}</div>
+            </div>`;
+        }).join('')}
+    </div>
+
+    <div class="card" style="padding:14px;margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <input id="umSearch" type="text" placeholder="Buscar por nome ou e-mail…"
+               style="flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.86rem;background:var(--bg);"
+               oninput="filterUserTable()" />
+        <select id="umRoleFilter" onchange="filterUserTable()"
+                style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.86rem;background:var(--bg);">
+            <option value="">Todos os perfis</option>
+            ${Object.entries(USER_ROLE_INFO)
+                .filter(([k]) => k !== 'indicador' && (isPresidente || k !== 'presidente'))
+                .map(([k, i]) => `<option value="${k}">${i.label}</option>`).join('')}
+            <option value="indicador">Parceiro Indicador</option>
+        </select>
+        <select id="umStatusFilter" onchange="filterUserTable()"
+                style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.86rem;background:var(--bg);">
+            <option value="">Todos os status</option>
+            <option value="active">Ativos</option>
+            <option value="inactive">Desativados</option>
+        </select>
+    </div>
+
+    <div class="card" style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:.86rem;">
+            <thead><tr style="border-bottom:2px solid var(--border);">
+                <th style="padding:10px 12px;text-align:left;">Nome</th>
+                <th style="padding:10px 12px;text-align:left;">E-mail</th>
+                <th style="padding:10px 12px;text-align:center;">Perfil</th>
+                <th style="padding:10px 12px;text-align:center;">Status</th>
+                <th style="padding:10px 12px;text-align:center;">Ações</th>
+            </tr></thead>
+            <tbody id="umTbody">${_renderUserRows(visible)}</tbody>
+        </table>
+    </div>`;
+
+    showSection('dynamicContent');
+}
+
+function _renderUserRows(users) {
+    if (!users.length) return `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-soft);">Nenhum usuário encontrado.</td></tr>`;
+    return users.map(u => {
+        const isActive = u.active !== false;
+        const isSelf   = u.id === app.currentUser?.id;
+        const isPresidente = app.currentUser?.role === 'presidente';
+        const canEdit  = isPresidente || (u.role !== 'presidente' && u.role !== 'gestor');
+        return `<tr style="border-bottom:1px solid var(--border);${isActive ? '' : 'opacity:.5;'}">
+            <td style="padding:10px 12px;font-weight:600;">${esc(u.name)}
+                ${isSelf ? '<span style="font-size:.7rem;color:var(--accent);font-weight:700;margin-left:4px;">(você)</span>' : ''}</td>
+            <td style="padding:10px 12px;color:var(--text-soft);">${esc(u.email)}</td>
+            <td style="padding:10px 12px;text-align:center;">${_userRoleBadge(u)}</td>
+            <td style="padding:10px 12px;text-align:center;">
+                <span style="background:${isActive?'#dcfce7':'#fee2e2'};color:${isActive?'#15803d':'#dc2626'};
+                    padding:3px 10px;border-radius:20px;font-size:.76rem;font-weight:600;">
+                    ${isActive ? 'Ativo' : 'Desativado'}
+                </span>
+            </td>
+            <td style="padding:10px 12px;text-align:center;white-space:nowrap;">
+                ${canEdit ? `<button class="secondary-btn" style="padding:4px 10px;font-size:.76rem;"
+                    onclick="openUserModal('${esc(u.id)}')">✏️ Editar</button>` : ''}
+                ${canEdit && !isSelf ? `<button class="secondary-btn"
+                    style="padding:4px 10px;font-size:.76rem;margin-left:4px;color:${isActive?'var(--danger)':'var(--success)'};"
+                    onclick="toggleUserActive('${esc(u.id)}')">${isActive ? '🚫 Desativar' : '✅ Ativar'}</button>` : ''}
+                ${!canEdit ? '<span style="font-size:.76rem;color:var(--text-soft);">—</span>' : ''}
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function filterUserTable() {
+    const q      = (document.getElementById('umSearch')?.value || '').toLowerCase();
+    const role   = document.getElementById('umRoleFilter')?.value || '';
+    const status = document.getElementById('umStatusFilter')?.value || '';
+    const isPresidente = app.currentUser?.role === 'presidente';
+    let list = (app.state.users || []).filter(u => isPresidente || u.role !== 'presidente');
+
+    if (q)      list = list.filter(u => (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q));
+    if (role)   list = list.filter(u => role === 'indicador' ? _userRoleKey(u) === 'indicador' : u.role === role);
+    if (status) list = list.filter(u => status === 'active' ? u.active !== false : u.active === false);
+
+    const tbody = document.getElementById('umTbody');
+    if (tbody) tbody.innerHTML = _renderUserRows(list);
+}
+
+function _umExtraFields(role, u) {
+    u = u || {};
+    if (role === 'instalador') {
+        const pt = u.partnerType || 'instalador';
+        return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:4px;">
+            <div class="field"><label>Tipo de parceiro</label>
+                <select id="um_partnerType">
+                    <option value="instalador" ${pt==='instalador'?'selected':''}>Parceiro Instalador</option>
+                    <option value="indicador"  ${pt==='indicador' ?'selected':''}>Parceiro Indicador</option>
+                </select></div>
+            <div class="field"><label>Nome da loja / empresa</label>
+                <input id="um_storeName" type="text" value="${esc(u.storeName||'')}" placeholder="AutoTech Guarulhos" /></div>
+            <div class="field"><label>Região</label>
+                <input id="um_region" type="text" value="${esc(u.region||'')}" placeholder="Guarulhos / SP" /></div>
+            <div class="field"><label>Comissão indicação (%)</label>
+                <input id="um_commPct" type="number" min="0" max="100" step="0.5"
+                       value="${esc(String(u.commissionPct||''))}" placeholder="10" /></div>
+        </div>`;
+    }
+    if (role === 'consultor' || role === 'tecnico' || role === 'gestor') {
+        const lbl = role === 'gestor' ? 'Região / Equipe' : 'Região';
+        return `<div class="field" style="margin-top:4px;"><label>${lbl}</label>
+            <input id="um_region" type="text" value="${esc(u.region||u.area||'')}" placeholder="São Paulo / SP" /></div>`;
+    }
+    if (role === 'executivo') {
+        return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:4px;">
+            <div class="field"><label>Empresa</label>
+                <input id="um_company" type="text" value="${esc(u.company||'')}" placeholder="Drummond Soluções" /></div>
+            <div class="field"><label>Região</label>
+                <input id="um_region" type="text" value="${esc(u.region||'')}" placeholder="São Paulo / SP" /></div>
+        </div>`;
+    }
+    return '';
+}
+
+function openUserModal(id) {
+    const u      = id ? (app.state.users||[]).find(x => x.id === id) : null;
+    const isEdit = !!u;
+    const isPresidente = app.currentUser?.role === 'presidente';
+
+    const roles = [
+        { v: 'gestor',     l: 'Gestor' },
+        { v: 'consultor',  l: 'Consultor' },
+        { v: 'instalador', l: 'Parceiro Instalador / Indicador' },
+        { v: 'tecnico',    l: 'Técnico' },
+        { v: 'cliente',    l: 'Cliente' },
+        { v: 'executivo',  l: 'Parceiro Executivo' }
+    ];
+    if (isPresidente) roles.unshift({ v: 'presidente', l: 'Presidente' });
+
+    const curRole = u?.role || 'gestor';
+
+    showModal(isEdit ? `Editar: ${esc(u.name)}` : 'Novo usuário', `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="field" style="grid-column:span 2"><label>Nome completo *</label>
+            <input id="um_nome" type="text" value="${esc(u?.name||'')}" placeholder="Nome completo" /></div>
+
+        <div class="field"><label>E-mail *</label>
+            <input id="um_email" type="email" value="${esc(u?.email||'')}" placeholder="email@empresa.com"
+                   ${isEdit ? 'readonly style="background:var(--bg);color:var(--text-soft);"' : ''} /></div>
+
+        <div class="field"><label>${isEdit ? 'Nova senha (em branco = manter)' : 'Senha *'}</label>
+            <input id="um_pass" type="password"
+                   placeholder="${isEdit ? 'Nova senha (opcional)' : 'Mínimo 8 caracteres'}" /></div>
+
+        <div class="field"><label>Perfil *</label>
+            <select id="um_role" onchange="document.getElementById('um_extra').innerHTML=_umExtraFields(this.value,null)">
+                ${roles.map(r => `<option value="${r.v}" ${curRole===r.v?'selected':''}>${r.l}</option>`).join('')}
+            </select></div>
+
+        <div class="field"><label>WhatsApp</label>
+            <input id="um_wa" type="tel" value="${esc(u?.whatsapp||u?.phone||'')}" placeholder="(11) 99999-9999" /></div>
+
+        <div class="field"><label>CPF</label>
+            <input id="um_cpf" type="text" value="${esc(u?.cpf||'')}" placeholder="000.000.000-00" /></div>
+
+        <div class="field"><label>PIX / chave bancária</label>
+            <input id="um_pix" type="text" value="${esc(u?.pixKey||'')}" placeholder="CPF, e-mail ou chave" /></div>
+    </div>
+
+    <div id="um_extra" style="margin-top:4px;">${_umExtraFields(curRole, u)}</div>
+
+    ${isEdit ? `<div style="margin-top:16px;padding:14px;background:var(--bg);border-radius:10px;border:1px solid var(--border);">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;">
+            <input type="checkbox" id="um_active" ${u?.active!==false?'checked':''} style="width:16px;height:16px;cursor:pointer;" />
+            Acesso ativo — desmarque para bloquear o login deste usuário
+        </label>
+    </div>` : ''}
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+        <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
+        <button class="primary-btn" onclick="saveUserModal('${id||''}')">Salvar</button>
+    </div>`);
+}
+
+async function saveUserModal(id) {
+    const nome  = document.getElementById('um_nome')?.value.trim();
+    const email = document.getElementById('um_email')?.value.trim().toLowerCase();
+    const pass  = document.getElementById('um_pass')?.value.trim();
+    const role  = document.getElementById('um_role')?.value;
+
+    if (!nome)  { showToast('Nome é obrigatório.', 'error'); return; }
+    if (!email) { showToast('E-mail é obrigatório.', 'error'); return; }
+    if (!role)  { showToast('Perfil é obrigatório.', 'error'); return; }
+    if (!id && !pass) { showToast('Senha é obrigatória para novo usuário.', 'error'); return; }
+    if (pass && pass.length < 8) { showToast('Senha deve ter pelo menos 8 caracteres.', 'error'); return; }
+
+    // Campos extras condicionais
+    const extra = {};
+    const wa  = document.getElementById('um_wa')?.value.trim();
+    const cpf = document.getElementById('um_cpf')?.value.trim();
+    const pix = document.getElementById('um_pix')?.value.trim();
+    const reg = document.getElementById('um_region')?.value.trim();
+    if (wa)  extra.whatsapp = wa;
+    if (cpf) extra.cpf = cpf;
+    if (pix) extra.pixKey = pix;
+    if (reg) extra.region = reg;
+
+    if (role === 'instalador') {
+        extra.partnerType = document.getElementById('um_partnerType')?.value || 'instalador';
+        const sn  = document.getElementById('um_storeName')?.value.trim();
+        const pct = document.getElementById('um_commPct')?.value.trim();
+        if (sn)  extra.storeName     = sn;
+        if (pct) extra.commissionPct = parseFloat(pct);
+    }
+    if (role === 'executivo') {
+        const co = document.getElementById('um_company')?.value.trim();
+        if (co) extra.company = co;
+    }
+
+    const users = app.state.users || [];
+
+    if (id) {
+        // EDITAR
+        const u = users.find(x => x.id === id);
+        if (!u) { showToast('Usuário não encontrado.', 'error'); return; }
+        const active = document.getElementById('um_active')?.checked ?? true;
+        Object.assign(u, { name: nome, role, active, ...extra });
+        if (pass) u.password = pass;
+        addAuditLog('user_update', { id, name: nome, role });
+        showToast(`Usuário "${esc(nome)}" atualizado.`, 'success');
+    } else {
+        // CRIAR
+        if (users.some(u => u.email === email)) { showToast('Este e-mail já está cadastrado.', 'error'); return; }
+        const newId   = `user_${Date.now()}`;
+        const newUser = { id: newId, name: nome, email, password: pass, role, active: true, createdAt: todayISO(), ...extra };
+        if (!app.state.users) app.state.users = [];
+        app.state.users.push(newUser);
+        addAuditLog('user_create', { id: newId, name: nome, role });
+
+        // Tenta criar no Supabase Auth em background (sem bloquear o fluxo)
+        if (supabaseClient) {
+            supabaseClient.auth.signUp({ email, password: pass, options: { data: { name: nome } } })
+                .then(({ error }) => {
+                    if (!error) showToast(`Conta criada! Verifique se e-mail de confirmação foi enviado para ${email}.`, 'info', 6000);
+                })
+                .catch(() => {});
+        }
+        showToast(`Usuário "${esc(nome)}" criado com sucesso!`, 'success');
+    }
+
+    saveState();
+    closeModal();
+    renderGerenciarUsuarios();
+}
+
+function toggleUserActive(id) {
+    const u = (app.state.users||[]).find(x => x.id === id);
+    if (!u) return;
+    if (u.id === app.currentUser?.id) { showToast('Não é possível desativar o próprio acesso.', 'error'); return; }
+    u.active = u.active === false; // false → true ; true/undefined → false
+    const action = u.active ? 'user_activate' : 'user_deactivate';
+    addAuditLog(action, { id, name: u.name });
+    saveState();
+    showToast(`Acesso de "${esc(u.name)}" ${u.active ? 'ativado' : 'desativado'}.`, u.active ? 'success' : 'info');
+    renderGerenciarUsuarios();
+}
+
 function renderPresidenteGestores() {
     const el = presidenteEl(); if (!el) return;
     const gestores = (app.state.users||[]).filter(u=>u.role==='gestor');
@@ -13548,7 +13889,9 @@ function renderPresidenteAuditoria() {
         gestor_delete: 'Gestor excluído', produto_create: 'Produto criado', produto_update: 'Produto editado',
         produto_delete: 'Produto excluído', commission_rules_update: 'Comissões alteradas',
         recurrence_rules_update: 'Recorrência alterada', produto_status_change: 'Status produto alterado',
-        parceiro_create: 'Parceiro criado', parceiro_update: 'Parceiro editado'
+        parceiro_create: 'Parceiro criado', parceiro_update: 'Parceiro editado',
+        user_create: 'Usuário criado', user_update: 'Usuário editado',
+        user_activate: 'Acesso ativado', user_deactivate: 'Acesso desativado'
     };
 
     el.innerHTML = `
