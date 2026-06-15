@@ -8,57 +8,71 @@ create extension if not exists "pgcrypto";
 -- Execute no SQL Editor do Supabase (requer pgcrypto)
 -- ----------------------------------------------------------------
 do $$
+declare
+  v_uid uuid;
 begin
   if exists (
     select 1 from pg_namespace n
     join pg_class c on n.oid = c.relnamespace
     where n.nspname = 'auth' and c.relname = 'users'
   ) then
+
     -- Presidente
-    insert into auth.users (
-      instance_id, id, aud, role, email,
-      encrypted_password, email_confirmed_at,
-      raw_app_meta_data, raw_user_meta_data,
-      created_at, updated_at,
-      confirmation_token, recovery_token,
-      email_change_token_new, email_change
-    ) values (
-      gen_random_uuid(),
-      gen_random_uuid(),
-      'authenticated', 'authenticated',
-      'presidente@tracktiv.com.br',
-      crypt('Admin@2024', gen_salt('bf')),
-      now(),
-      '{"provider":"email","providers":["email"]}',
-      '{"name":"Presidente Demo"}',
-      now(), now(), '', '', '', ''
-    ) on conflict (email) do update set
-      encrypted_password = crypt('Admin@2024', gen_salt('bf')),
-      email_confirmed_at = coalesce(auth.users.email_confirmed_at, now()),
-      updated_at = now();
+    select id into v_uid from auth.users where email = 'presidente@tracktiv.com.br';
+    if v_uid is null then
+      insert into auth.users (
+        id, aud, role, email,
+        encrypted_password, email_confirmed_at,
+        raw_app_meta_data, raw_user_meta_data,
+        created_at, updated_at,
+        confirmation_token, recovery_token,
+        email_change_token_new, email_change
+      ) values (
+        gen_random_uuid(),
+        'authenticated', 'authenticated',
+        'presidente@tracktiv.com.br',
+        crypt('Admin@2024', gen_salt('bf')),
+        now(),
+        '{"provider":"email","providers":["email"]}',
+        '{"name":"Presidente Demo"}',
+        now(), now(), '', '', '', ''
+      );
+    else
+      update auth.users set
+        encrypted_password = crypt('Admin@2024', gen_salt('bf')),
+        email_confirmed_at = coalesce(email_confirmed_at, now()),
+        updated_at = now()
+      where id = v_uid;
+    end if;
 
     -- Gestor (produção)
-    insert into auth.users (
-      instance_id, id, aud, role, email,
-      encrypted_password, email_confirmed_at,
-      raw_app_meta_data, raw_user_meta_data,
-      created_at, updated_at,
-      confirmation_token, recovery_token,
-      email_change_token_new, email_change
-    ) values (
-      gen_random_uuid(),
-      gen_random_uuid(),
-      'authenticated', 'authenticated',
-      'gestor@tracktiv.com.br',
-      crypt('Gestor@2024', gen_salt('bf')),
-      now(),
-      '{"provider":"email","providers":["email"]}',
-      '{"name":"Gestor Tracktiv"}',
-      now(), now(), '', '', '', ''
-    ) on conflict (email) do update set
-      encrypted_password = crypt('Gestor@2024', gen_salt('bf')),
-      email_confirmed_at = coalesce(auth.users.email_confirmed_at, now()),
-      updated_at = now();
+    select id into v_uid from auth.users where email = 'gestor@tracktiv.com.br';
+    if v_uid is null then
+      insert into auth.users (
+        id, aud, role, email,
+        encrypted_password, email_confirmed_at,
+        raw_app_meta_data, raw_user_meta_data,
+        created_at, updated_at,
+        confirmation_token, recovery_token,
+        email_change_token_new, email_change
+      ) values (
+        gen_random_uuid(),
+        'authenticated', 'authenticated',
+        'gestor@tracktiv.com.br',
+        crypt('Gestor@2024', gen_salt('bf')),
+        now(),
+        '{"provider":"email","providers":["email"]}',
+        '{"name":"Gestor Tracktiv"}',
+        now(), now(), '', '', '', ''
+      );
+    else
+      update auth.users set
+        encrypted_password = crypt('Gestor@2024', gen_salt('bf')),
+        email_confirmed_at = coalesce(email_confirmed_at, now()),
+        updated_at = now()
+      where id = v_uid;
+    end if;
+
   end if;
 end
 $$;
