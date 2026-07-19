@@ -114,6 +114,105 @@ begin
     where u.id = '55555555-5555-5555-5555-555555555555'
       and not exists (select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email');
 
+    -- Consultor (id fixo — bate com public.profiles.id)
+    insert into auth.users (
+      id, instance_id, aud, role, email,
+      encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data,
+      created_at, updated_at,
+      confirmation_token, recovery_token,
+      email_change_token_new, email_change
+    ) values (
+      '11111111-1111-1111-1111-111111111111',
+      '00000000-0000-0000-0000-000000000000',
+      'authenticated', 'authenticated',
+      'consultor@tracktiv.com',
+      crypt('Consultor123', gen_salt('bf')),
+      now(),
+      '{"provider":"email","providers":["email"]}',
+      '{"name":"Laura Mendes"}',
+      now(), now(), '', '', '', ''
+    )
+    on conflict (id) do update set
+      instance_id = excluded.instance_id,
+      encrypted_password = crypt('Consultor123', gen_salt('bf')),
+      email_confirmed_at = coalesce(auth.users.email_confirmed_at, excluded.email_confirmed_at),
+      updated_at = now();
+
+    insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+    select gen_random_uuid(), u.id::text, u.id,
+           jsonb_build_object('sub', u.id::text, 'email', u.email),
+           'email', now(), now(), now()
+    from auth.users u
+    where u.id = '11111111-1111-1111-1111-111111111111'
+      and not exists (select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email');
+
+    -- Instalador (id fixo — bate com public.profiles.id)
+    insert into auth.users (
+      id, instance_id, aud, role, email,
+      encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data,
+      created_at, updated_at,
+      confirmation_token, recovery_token,
+      email_change_token_new, email_change
+    ) values (
+      '33333333-3333-3333-3333-333333333333',
+      '00000000-0000-0000-0000-000000000000',
+      'authenticated', 'authenticated',
+      'instalador@tracktiv.com',
+      crypt('Instalador123', gen_salt('bf')),
+      now(),
+      '{"provider":"email","providers":["email"]}',
+      '{"name":"Carlos Pereira"}',
+      now(), now(), '', '', '', ''
+    )
+    on conflict (id) do update set
+      instance_id = excluded.instance_id,
+      encrypted_password = crypt('Instalador123', gen_salt('bf')),
+      email_confirmed_at = coalesce(auth.users.email_confirmed_at, excluded.email_confirmed_at),
+      updated_at = now();
+
+    insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+    select gen_random_uuid(), u.id::text, u.id,
+           jsonb_build_object('sub', u.id::text, 'email', u.email),
+           'email', now(), now(), now()
+    from auth.users u
+    where u.id = '33333333-3333-3333-3333-333333333333'
+      and not exists (select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email');
+
+    -- Cliente (id fixo — bate com public.profiles.id)
+    insert into auth.users (
+      id, instance_id, aud, role, email,
+      encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data,
+      created_at, updated_at,
+      confirmation_token, recovery_token,
+      email_change_token_new, email_change
+    ) values (
+      '77777777-7777-7777-7777-777777777777',
+      '00000000-0000-0000-0000-000000000000',
+      'authenticated', 'authenticated',
+      'cliente@tracktiv.com',
+      crypt('Cliente123', gen_salt('bf')),
+      now(),
+      '{"provider":"email","providers":["email"]}',
+      '{"name":"Auto Prime Transportes"}',
+      now(), now(), '', '', '', ''
+    )
+    on conflict (id) do update set
+      instance_id = excluded.instance_id,
+      encrypted_password = crypt('Cliente123', gen_salt('bf')),
+      email_confirmed_at = coalesce(auth.users.email_confirmed_at, excluded.email_confirmed_at),
+      updated_at = now();
+
+    insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+    select gen_random_uuid(), u.id::text, u.id,
+           jsonb_build_object('sub', u.id::text, 'email', u.email),
+           'email', now(), now(), now()
+    from auth.users u
+    where u.id = '77777777-7777-7777-7777-777777777777'
+      and not exists (select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email');
+
   end if;
 end
 $$;

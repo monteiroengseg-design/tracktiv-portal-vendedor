@@ -13,8 +13,9 @@ Portal web SaaS da Tracktiv, empresa de rastreamento veicular. Single-page app s
 **Login de demo:**
 | Role | Email | Senha |
 |---|---|---|
+| Presidente | presidente@tracktiv.com.br | Admin@2024 |
 | Gestor | gestor@tracktiv.com | Gestor123 |
-| Consultor | laura@tracktiv.com | Laura123 |
+| Consultor | consultor@tracktiv.com | Consultor123 |
 | Parceiro Instalador | instalador@tracktiv.com | Instalador123 |
 | Técnico | tecnico@tracktiv.com | Tecnico123 |
 | Cliente | cliente@tracktiv.com | Cliente123 |
