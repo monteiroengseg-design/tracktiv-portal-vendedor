@@ -525,6 +525,11 @@ create policy chamados_insert_staff_or_admin on public.chamados
     (select role from public.profiles where id = auth.uid()) in ('presidente','gestor','consultor','tecnico')
     or tecnico_id = auth.uid()
   );
+create policy chamados_update_assigned_or_admin on public.chamados
+  for update using (
+    tecnico_id = auth.uid()
+    or (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
+  );
 
 create policy client_documents_select_related on public.client_documents
   for select using (

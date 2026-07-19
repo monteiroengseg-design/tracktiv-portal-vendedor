@@ -4656,7 +4656,18 @@ function openConsultorModal(id = null) {
             <div class="form-section-title">Dados de acesso</div>
             <div class="field"><label>Nome *</label><input id="cName" type="text" value="${esc(ed?.name)}" required /></div>
             <div class="field"><label>E-mail *</label><input id="cEmail" type="email" value="${esc(ed?.email)}" required /></div>
-            <div class="field"><label>Senha *</label><input id="cPass" type="text" value="${esc(ed?.password)}" required /></div>
+            ${ed ? `<div class="field"><label>Senha (em branco = manter)</label><input id="cPass" type="text" value="" /></div>` : `
+<div class="field full-width" id="cInviteToggleWrap">
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;">
+        <input type="checkbox" id="cInviteMode" checked style="width:16px;height:16px;cursor:pointer;" />
+        📧 Enviar convite por e-mail (usuário define a própria senha)
+    </label>
+    <small style="color:var(--text-soft);margin-top:4px;display:block;">O usuário receberá um e-mail para criar sua senha de acesso.</small>
+</div>
+<div class="field full-width" id="cPassWrap" style="display:none;">
+    <label>Senha *</label>
+    <input id="cPass" type="text" value="" />
+</div>`}
             <div class="field"><label>WhatsApp</label><input id="cWa" type="tel" placeholder="(11) 99999-9999" value="${esc(ed?.whatsapp)}" /></div>
             <div class="form-section-title">Dados pessoais</div>
             <div class="field"><label>CPF</label><input id="cCpf" type="text" placeholder="000.000.000-00" value="${esc(ed?.cpf)}" /></div>
@@ -4671,17 +4682,24 @@ function openConsultorModal(id = null) {
     `);
     document.getElementById('cancelConsultorBtn').addEventListener('click', closeModal);
     document.getElementById('consultorForm').addEventListener('submit', handleConsultorSave);
+    if (!ed) {
+        const inviteCb = document.getElementById('cInviteMode');
+        const passWrap = document.getElementById('cPassWrap');
+        if (inviteCb) inviteCb.addEventListener('change', () => {
+            passWrap.style.display = inviteCb.checked ? 'none' : 'block';
+        });
+    }
     applyFormConfig('consultor');
 }
 
-function handleConsultorSave(e) {
+async function handleConsultorSave(e) {
     e.preventDefault();
     const name  = document.getElementById('cName').value.trim();
     const email = document.getElementById('cEmail').value.trim().toLowerCase();
-    const pass  = document.getElementById('cPass').value.trim();
+    const pass  = document.getElementById('cPass')?.value.trim() || '';
     const err   = document.getElementById('consultorFormError');
     err.textContent = '';
-    if (!name || !email || !pass) { err.textContent = 'Nome, e-mail e senha são obrigatórios.'; return; }
+    if (!name || !email) { err.textContent = 'Nome e e-mail são obrigatórios.'; return; }
     if ((app.state.users || []).some(u => u.email === email && u.id !== app.editingConsultantId)) {
         err.textContent = 'Já existe um usuário com este e-mail.'; return;
     }
@@ -4693,10 +4711,26 @@ function handleConsultorSave(e) {
     };
     if (app.editingConsultantId) {
         const u = app.state.users.find(u => u.id === app.editingConsultantId);
-        Object.assign(u, { name, email, password: pass, ...extra });
+        Object.assign(u, { name, email, ...extra });
+        if (pass) u.password = pass;
         addAuditLog('consultor_update', { id: app.editingConsultantId, name });
         showToast(`Dados de "${name}" atualizados.`, 'success');
     } else {
+        const inviteMode = document.getElementById('cInviteMode')?.checked ?? true;
+        if (inviteMode && supabaseClient && !app.demoMode) {
+            const saveBtn = document.querySelector('#modalContent .primary-btn');
+            if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Enviando convite…'; }
+            const { userId, invited, error: invErr } = await _sbInviteUser(email, name, 'consultor', extra);
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvar'; }
+            if (!userId) { err.textContent = invErr || 'Erro ao criar usuário no Supabase.'; return; }
+            const newUser = { id: userId, name, email, role: 'consultor', invitePending: true, createdAt: todayISO(), ...extra };
+            app.state.users.push(newUser);
+            addAuditLog('consultor_create', { id: userId, name, via: 'invite' });
+            saveState(); closeModal(); renderAppViews();
+            showToast(invited ? `Convite enviado para ${email}!` : `Consultor "${name}" criado (e-mail de convite não enviado).`, invited ? 'success' : 'warning', 6000);
+            return;
+        }
+        if (!pass) { err.textContent = 'Informe a senha ou ative o envio de convite por e-mail.'; return; }
         const newId = `consultor_${Date.now()}`;
         app.state.users.push({ id: newId, name, email, password: pass, role: 'consultor', ...extra });
         addAuditLog('consultor_create', { id: newId, name });
@@ -4926,7 +4960,18 @@ function openParceirosModal(id = null) {
             <div class="form-section-title full-width">Dados de acesso</div>
             <div class="field"><label>Nome *</label><input id="iName" type="text" value="${esc(ed?.name || '')}" required /></div>
             <div class="field"><label>E-mail *</label><input id="iEmail" type="email" value="${esc(ed?.email || '')}" required /></div>
-            <div class="field"><label>Senha *</label><input id="iPass" type="text" value="${esc(ed?.password || '')}" required /></div>
+            ${ed ? `<div class="field"><label>Senha (em branco = manter)</label><input id="iPass" type="text" value="" /></div>` : `
+<div class="field full-width" id="iInviteToggleWrap">
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;">
+        <input type="checkbox" id="iInviteMode" checked style="width:16px;height:16px;cursor:pointer;" />
+        📧 Enviar convite por e-mail (usuário define a própria senha)
+    </label>
+    <small style="color:var(--text-soft);margin-top:4px;display:block;">O parceiro receberá um e-mail para criar sua senha de acesso.</small>
+</div>
+<div class="field" id="iPassWrap" style="display:none;">
+    <label>Senha *</label>
+    <input id="iPass" type="text" value="" />
+</div>`}
             <div class="field"><label>WhatsApp *</label><input id="iWa" type="tel" placeholder="(11) 99999-9999" value="${esc(ed?.whatsapp || '')}" required /></div>
             <div class="form-section-title full-width">Dados pessoais</div>
             <div class="field"><label>CPF *</label><input id="iCpf" type="text" placeholder="000.000.000-00" value="${esc(ed?.cpf || '')}" required /></div>
@@ -4958,20 +5003,27 @@ function openParceirosModal(id = null) {
     document.getElementById('iPartnerType').addEventListener('change', toggleFields);
     document.getElementById('cancelInstaladorBtn').addEventListener('click', closeModal);
     document.getElementById('instaladorForm').addEventListener('submit', handleParceiroSave);
+    if (!id) {
+        const inviteCb2 = document.getElementById('iInviteMode');
+        const passWrap2 = document.getElementById('iPassWrap');
+        if (inviteCb2) inviteCb2.addEventListener('change', () => {
+            passWrap2.style.display = inviteCb2.checked ? 'none' : 'block';
+        });
+    }
 }
 
-function handleParceiroSave(e) {
+async function handleParceiroSave(e) {
     e.preventDefault();
     const name        = document.getElementById('iName').value.trim();
     const email       = document.getElementById('iEmail').value.trim().toLowerCase();
-    const pass        = document.getElementById('iPass').value.trim();
+    const pass        = document.getElementById('iPass')?.value.trim() || '';
     const cpf         = document.getElementById('iCpf').value.trim();
     const partnerType = document.getElementById('iPartnerType').value;
     const store       = partnerType === 'instalador' ? document.getElementById('iStore').value.trim() : '';
     const err         = document.getElementById('instaladorFormError');
     err.textContent = '';
 
-    if (!name || !email || !pass || !cpf) { err.textContent = 'Preencha todos os campos obrigatórios.'; return; }
+    if (!name || !email || !cpf) { err.textContent = 'Preencha todos os campos obrigatórios.'; return; }
     if (partnerType === 'instalador' && !store) { err.textContent = 'Informe o nome da loja para Parceiro Instalador.'; return; }
     if ((app.state.users || []).some(u => u.email === email && u.id !== app.editingInstaladorId)) {
         err.textContent = 'Já existe um usuário com este e-mail.'; return;
@@ -4992,6 +5044,21 @@ function handleParceiroSave(e) {
         Object.assign(app.state.users.find(u => u.id === app.editingInstaladorId), data);
         showToast(`Dados de "${name}" atualizados.`, 'success');
     } else {
+        const inviteMode = document.getElementById('iInviteMode')?.checked ?? true;
+        if (inviteMode && supabaseClient && !app.demoMode) {
+            const saveBtn2 = document.querySelector('#modalContent .primary-btn');
+            if (saveBtn2) { saveBtn2.disabled = true; saveBtn2.textContent = 'Enviando convite…'; }
+            const { userId, invited, error: invErr } = await _sbInviteUser(email, name, 'instalador', { partnerType, ...data });
+            if (saveBtn2) { saveBtn2.disabled = false; saveBtn2.textContent = 'Salvar'; }
+            if (!userId) { err.textContent = invErr || 'Erro ao criar usuário no Supabase.'; return; }
+            const newUser = { id: userId, role: 'instalador', invitePending: true, createdAt: todayISO(), ...data };
+            app.state.users.push(newUser);
+            addAuditLog('parceiro_create', { id: userId, name, via: 'invite', partnerType });
+            saveState(); closeModal(); renderAppViews();
+            showToast(invited ? `Convite enviado para ${email}!` : `${typeLabel} "${name}" criado.`, invited ? 'success' : 'warning', 6000);
+            return;
+        }
+        if (!pass) { err.textContent = 'Informe a senha ou ative o envio de convite por e-mail.'; return; }
         const prefix = partnerType === 'indicador' ? 'indicador' : 'instalador';
         app.state.users.push({ id: `${prefix}_${Date.now()}`, role: 'instalador', ...data });
         showToast(`${typeLabel} "${name}" cadastrado com sucesso!`, 'success');
@@ -5303,11 +5370,13 @@ function initSupabase() {
 
     // Restaura sessão ativa no page load e reage a mudanças futuras de auth
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user && !app.currentUser) {
+        if (event === 'PASSWORD_RECOVERY') {
+            // Usuário veio do link de convite — mostra form de definir senha
+            showSetPasswordModal(session);
+        } else if (event === 'SIGNED_IN' && session?.user && !app.currentUser) {
             const user = await _loginFromSupabaseSession(session.user.email);
             if (user) loginWithUser(user);
         } else if (event === 'SIGNED_OUT' && app.currentUser) {
-            // Sessão expirou externamente — força logout
             app.currentUser = null;
             document.getElementById('appScreen').classList.add('hidden');
             document.getElementById('clientePortal').classList.add('hidden');
@@ -5483,6 +5552,121 @@ function _sbDeleteClient(id) {
     if (!supabaseClient || app.demoMode) return;
     supabaseClient.from('clients').delete().eq('id', id)
         .catch(err => console.warn('[Supabase] delete client falhou:', err));
+}
+
+function _mapChamadoToSB(ch) {
+    return {
+        id:          ch.id,
+        client_id:   ch.clientId    || null,
+        tecnico_id:  ch.tecnicoId   || null,
+        title:       ch.title       || '',
+        description: ch.description || '',
+        priority:    ch.priority    || 'Normal',
+        status:      ch.status      || 'Aberto',
+        created_at:  ch.createdAt   || todayISO(),
+        updated_at:  ch.updatedAt   || todayISO(),
+        messages:    ch.messages    || [],
+    };
+}
+
+function _sbUpsertChamado(ch) {
+    if (!supabaseClient || app.demoMode) return;
+    supabaseClient.from('chamados').upsert(_mapChamadoToSB(ch))
+        .catch(err => console.warn('[Supabase] upsert chamado falhou:', err));
+}
+
+// Convida usuário via Supabase Edge Function (usa service_role key no servidor).
+// A Edge Function em supabase/functions/invite-user chama admin.inviteUserByEmail()
+// e cria o profile — o usuário recebe e-mail para definir a própria senha.
+async function _sbInviteUser(email, name, role, extraData = {}) {
+    if (!supabaseClient || app.demoMode) return { userId: null, invited: false };
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) return { userId: null, invited: false, error: 'Sessão expirada — faça login novamente.' };
+
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/invite-user`, {
+            method: 'POST',
+            headers: {
+                'Content-Type':  'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+                'apikey':        SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify({ email, name, role, extraData })
+        });
+
+        const result = await res.json();
+        if (!res.ok || result.error) {
+            return { userId: null, invited: false, error: result.error || `HTTP ${res.status}` };
+        }
+        return { userId: result.userId, invited: true };
+    } catch (ex) {
+        console.warn('[Supabase] _sbInviteUser exception:', ex);
+        return { userId: null, invited: false, error: ex.message };
+    }
+}
+
+function showSetPasswordModal(session) {
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('appScreen').classList.add('hidden');
+    document.getElementById('clientePortal').classList.add('hidden');
+    showModal('Bem-vindo! Defina sua senha', `
+        <div style="text-align:center;margin-bottom:20px;">
+            <div style="font-size:3rem;margin-bottom:8px;">🔐</div>
+            <p style="color:var(--text-soft);font-size:0.9rem;">Crie uma senha segura para acessar o portal Tracktiv.</p>
+            <p style="color:var(--text-soft);font-size:0.82rem;margin-top:4px;">Você foi convidado por sua equipe.</p>
+        </div>
+        <form id="setPasswordForm" class="form-grid">
+            <div class="field full-width">
+                <label>Nova senha *</label>
+                <input id="sp_pass" type="password" placeholder="Mínimo 8 caracteres" required minlength="8" autocomplete="new-password" />
+            </div>
+            <div class="field full-width">
+                <label>Confirmar senha *</label>
+                <input id="sp_pass2" type="password" placeholder="Repita a senha" required minlength="8" autocomplete="new-password" />
+            </div>
+            <div id="sp_error" class="error-text full-width"></div>
+            <div class="actions full-width">
+                <button type="submit" class="primary-btn" id="sp_btn">Definir senha e entrar →</button>
+            </div>
+        </form>
+    `);
+    // Impede fechar o modal (usuário DEVE definir a senha)
+    const overlay = document.getElementById('modalOverlay');
+    if (overlay) overlay.onclick = null;
+
+    document.getElementById('setPasswordForm').addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const pass  = document.getElementById('sp_pass').value;
+        const pass2 = document.getElementById('sp_pass2').value;
+        const errEl = document.getElementById('sp_error');
+        const btn   = document.getElementById('sp_btn');
+        errEl.textContent = '';
+        if (pass.length < 8)  { errEl.textContent = 'Senha deve ter pelo menos 8 caracteres.'; return; }
+        if (pass !== pass2)   { errEl.textContent = 'As senhas não coincidem.'; return; }
+        btn.disabled = true; btn.textContent = 'Salvando…';
+        const { error } = await supabaseClient.auth.updateUser({ password: pass });
+        if (error) {
+            errEl.textContent = 'Erro: ' + error.message;
+            btn.disabled = false; btn.textContent = 'Definir senha e entrar →';
+            return;
+        }
+        // Marca convite como aceito no profile
+        if (session?.user?.id) {
+            supabaseClient.from('profiles').update({ data: {} })
+                .eq('id', session.user.id)
+                .then(() => {})
+                .catch(() => {});
+        }
+        closeModal();
+        const user = await _loginFromSupabaseSession(session.user.email);
+        if (user) {
+            loginWithUser(user);
+            showToast('Senha definida! Bem-vindo ao portal.', 'success', 5000);
+        } else {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            showToast('Senha definida! Faça login para continuar.', 'info', 5000);
+        }
+    });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -9649,8 +9833,11 @@ function saveChamado(e) {
     if (!clientId || !title || !desc) return;
     const uid = app.currentUser.id;
     const now = todayISO();
+    const newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : 'ch_' + Date.now();
     const ch = {
-        id: 'ch_' + Date.now(), clientId, tecnicoId: uid, title, description: desc,
+        id: newId, clientId, tecnicoId: uid, title, description: desc,
         priority, status: 'Aberto', createdAt: now, updatedAt: now,
         messages: [{ id: 'cm_' + Date.now(), from: uid, text: `Chamado aberto: ${desc}`, at: now }]
     };
@@ -9660,6 +9847,7 @@ function saveChamado(e) {
     if (gestor) addNotification(gestor.id, 'chamado', `Novo chamado aberto por ${app.currentUser.name}: "${title}"`, { render: 'renderGestorChamados' });
     saveState();
     closeModal();
+    _sbUpsertChamado(ch);
     showToast(`Chamado "${title}" aberto com sucesso!`, 'success');
     if (app.currentUser.role === 'tecnico') {
         renderTecnicoChamados();
@@ -9725,6 +9913,7 @@ function updateChamadoStatus(chamadoId, newStatus) {
     if (!ch.messages) ch.messages = [];
     ch.messages.push({ id: 'cm_' + Date.now(), from: app.currentUser.id, text: `Status alterado para: ${newStatus}`, at: todayISO() });
     saveState();
+    _sbUpsertChamado(ch);
     showToast(`Status do chamado atualizado para "${newStatus}".`, 'success');
     if (app.currentUser.role === 'tecnico') {
         renderTecnicoDashboard();
@@ -9746,6 +9935,7 @@ function sendChamadoMessage(chamadoId) {
         if (gestor) addNotification(gestor.id, 'chamado', `Nova mensagem no chamado "${ch.title}" por ${app.currentUser.name}`, { render: 'renderGestorChamados' });
     }
     saveState();
+    _sbUpsertChamado(ch);
     closeModal();
     openChamadoDetail(chamadoId);
 }
@@ -9804,12 +9994,25 @@ function openTecnicoModal(tecnicoId) {
             <input type="checkbox" class="tec-qual-cb" value="${s.key}" ${quals.includes(s.key) ? 'checked' : ''} style="width:15px;height:15px;">
             <span>${s.icon} ${s.label}</span>
         </label>`).join('');
+    const senhaField = t
+        ? `<div class="field"><label>Senha (em branco = manter)</label><input id="tecSenha" type="password"></div>`
+        : `<div class="field" style="grid-column:1/-1;">
+               <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;">
+                   <input type="checkbox" id="tecInviteMode" checked style="width:16px;height:16px;cursor:pointer;" />
+                   📧 Enviar convite por e-mail (usuário define a própria senha)
+               </label>
+               <small style="color:var(--text-soft);margin-top:4px;display:block;">O técnico receberá um e-mail com link para criar sua senha de acesso.</small>
+               <div id="tecPassWrap" style="display:none;margin-top:10px;">
+                   <label>Senha *</label>
+                   <input id="tecSenha" type="password" style="width:100%;margin-top:4px;" />
+               </div>
+           </div>`;
     showModal(t ? 'Editar técnico' : 'Cadastrar técnico', `
         <form onsubmit="saveTecnico(event,'${tecnicoId || ''}')">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div class="field"><label>Nome *</label><input id="tecNome" value="${t ? esc(t.name) : ''}" required></div>
                 <div class="field"><label>E-mail *</label><input id="tecEmail" type="email" value="${t ? esc(t.email) : ''}" required></div>
-                <div class="field"><label>Senha${t ? ' (em branco = manter)' : ' *'}</label><input id="tecSenha" type="password" ${t ? '' : 'required'}></div>
+                ${senhaField}
                 <div class="field"><label>CPF</label><input id="tecCPF" value="${t ? esc(t.cpf || '') : ''}"></div>
                 <div class="field"><label>Telefone</label><input id="tecTel" value="${t ? esc(t.phone || '') : ''}"></div>
                 <div class="field"><label>WhatsApp</label><input id="tecWA" value="${t ? esc(t.whatsapp || '') : ''}"></div>
@@ -9828,13 +10031,18 @@ function openTecnicoModal(tecnicoId) {
             </div>
         </form>
     `);
+    if (!t) {
+        const cb = document.getElementById('tecInviteMode');
+        const pw = document.getElementById('tecPassWrap');
+        if (cb && pw) cb.addEventListener('change', () => { pw.style.display = cb.checked ? 'none' : 'block'; });
+    }
 }
 
-function saveTecnico(e, tecnicoId) {
+async function saveTecnico(e, tecnicoId) {
     e.preventDefault();
     const nome  = document.getElementById('tecNome').value.trim();
     const email = document.getElementById('tecEmail').value.trim().toLowerCase();
-    const senha = document.getElementById('tecSenha').value.trim();
+    const senha = document.getElementById('tecSenha')?.value.trim() || '';
     const cpf   = document.getElementById('tecCPF').value.trim();
     const tel   = document.getElementById('tecTel').value.trim();
     const wa    = document.getElementById('tecWA').value.trim();
@@ -9849,17 +10057,34 @@ function saveTecnico(e, tecnicoId) {
         u.qualifications = quals;
         if (senha) u.password = senha;
         showToast(`Dados de "${nome}" atualizados.`, 'success');
+        saveState(); closeModal(); renderGestorTecnicos();
     } else {
         if (users.find(x => x.email === email)) { showToast('Este e-mail já está cadastrado no sistema.', 'error'); return; }
-        const newT = { id: 'tecnico_' + Date.now(), name: nome, email, password: senha, role: 'tecnico', cpf, phone: tel, whatsapp: wa, specialty: esp, qualifications: quals };
+        const inviteMode = document.getElementById('tecInviteMode')?.checked ?? true;
+        const extraTec   = { cpf, phone: tel, whatsapp: wa, specialty: esp, qualifications: quals };
+        if (inviteMode && supabaseClient && !app.demoMode) {
+            const btn = document.querySelector('#modalContent .primary-btn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Enviando convite…'; }
+            const { userId, invited, error: invErr } = await _sbInviteUser(email, nome, 'tecnico', extraTec);
+            if (btn) { btn.disabled = false; btn.textContent = 'Cadastrar'; }
+            if (!userId) { showToast(invErr || 'Erro ao criar técnico no Supabase.', 'error'); return; }
+            const newT = { id: userId, name: nome, email, role: 'tecnico', invitePending: true, createdAt: todayISO(), ...extraTec };
+            users.push(newT);
+            if (!app.state.tecnicoClients) app.state.tecnicoClients = {};
+            app.state.tecnicoClients[userId] = [];
+            addAuditLog('tecnico_create', { id: userId, name: nome, via: 'invite' });
+            saveState(); closeModal(); renderGestorTecnicos();
+            showToast(invited ? `Convite enviado para ${email}!` : `Técnico "${nome}" criado (verifique o e-mail manualmente).`, invited ? 'success' : 'warning', 6000);
+            return;
+        }
+        if (!senha) { showToast('Informe a senha ou ative o envio de convite por e-mail.', 'error'); return; }
+        const newT = { id: 'tecnico_' + Date.now(), name: nome, email, password: senha, role: 'tecnico', ...extraTec };
         users.push(newT);
         if (!app.state.tecnicoClients) app.state.tecnicoClients = {};
         app.state.tecnicoClients[newT.id] = [];
         showToast(`Técnico "${nome}" cadastrado com sucesso!`, 'success');
+        saveState(); closeModal(); renderGestorTecnicos();
     }
-    saveState();
-    closeModal();
-    renderGestorTecnicos();
 }
 
 function deleteTecnico(tecnicoId) {
@@ -13876,9 +14101,22 @@ function openUserModal(id) {
             <input id="um_email" type="email" value="${esc(u?.email||'')}" placeholder="email@empresa.com"
                    ${isEdit ? 'readonly style="background:var(--bg);color:var(--text-soft);"' : ''} /></div>
 
-        <div class="field"><label>${isEdit ? 'Nova senha (em branco = manter)' : 'Senha *'}</label>
-            <input id="um_pass" type="password"
-                   placeholder="${isEdit ? 'Nova senha (opcional)' : 'Mínimo 8 caracteres'}" /></div>
+        ${isEdit
+            ? `<div class="field"><label>Nova senha (em branco = manter)</label>
+                   <input id="um_pass" type="password" placeholder="Nova senha (opcional)" /></div>`
+            : `<div class="field" style="grid-column:span 2">
+                   <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;">
+                       <input type="checkbox" id="um_inviteMode" checked style="width:16px;height:16px;cursor:pointer;" />
+                       📧 Enviar convite por e-mail (usuário define a própria senha)
+                   </label>
+                   <small style="color:var(--text-soft);margin-top:4px;display:block;">O usuário receberá um e-mail com link para criar sua senha de acesso.</small>
+               </div>
+               <div id="um_passWrap" style="display:none;grid-column:span 2;">
+                   <div class="field"><label>Senha *</label>
+                       <input id="um_pass" type="password" placeholder="Mínimo 8 caracteres" />
+                   </div>
+               </div>`
+        }
 
         <div class="field"><label>Perfil *</label>
             <select id="um_role" onchange="document.getElementById('um_extra').innerHTML=_umExtraFields(this.value,null)">
@@ -13908,18 +14146,24 @@ function openUserModal(id) {
         <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
         <button class="primary-btn" onclick="saveUserModal('${id||''}')">Salvar</button>
     </div>`);
+    if (!id) {
+        const umCb = document.getElementById('um_inviteMode');
+        const umPw = document.getElementById('um_passWrap');
+        if (umCb && umPw) umCb.addEventListener('change', () => { umPw.style.display = umCb.checked ? 'none' : 'block'; });
+    }
 }
 
 async function saveUserModal(id) {
     const nome  = document.getElementById('um_nome')?.value.trim();
     const email = document.getElementById('um_email')?.value.trim().toLowerCase();
-    const pass  = document.getElementById('um_pass')?.value.trim();
+    const pass  = document.getElementById('um_pass')?.value.trim() || '';
     const role  = document.getElementById('um_role')?.value;
+    const umInviteMode = !id && (document.getElementById('um_inviteMode')?.checked ?? true);
 
     if (!nome)  { showToast('Nome é obrigatório.', 'error'); return; }
     if (!email) { showToast('E-mail é obrigatório.', 'error'); return; }
     if (!role)  { showToast('Perfil é obrigatório.', 'error'); return; }
-    if (!id && !pass) { showToast('Senha é obrigatória para novo usuário.', 'error'); return; }
+    if (!id && !umInviteMode && !pass) { showToast('Informe a senha ou ative o envio de convite por e-mail.', 'error'); return; }
     if (pass && pass.length < 8) { showToast('Senha deve ter pelo menos 8 caracteres.', 'error'); return; }
 
     // Campos extras condicionais
@@ -13976,44 +14220,25 @@ async function saveUserModal(id) {
             ? crypto.randomUUID() : `user_${Date.now()}`;
         let supabaseMsg = '';
 
-        if (supabaseClient) {
-            if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Criando…'; }
-            try {
-                // 1. Cria no Supabase Auth — retorna o UUID real do usuário
-                const { data: authData, error: authErr } = await supabaseClient.auth.signUp({
-                    email, password: pass, options: { data: { name: nome } }
-                });
-
-                if (authErr) {
-                    console.warn('[Supabase] signUp error:', authErr.message);
-                    supabaseMsg = ` (Supabase Auth: ${authErr.message})`;
-                } else if (authData?.user) {
-                    userId = authData.user.id; // Usa o UUID gerado pelo Supabase
-
-                    // 2. Cria linha em public.profiles com o mesmo UUID
-                    const { error: profileErr } = await supabaseClient.from('profiles').upsert({
-                        id: userId, name: nome, email, role,
-                        partner_type: extra.partnerType || null,
-                        data: { active: true, ...extra },
-                    });
-                    if (profileErr) console.warn('[Supabase] profile insert failed:', profileErr.message);
-
-                    const confirmed = !!authData.user.email_confirmed_at;
-                    supabaseMsg = confirmed
-                        ? ' Conta ativa no Supabase.'
-                        : ` E-mail de confirmação enviado para ${email}.`;
-                }
-            } catch (e) {
-                console.warn('[Supabase] signUp exception:', e);
-            } finally {
-                if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvar'; }
+        if (supabaseClient && !app.demoMode) {
+            if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = umInviteMode ? 'Enviando convite…' : 'Criando…'; }
+            const { userId: sbUid, invited, error: invErr } = await _sbInviteUser(email, nome, role, extra);
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvar'; }
+            if (sbUid) {
+                userId = sbUid;
+                supabaseMsg = invited
+                    ? ` Convite enviado para ${email}.`
+                    : ` Usuário criado no Supabase (e-mail de convite não enviado).`;
+            } else {
+                supabaseMsg = ` (erro Supabase: ${invErr || 'desconhecido'})`;
             }
         }
 
-        const newUser = { id: userId, name: nome, email, password: pass, role, active: true, createdAt: todayISO(), ...extra };
+        const newUser = { id: userId, name: nome, email, role, active: true, invitePending: umInviteMode, createdAt: todayISO(), ...extra };
+        if (!pass && !umInviteMode) newUser.password = pass;
         if (!app.state.users) app.state.users = [];
         app.state.users.push(newUser);
-        addAuditLog('user_create', { id: userId, name: nome, role });
+        addAuditLog('user_create', { id: userId, name: nome, role, via: umInviteMode ? 'invite' : 'manual' });
         saveState(); closeModal(); renderGerenciarUsuarios();
         showToast(`Usuário "${esc(nome)}" criado.${supabaseMsg}`, 'success', 6000);
     }
@@ -14092,7 +14317,20 @@ function openGestorModal(id) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <div class="field full-width"><label>Nome completo *</label><input id="gm_nome" type="text" value="${esc(g?.name||'')}" placeholder="Nome do gestor"/></div>
             <div class="field"><label>E-mail *</label><input id="gm_email" type="email" value="${esc(g?.email||'')}" placeholder="gestor@tracktiv.com.br"/></div>
-            <div class="field"><label>Senha *</label><input id="gm_pass" type="password" value="${esc(g?.password||'')}" placeholder="Mínimo 8 caracteres"/></div>
+            ${g
+                ? `<div class="field"><label>Senha (em branco = manter)</label><input id="gm_pass" type="password" placeholder="Nova senha (opcional)"/></div>`
+                : `<div class="field" style="grid-column:span 2">
+                       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;">
+                           <input type="checkbox" id="gm_inviteMode" checked style="width:16px;height:16px;cursor:pointer;" />
+                           📧 Enviar convite por e-mail (usuário define a própria senha)
+                       </label>
+                       <small style="color:var(--text-soft);margin-top:4px;display:block;">O gestor receberá um e-mail com link para criar sua senha de acesso.</small>
+                       <div id="gm_passWrap" style="display:none;margin-top:10px;">
+                           <label>Senha *</label>
+                           <input id="gm_pass" type="password" placeholder="Mínimo 8 caracteres" style="width:100%;margin-top:4px;"/>
+                       </div>
+                   </div>`
+            }
             <div class="field"><label>WhatsApp</label><input id="gm_wa" type="tel" value="${esc(g?.whatsapp||'')}" placeholder="(11) 99999-9999"/></div>
             <div class="field"><label>Região/Equipe</label><input id="gm_region" type="text" value="${esc(g?.region||'')}" placeholder="Ex: São Paulo Interior"/></div>
         </div>
@@ -14100,30 +14338,55 @@ function openGestorModal(id) {
             <button class="secondary-btn" onclick="closeModal()">Cancelar</button>
             <button class="primary-btn" onclick="saveGestorById('${id||''}')">Salvar gestor</button>
         </div>`);
+    if (!id) {
+        const gmCb = document.getElementById('gm_inviteMode');
+        const gmPw = document.getElementById('gm_passWrap');
+        if (gmCb && gmPw) gmCb.addEventListener('change', () => { gmPw.style.display = gmCb.checked ? 'none' : 'block'; });
+    }
 }
 
-function saveGestorById(id) {
+async function saveGestorById(id) {
     const nome  = document.getElementById('gm_nome')?.value.trim();
     const email = document.getElementById('gm_email')?.value.trim().toLowerCase();
-    const pass  = document.getElementById('gm_pass')?.value.trim();
-    if (!nome || !email || !pass) { showToast('Nome, e-mail e senha são obrigatórios.', 'error'); return; }
-    if (pass.length < 8) { showToast('Senha deve ter pelo menos 8 caracteres.', 'error'); return; }
+    const pass  = document.getElementById('gm_pass')?.value.trim() || '';
+    const gmInvite = !id && (document.getElementById('gm_inviteMode')?.checked ?? true);
+    if (!nome || !email) { showToast('Nome e e-mail são obrigatórios.', 'error'); return; }
+    if (!id && !gmInvite && (!pass || pass.length < 8)) { showToast('Informe a senha (mínimo 8 caracteres) ou ative o envio de convite.', 'error'); return; }
+    if (pass && pass.length > 0 && pass.length < 8) { showToast('Senha deve ter pelo menos 8 caracteres.', 'error'); return; }
     const extra = { whatsapp: document.getElementById('gm_wa')?.value.trim(), region: document.getElementById('gm_region')?.value.trim() };
     if (id) {
         const u = (app.state.users||[]).find(u=>u.id===id);
-        if (u) Object.assign(u, { name: nome, email, password: pass, ...extra });
+        if (u) { Object.assign(u, { name: nome, email, ...extra }); if (pass) u.password = pass; }
         addAuditLog('gestor_update', { id, name: nome });
+        saveState(); closeModal(); renderPresidenteGestores();
         showToast(`Gestor "${nome}" atualizado.`, 'success');
+        if (supabaseClient && u) {
+            supabaseClient.from('profiles').upsert({ id, name: nome, email, role: 'gestor', data: { active: true, ...extra } })
+                .catch(err => console.warn('[Supabase] gestor upsert failed:', err));
+        }
     } else {
         const dupEmail = (app.state.users||[]).some(u=>u.email===email);
         if (dupEmail) { showToast('E-mail já cadastrado.', 'error'); return; }
+        if (gmInvite && supabaseClient && !app.demoMode) {
+            const btn = document.querySelector('#modalContent .primary-btn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Enviando convite…'; }
+            const { userId, invited, error: invErr } = await _sbInviteUser(email, nome, 'gestor', extra);
+            if (btn) { btn.disabled = false; btn.textContent = 'Salvar gestor'; }
+            if (!userId) { showToast(invErr || 'Erro ao criar gestor no Supabase.', 'error'); return; }
+            if (!app.state.users) app.state.users = [];
+            app.state.users.push({ id: userId, name: nome, email, role: 'gestor', invitePending: true, createdAt: todayISO(), ...extra });
+            addAuditLog('gestor_create', { id: userId, name: nome, via: 'invite' });
+            saveState(); closeModal(); renderPresidenteGestores();
+            showToast(invited ? `Convite enviado para ${email}!` : `Gestor "${nome}" criado.`, invited ? 'success' : 'warning', 6000);
+            return;
+        }
         const newId = `gestor_${Date.now()}`;
         if (!app.state.users) app.state.users = [];
         app.state.users.push({ id: newId, name: nome, email, password: pass, role: 'gestor', ...extra });
         addAuditLog('gestor_create', { id: newId, name: nome });
+        saveState(); closeModal(); renderPresidenteGestores();
         showToast(`Gestor "${nome}" criado com sucesso!`, 'success');
     }
-    saveState(); closeModal(); renderPresidenteGestores();
 }
 
 function deleteGestorById(id) {
