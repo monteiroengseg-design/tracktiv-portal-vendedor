@@ -8,8 +8,6 @@ create extension if not exists "pgcrypto";
 -- Execute no SQL Editor do Supabase (requer pgcrypto)
 -- ----------------------------------------------------------------
 do $$
-declare
-  v_uid uuid;
 begin
   if exists (
     select 1 from pg_namespace n
@@ -17,61 +15,104 @@ begin
     where n.nspname = 'auth' and c.relname = 'users'
   ) then
 
-    -- Presidente
-    select id into v_uid from auth.users where email = 'presidente@tracktiv.com.br';
-    if v_uid is null then
-      insert into auth.users (
-        id, aud, role, email,
-        encrypted_password, email_confirmed_at,
-        raw_app_meta_data, raw_user_meta_data,
-        created_at, updated_at,
-        confirmation_token, recovery_token,
-        email_change_token_new, email_change
-      ) values (
-        gen_random_uuid(),
-        'authenticated', 'authenticated',
-        'presidente@tracktiv.com.br',
-        crypt('Admin@2024', gen_salt('bf')),
-        now(),
-        '{"provider":"email","providers":["email"]}',
-        '{"name":"Presidente Demo"}',
-        now(), now(), '', '', '', ''
-      );
-    else
-      update auth.users set
-        encrypted_password = crypt('Admin@2024', gen_salt('bf')),
-        email_confirmed_at = coalesce(email_confirmed_at, now()),
-        updated_at = now()
-      where id = v_uid;
-    end if;
+    -- Presidente (id fixo — precisa bater com public.profiles.id pra RLS via auth.uid() funcionar)
+    insert into auth.users (
+      id, instance_id, aud, role, email,
+      encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data,
+      created_at, updated_at,
+      confirmation_token, recovery_token,
+      email_change_token_new, email_change
+    ) values (
+      '00000000-0000-0000-0000-000000000001',
+      '00000000-0000-0000-0000-000000000000',
+      'authenticated', 'authenticated',
+      'presidente@tracktiv.com.br',
+      crypt('Admin@2024', gen_salt('bf')),
+      now(),
+      '{"provider":"email","providers":["email"]}',
+      '{"name":"Presidente Demo"}',
+      now(), now(), '', '', '', ''
+    )
+    on conflict (id) do update set
+      instance_id = excluded.instance_id,
+      encrypted_password = crypt('Admin@2024', gen_salt('bf')),
+      email_confirmed_at = coalesce(auth.users.email_confirmed_at, excluded.email_confirmed_at),
+      updated_at = now();
 
-    -- Gestor (produção)
-    select id into v_uid from auth.users where email = 'gestor@tracktiv.com.br';
-    if v_uid is null then
-      insert into auth.users (
-        id, aud, role, email,
-        encrypted_password, email_confirmed_at,
-        raw_app_meta_data, raw_user_meta_data,
-        created_at, updated_at,
-        confirmation_token, recovery_token,
-        email_change_token_new, email_change
-      ) values (
-        gen_random_uuid(),
-        'authenticated', 'authenticated',
-        'gestor@tracktiv.com.br',
-        crypt('Gestor@2024', gen_salt('bf')),
-        now(),
-        '{"provider":"email","providers":["email"]}',
-        '{"name":"Gestor Tracktiv"}',
-        now(), now(), '', '', '', ''
-      );
-    else
-      update auth.users set
-        encrypted_password = crypt('Gestor@2024', gen_salt('bf')),
-        email_confirmed_at = coalesce(email_confirmed_at, now()),
-        updated_at = now()
-      where id = v_uid;
-    end if;
+    insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+    select gen_random_uuid(), u.id::text, u.id,
+           jsonb_build_object('sub', u.id::text, 'email', u.email),
+           'email', now(), now(), now()
+    from auth.users u
+    where u.id = '00000000-0000-0000-0000-000000000001'
+      and not exists (select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email');
+
+    -- Gestor (id fixo — bate com public.profiles.id; e-mail alinhado com CLAUDE.md/sampleState)
+    insert into auth.users (
+      id, instance_id, aud, role, email,
+      encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data,
+      created_at, updated_at,
+      confirmation_token, recovery_token,
+      email_change_token_new, email_change
+    ) values (
+      '00000000-0000-0000-0000-000000000002',
+      '00000000-0000-0000-0000-000000000000',
+      'authenticated', 'authenticated',
+      'gestor@tracktiv.com',
+      crypt('Gestor123', gen_salt('bf')),
+      now(),
+      '{"provider":"email","providers":["email"]}',
+      '{"name":"Gestor Tracktiv"}',
+      now(), now(), '', '', '', ''
+    )
+    on conflict (id) do update set
+      instance_id = excluded.instance_id,
+      encrypted_password = crypt('Gestor123', gen_salt('bf')),
+      email_confirmed_at = coalesce(auth.users.email_confirmed_at, excluded.email_confirmed_at),
+      updated_at = now();
+
+    insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+    select gen_random_uuid(), u.id::text, u.id,
+           jsonb_build_object('sub', u.id::text, 'email', u.email),
+           'email', now(), now(), now()
+    from auth.users u
+    where u.id = '00000000-0000-0000-0000-000000000002'
+      and not exists (select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email');
+
+    -- Técnico (id fixo — bate com public.profiles.id)
+    insert into auth.users (
+      id, instance_id, aud, role, email,
+      encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data,
+      created_at, updated_at,
+      confirmation_token, recovery_token,
+      email_change_token_new, email_change
+    ) values (
+      '55555555-5555-5555-5555-555555555555',
+      '00000000-0000-0000-0000-000000000000',
+      'authenticated', 'authenticated',
+      'tecnico@tracktiv.com',
+      crypt('Tecnico123', gen_salt('bf')),
+      now(),
+      '{"provider":"email","providers":["email"]}',
+      '{"name":"Rafael Santos"}',
+      now(), now(), '', '', '', ''
+    )
+    on conflict (id) do update set
+      instance_id = excluded.instance_id,
+      encrypted_password = crypt('Tecnico123', gen_salt('bf')),
+      email_confirmed_at = coalesce(auth.users.email_confirmed_at, excluded.email_confirmed_at),
+      updated_at = now();
+
+    insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+    select gen_random_uuid(), u.id::text, u.id,
+           jsonb_build_object('sub', u.id::text, 'email', u.email),
+           'email', now(), now(), now()
+    from auth.users u
+    where u.id = '55555555-5555-5555-5555-555555555555'
+      and not exists (select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email');
 
   end if;
 end
@@ -641,7 +682,7 @@ create policy app_state_entries_select_admin on public.app_state_entries
 insert into public.profiles (id, name, email, role, data, created_at)
 values
   ('00000000-0000-0000-0000-000000000001', 'Presidente Demo', 'presidente@tracktiv.com.br', 'presidente', '{}', now()),
-  ('00000000-0000-0000-0000-000000000002', 'Gestor Tracktiv', 'gestor@tracktiv.com.br', 'gestor', '{}', now()),
+  ('00000000-0000-0000-0000-000000000002', 'Gestor Tracktiv', 'gestor@tracktiv.com', 'gestor', '{}', now()),
   ('11111111-1111-1111-1111-111111111111', 'Laura Mendes', 'consultor@tracktiv.com', 'consultor', '{"cpf":"312.456.789-04","address":"Rua das Orquídeas, 450 - São Paulo/SP","whatsapp":"(11) 91234-5678","pixKey":"laura.mendes@tracktiv.com"}', now()),
   ('22222222-2222-2222-2222-222222222222', 'Bruno Carvalho', 'bruno@tracktiv.com', 'consultor', '{"cpf":"987.654.321-09","address":"Av. Paulista, 1578 - São Paulo/SP","whatsapp":"(11) 97654-3210","pixKey":"bruno.carvalho@tracktiv.com"}', now()),
   ('33333333-3333-3333-3333-333333333333', 'Carlos Pereira', 'instalador@tracktiv.com', 'instalador', '{"partnerType":"instalador","cpf":"111.222.333-44","address":"Av. Industrial, 500 - Guarulhos/SP","whatsapp":"(11) 98888-7777","pixKey":"carlos.pereira@gmail.com","storeName":"AutoTech Guarulhos","region":"Guarulhos/SP"}', now()),

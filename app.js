@@ -5844,7 +5844,10 @@ async function handleLogin(e) {
             }
             // "Invalid login credentials" = credenciais erradas no Supabase.
             // Permite cair no fallback local para usuários demo que não estão no Supabase.
-        } catch (_) { /* Supabase indisponível — continua para auth local */ }
+            console.warn(`[AUTH FALLBACK] Supabase rejeitou login de "${email}" (${error?.message || 'motivo desconhecido'}) — caindo para autenticação local.`);
+        } catch (err) {
+            console.warn(`[AUTH FALLBACK] Supabase indisponível ao tentar logar "${email}" (${err?.message || err}) — caindo para autenticação local.`);
+        }
     }
 
     // 2. Fallback: auth local (usuários demo e usuários criados via localStorage)
