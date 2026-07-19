@@ -20967,7 +20967,7 @@ function renderInstaladorDashboardV2() {
             _kpi('🔧', 'INSTALAÇÕES MÊS', mInsts.length, 'R$ ' + formatCurrency(mInsts.length * INSTALL_FEE) + ' gerados', g1, mInsts.length) +
             _kpi('💰', 'COMISSÃO INSTAL.', 'R$ ' + formatCurrency(m.installCommission), 'este mês', g2) +
             _kpi('👥', 'CLIENTES LOJA', m.clientCount, 'ativos na base', g3, m.clientCount) +
-            _kpi('🔄', 'RECORRÊNCIA', m.recurrence, 'contratos gerando renda', g4, m.recurrence) +
+            _kpi('🔄', 'RECORRÊNCIA', m.recurrence.label, 'contratos gerando renda', g4) +
         '</div>' +
         '<div class="dash-grid-2">' +
             '<div class="card"><h3 style="margin:0 0 12px;">⏳ Instalações Pendentes</h3>' + pendHtml + '</div>' +
