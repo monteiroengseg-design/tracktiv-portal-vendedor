@@ -627,7 +627,7 @@ create policy clients_select_role_based on public.clients
   );
 create policy clients_insert_consultor_or_gestor on public.clients
   for insert with check (
-    (select role from public.profiles where id = auth.uid()) in ('presidente','gestor','consultor')
+    (select role from public.profiles where id = auth.uid()) in ('presidente','gestor','consultor','instalador')
   );
 create policy clients_update_owner_or_admin on public.clients
   for update using (
