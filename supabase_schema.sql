@@ -605,11 +605,8 @@ alter table public.executive_clients enable row level security;
 alter table public.executive_sales enable row level security;
 alter table public.app_state_entries enable row level security;
 
-create policy profiles_select_own_or_admin on public.profiles
-  for select using (
-    id = auth.uid()
-    or (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
-  );
+create policy profiles_select_authenticated on public.profiles
+  for select using (true);
 create policy profiles_update_own_or_admin on public.profiles
   for update using (
     id = auth.uid()
