@@ -562,6 +562,11 @@ create policy notifications_insert_owner on public.notifications
     user_id = auth.uid()
     or (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
   );
+create policy notifications_update_owner_or_admin on public.notifications
+  for update using (
+    user_id = auth.uid()
+    or (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
+  );
 
 create policy comunicados_select_public on public.comunicados
   for select using (true);
@@ -569,6 +574,32 @@ create policy comunicados_insert_admin on public.comunicados
   for insert with check (
     (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
   );
+create policy comunicados_update_admin on public.comunicados
+  for update using (
+    (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
+  );
+create policy comunicados_delete_admin on public.comunicados
+  for delete using (
+    (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
+  );
+
+-- Permite qualquer autenticado marcar um comunicado como lido (acrescentar o
+-- próprio uid em `lidos`) sem precisar de UPDATE geral na tabela — evita que
+-- um usuário sem permissão de admin reescreva título/mensagem de outro autor.
+create or replace function public.mark_comunicado_read(p_comunicado_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.comunicados
+  set lidos = array_append(lidos, auth.uid()::text)
+  where id = p_comunicado_id
+    and not (auth.uid()::text = any(lidos));
+end;
+$$;
+grant execute on function public.mark_comunicado_read(uuid) to authenticated;
 
 create policy products_select_public on public.products
   for select using (true);

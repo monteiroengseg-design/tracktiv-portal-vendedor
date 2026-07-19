@@ -5510,13 +5510,13 @@ function _mapComunicadoFromSB(row) {
 
 function _mapNotifFromSB(row) {
     return {
-        id:        row.id,
-        userId:    row.user_id || null,
-        type:      row.type    || '',
-        message:   row.message || '',
-        link:      row.link    || '',
-        seen:      row.seen    || false,
-        createdAt: row.created_at || '',
+        id:           row.id,
+        targetUserId: row.user_id || null,
+        type:         row.type    || '',
+        message:      row.message || '',
+        linkAction:   row.link ? JSON.parse(row.link) : null,
+        read:         row.seen    || false,
+        createdAt:    row.created_at || '',
     };
 }
 
@@ -5619,6 +5619,57 @@ function _sbDeleteInstallsByInstalador(instaladorId) {
     if (!supabaseClient || app.demoMode) return;
     supabaseClient.from('installations').delete().eq('instalador_id', instaladorId)
         .catch(err => console.warn('[Supabase] delete installations do instalador falhou:', err));
+}
+
+function _mapComunicadoToSB(c) {
+    return {
+        id:        c.id,
+        autor_id:  c.autorId    || null,
+        titulo:    c.titulo     || '',
+        mensagem:  c.mensagem   || '',
+        prioridade: c.prioridade || 'normal',
+        criado_em: c.criadoEm   || todayISO(),
+        lidos:     c.lidos      || [],
+    };
+}
+
+function _sbUpsertComunicado(c) {
+    if (!supabaseClient || app.demoMode) return;
+    supabaseClient.from('comunicados').upsert(_mapComunicadoToSB(c))
+        .catch(err => console.warn('[Supabase] upsert comunicado falhou:', err));
+}
+
+function _sbDeleteComunicado(id) {
+    if (!supabaseClient || app.demoMode) return;
+    supabaseClient.from('comunicados').delete().eq('id', id)
+        .catch(err => console.warn('[Supabase] delete comunicado falhou:', err));
+}
+
+// Marca comunicado como lido via RPC security definer — evita dar UPDATE
+// de tabela pra qualquer autenticado (só essa função pode tocar `lidos`,
+// e só o próprio uid do chamador).
+function _sbMarkComunicadoRead(comunicadoId) {
+    if (!supabaseClient || app.demoMode) return;
+    supabaseClient.rpc('mark_comunicado_read', { p_comunicado_id: comunicadoId })
+        .catch(err => console.warn('[Supabase] mark_comunicado_read falhou:', err));
+}
+
+function _mapNotifToSB(n) {
+    return {
+        id:         n.id,
+        user_id:    n.targetUserId || null,
+        type:       n.type         || '',
+        message:    n.message      || '',
+        link:       n.linkAction   ? JSON.stringify(n.linkAction) : null,
+        seen:       n.read         || false,
+        created_at: n.createdAt    || todayISO(),
+    };
+}
+
+function _sbUpsertNotification(n) {
+    if (!supabaseClient || app.demoMode) return;
+    supabaseClient.from('notifications').upsert(_mapNotifToSB(n))
+        .catch(err => console.warn('[Supabase] upsert notification falhou:', err));
 }
 
 // Convida usuário via Supabase Edge Function (usa service_role key no servidor).
@@ -8828,14 +8879,16 @@ function addNotification(targetUserId, type, message, linkAction) {
     if (!app.state.notifications) app.state.notifications = [];
     const cutoff = thirtyDaysAgoISO(30);
     app.state.notifications = app.state.notifications.filter(n => n.createdAt >= cutoff);
-    app.state.notifications.push({
-        id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    const newNotif = {
+        id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `notif_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         targetUserId, type, message, read: false,
         createdAt: new Date().toISOString(),
         linkAction: linkAction || null
-    });
+    };
+    app.state.notifications.push(newNotif);
     saveState();
     updateNotifBadge();
+    _sbUpsertNotification(newNotif);
 }
 
 function updateNotifBadge() {
@@ -8912,9 +8965,13 @@ function renderNotifPanel() {
         <div class="notif-list">${comHtml}${listHtml}</div>`;
 
     document.getElementById('markAllReadBtn')?.addEventListener('click', () => {
-        (app.state.notifications || []).forEach(n => { if (n.targetUserId === uid) n.read = true; });
+        const justRead = [];
+        (app.state.notifications || []).forEach(n => {
+            if (n.targetUserId === uid && !n.read) { n.read = true; justRead.push(n); }
+        });
         getComunicadosAtivos().forEach(c => markComunicadoRead(c.id));
         saveState(); updateNotifBadge(); renderNotifPanel();
+        justRead.forEach(n => _sbUpsertNotification(n));
     });
 
     panel.querySelectorAll('.comunicado-notif').forEach(el => {
@@ -8930,7 +8987,7 @@ function renderNotifPanel() {
     panel.querySelectorAll('.notif-item:not(.comunicado-notif)').forEach(el => {
         el.addEventListener('click', () => {
             const n = (app.state.notifications || []).find(x => x.id === el.dataset.nid);
-            if (n) { n.read = true; saveState(); updateNotifBadge(); }
+            if (n && !n.read) { n.read = true; saveState(); updateNotifBadge(); _sbUpsertNotification(n); }
             const linkStr = el.dataset.link;
             if (linkStr) {
                 try {
@@ -10954,6 +11011,7 @@ function markComunicadoRead(comId) {
     if (com && !(com.lidos || []).includes(uid)) {
         com.lidos = [...(com.lidos || []), uid];
         saveState();
+        _sbMarkComunicadoRead(comId);
     }
 }
 
@@ -11071,7 +11129,7 @@ function saveComunicado() {
     if (!titulo) { errEl.textContent = 'Título obrigatório.'; return; }
     if (!mensagem) { errEl.textContent = 'Mensagem obrigatória.'; return; }
     const novo = {
-        id: 'com_' + Date.now(),
+        id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'com_' + Date.now(),
         autorId: app.currentUser.id,
         titulo, mensagem, prioridade,
         criadoEm: todayISO(),
@@ -11082,6 +11140,7 @@ function saveComunicado() {
     closeModal();
     showToast(`Comunicado "${titulo}" publicado com sucesso!`, 'success');
     renderGestorComunicados();
+    _sbUpsertComunicado(novo);
 }
 
 function deleteComunicado(comId) {
@@ -11089,6 +11148,7 @@ function deleteComunicado(comId) {
     app.state.comunicados = (app.state.comunicados || []).filter(c => c.id !== comId);
     saveState();
     renderGestorComunicados();
+    _sbDeleteComunicado(comId);
 }
 
 function openComunicadoLidosModal(comId) {
