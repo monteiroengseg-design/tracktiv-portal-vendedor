@@ -4112,13 +4112,19 @@ async function handlePhotoInstallSave(pendingInstId, pInst, durationSeconds) {
     if (!app.state.photoInstallations) app.state.photoInstallations = [];
     app.state.photoInstallations.push({ id: `phi_${Date.now()}`, pendingInstId, instaladorId: app.currentUser.id, clientId: pInst.clientId, clientName: pInst.clientName, plate, modelo, local, notes, photoVehicle, photoEquip, durationSeconds, completedAt: todayISO() });
     if (!app.state.installations) app.state.installations = [];
-    app.state.installations.push({ id: `install_${Date.now()}`, instaladorId: app.currentUser.id, clientName: pInst.clientName, plate, date: todayISO(), notes });
+    const newInstall = {
+        id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `install_${Date.now()}`,
+        instaladorId: app.currentUser.id, clientId: pInst.clientId || null, clientName: pInst.clientName,
+        plate, date: todayISO(), notes
+    };
+    app.state.installations.push(newInstall);
     app.state.pendingInstallations = (app.state.pendingInstallations || []).filter(p => p.id !== pendingInstId);
     // Notificar gestor e consultor
     const gestorU = (app.state.users || []).find(u => u.role === 'gestor');
     if (gestorU) addNotification(gestorU.id, 'install_complete', `🔧 Instalação concluída: ${pInst.clientName} — placa ${plate}`, { section: 'gestorInstaladores' });
     if (pInst.consultantId) addNotification(pInst.consultantId, 'install_complete', `🔧 Instalação concluída para ${pInst.clientName}!`, { section: 'consultorDashboard' });
     saveState(); closeModal(); renderAppViews();
+    _sbUpsertInstall(newInstall);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -5076,6 +5082,7 @@ function deleteInstalador(id) {
     app.state.clients       = app.state.clients.filter(c => c.instaladorId !== id);
     app.state.installations = (app.state.installations || []).filter(i => i.instaladorId !== id);
     saveState(); renderAppViews();
+    _sbDeleteInstallsByInstalador(id);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -5116,21 +5123,29 @@ function handleInstallationSave(e) {
     const date         = document.getElementById('instDate').value;
     if (!clientName || !plate || !date) { err.textContent = 'Preencha todos os campos obrigatórios.'; return; }
     const data = { instaladorId, clientName, plate, date, notes: document.getElementById('instNotes').value.trim() };
+    let savedInstall;
     if (app.editingInstallId) {
-        Object.assign((app.state.installations || []).find(i => i.id === app.editingInstallId), data);
+        savedInstall = (app.state.installations || []).find(i => i.id === app.editingInstallId);
+        Object.assign(savedInstall, data);
         showToast('Instalação atualizada.', 'success');
     } else {
         app.state.installations = app.state.installations || [];
-        app.state.installations.push({ id: `install_${Date.now()}`, ...data });
+        savedInstall = {
+            id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `install_${Date.now()}`,
+            ...data
+        };
+        app.state.installations.push(savedInstall);
         showToast(`Instalação de "${clientName}" registrada.`, 'success');
     }
     saveState(); closeModal(); renderAppViews();
+    _sbUpsertInstall(savedInstall);
 }
 
 function deleteInstallation(id) {
     if (!confirm('Excluir esta instalação?')) return;
     app.state.installations = (app.state.installations || []).filter(i => i.id !== id);
     saveState(); renderAppViews();
+    _sbDeleteInstall(id);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -5573,6 +5588,37 @@ function _sbUpsertChamado(ch) {
     if (!supabaseClient || app.demoMode) return;
     supabaseClient.from('chamados').upsert(_mapChamadoToSB(ch))
         .catch(err => console.warn('[Supabase] upsert chamado falhou:', err));
+}
+
+function _mapInstallToSB(i) {
+    return {
+        id:            i.id,
+        instalador_id: i.instaladorId || null,
+        client_id:     i.clientId     || null,
+        client_name:   i.clientName   || '',
+        plate:         i.plate        || '',
+        date:          i.date         || todayISO(),
+        notes:         i.notes        || '',
+        created_at:    i.createdAt    || todayISO(),
+    };
+}
+
+function _sbUpsertInstall(i) {
+    if (!supabaseClient || app.demoMode) return;
+    supabaseClient.from('installations').upsert(_mapInstallToSB(i))
+        .catch(err => console.warn('[Supabase] upsert installation falhou:', err));
+}
+
+function _sbDeleteInstall(id) {
+    if (!supabaseClient || app.demoMode) return;
+    supabaseClient.from('installations').delete().eq('id', id)
+        .catch(err => console.warn('[Supabase] delete installation falhou:', err));
+}
+
+function _sbDeleteInstallsByInstalador(instaladorId) {
+    if (!supabaseClient || app.demoMode) return;
+    supabaseClient.from('installations').delete().eq('instalador_id', instaladorId)
+        .catch(err => console.warn('[Supabase] delete installations do instalador falhou:', err));
 }
 
 // Convida usuário via Supabase Edge Function (usa service_role key no servidor).

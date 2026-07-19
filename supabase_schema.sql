@@ -513,6 +513,15 @@ create policy installations_insert_installer on public.installations
     instalador_id = auth.uid()
     or (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
   );
+create policy installations_update_installer_or_admin on public.installations
+  for update using (
+    instalador_id = auth.uid()
+    or (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
+  );
+create policy installations_delete_admin on public.installations
+  for delete using (
+    (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
+  );
 
 create policy chamados_select_assigned_or_admin on public.chamados
   for select using (
