@@ -38,6 +38,10 @@ begin
       instance_id = excluded.instance_id,
       encrypted_password = crypt('Admin@2024', gen_salt('bf')),
       email_confirmed_at = coalesce(auth.users.email_confirmed_at, excluded.email_confirmed_at),
+      confirmation_token = coalesce(auth.users.confirmation_token, ''),
+      recovery_token = coalesce(auth.users.recovery_token, ''),
+      email_change_token_new = coalesce(auth.users.email_change_token_new, ''),
+      email_change = coalesce(auth.users.email_change, ''),
       updated_at = now();
 
     insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
@@ -71,6 +75,10 @@ begin
       instance_id = excluded.instance_id,
       encrypted_password = crypt('Gestor123', gen_salt('bf')),
       email_confirmed_at = coalesce(auth.users.email_confirmed_at, excluded.email_confirmed_at),
+      confirmation_token = coalesce(auth.users.confirmation_token, ''),
+      recovery_token = coalesce(auth.users.recovery_token, ''),
+      email_change_token_new = coalesce(auth.users.email_change_token_new, ''),
+      email_change = coalesce(auth.users.email_change, ''),
       updated_at = now();
 
     insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
@@ -104,6 +112,10 @@ begin
       instance_id = excluded.instance_id,
       encrypted_password = crypt('Tecnico123', gen_salt('bf')),
       email_confirmed_at = coalesce(auth.users.email_confirmed_at, excluded.email_confirmed_at),
+      confirmation_token = coalesce(auth.users.confirmation_token, ''),
+      recovery_token = coalesce(auth.users.recovery_token, ''),
+      email_change_token_new = coalesce(auth.users.email_change_token_new, ''),
+      email_change = coalesce(auth.users.email_change, ''),
       updated_at = now();
 
     insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
@@ -137,6 +149,10 @@ begin
       instance_id = excluded.instance_id,
       encrypted_password = crypt('Consultor123', gen_salt('bf')),
       email_confirmed_at = coalesce(auth.users.email_confirmed_at, excluded.email_confirmed_at),
+      confirmation_token = coalesce(auth.users.confirmation_token, ''),
+      recovery_token = coalesce(auth.users.recovery_token, ''),
+      email_change_token_new = coalesce(auth.users.email_change_token_new, ''),
+      email_change = coalesce(auth.users.email_change, ''),
       updated_at = now();
 
     insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
@@ -170,6 +186,10 @@ begin
       instance_id = excluded.instance_id,
       encrypted_password = crypt('Instalador123', gen_salt('bf')),
       email_confirmed_at = coalesce(auth.users.email_confirmed_at, excluded.email_confirmed_at),
+      confirmation_token = coalesce(auth.users.confirmation_token, ''),
+      recovery_token = coalesce(auth.users.recovery_token, ''),
+      email_change_token_new = coalesce(auth.users.email_change_token_new, ''),
+      email_change = coalesce(auth.users.email_change, ''),
       updated_at = now();
 
     insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
@@ -203,6 +223,10 @@ begin
       instance_id = excluded.instance_id,
       encrypted_password = crypt('Cliente123', gen_salt('bf')),
       email_confirmed_at = coalesce(auth.users.email_confirmed_at, excluded.email_confirmed_at),
+      confirmation_token = coalesce(auth.users.confirmation_token, ''),
+      recovery_token = coalesce(auth.users.recovery_token, ''),
+      email_change_token_new = coalesce(auth.users.email_change_token_new, ''),
+      email_change = coalesce(auth.users.email_change, ''),
       updated_at = now();
 
     insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
