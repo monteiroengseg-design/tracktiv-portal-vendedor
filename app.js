@@ -5534,6 +5534,12 @@ async function loadSupabaseData(user) {
             supabaseClient.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
         ]);
 
+        const failedRes = [clientsRes, profilesRes, installRes, chamadosRes, comunicadosRes, notifsRes].find(r => r.error);
+        if (failedRes) {
+            console.warn('[Supabase] loadSupabaseData retornou erro:', failedRes.error);
+            showToast('Não foi possível buscar os dados mais recentes do servidor — mostrando os dados salvos neste aparelho, que podem estar desatualizados.', 'warning', 7000);
+        }
+
         if (clientsRes.data)    app.state.clients       = clientsRes.data.map(_mapClientFromSB);
         if (installRes.data)    app.state.installations = installRes.data.map(_mapInstallFromSB);
         if (chamadosRes.data)   app.state.chamados      = chamadosRes.data.map(_mapChamadoFromSB);
@@ -5552,21 +5558,36 @@ async function loadSupabaseData(user) {
         renderAppViews();
     } catch (err) {
         console.warn('[Supabase] loadSupabaseData falhou, usando cache local:', err);
+        showToast('Não foi possível buscar os dados mais recentes do servidor — mostrando os dados salvos neste aparelho, que podem estar desatualizados.', 'warning', 7000);
     }
 }
 
 // ─── Helpers de write-through ─────────────────────────────────────────────────
 
+// Avisa visivelmente quando uma escrita/leitura no Supabase falha, em vez de
+// só logar no console — sem isso o usuário nunca sabe que ficou sem sincronizar.
+function _sbWriteError(msg) {
+    showToast(`${msg} A alteração ficou salva só neste aparelho — será perdida se você trocar de dispositivo antes de reconectar.`, 'warning', 7000);
+}
+
+// Roda uma chamada Supabase (upsert/delete/rpc) e avisa em AMBOS os casos de
+// falha: rede fora do ar (a promise rejeita, cai no .catch) e requisição
+// concluída mas recusada pelo servidor — ex: RLS/permissão (a promise resolve
+// normalmente com { error } preenchido, sem nunca rejeitar).
+function _sbRun(promiseLike, errMsg) {
+    Promise.resolve(promiseLike).then(res => {
+        if (res && res.error) { console.warn('[Supabase]', errMsg, res.error); _sbWriteError(errMsg); }
+    }).catch(err => { console.warn('[Supabase]', errMsg, err); _sbWriteError(errMsg); });
+}
+
 function _sbUpsertClient(c) {
     if (!supabaseClient || app.demoMode) return;
-    supabaseClient.from('clients').upsert(_mapClientToSB(c))
-        .catch(err => console.warn('[Supabase] upsert client falhou:', err));
+    _sbRun(supabaseClient.from('clients').upsert(_mapClientToSB(c)), 'Não foi possível salvar o cliente no servidor.');
 }
 
 function _sbDeleteClient(id) {
     if (!supabaseClient || app.demoMode) return;
-    supabaseClient.from('clients').delete().eq('id', id)
-        .catch(err => console.warn('[Supabase] delete client falhou:', err));
+    _sbRun(supabaseClient.from('clients').delete().eq('id', id), 'Não foi possível excluir o cliente no servidor.');
 }
 
 function _mapChamadoToSB(ch) {
@@ -5586,8 +5607,7 @@ function _mapChamadoToSB(ch) {
 
 function _sbUpsertChamado(ch) {
     if (!supabaseClient || app.demoMode) return;
-    supabaseClient.from('chamados').upsert(_mapChamadoToSB(ch))
-        .catch(err => console.warn('[Supabase] upsert chamado falhou:', err));
+    _sbRun(supabaseClient.from('chamados').upsert(_mapChamadoToSB(ch)), 'Não foi possível salvar o chamado no servidor.');
 }
 
 function _mapInstallToSB(i) {
@@ -5605,20 +5625,17 @@ function _mapInstallToSB(i) {
 
 function _sbUpsertInstall(i) {
     if (!supabaseClient || app.demoMode) return;
-    supabaseClient.from('installations').upsert(_mapInstallToSB(i))
-        .catch(err => console.warn('[Supabase] upsert installation falhou:', err));
+    _sbRun(supabaseClient.from('installations').upsert(_mapInstallToSB(i)), 'Não foi possível salvar a instalação no servidor.');
 }
 
 function _sbDeleteInstall(id) {
     if (!supabaseClient || app.demoMode) return;
-    supabaseClient.from('installations').delete().eq('id', id)
-        .catch(err => console.warn('[Supabase] delete installation falhou:', err));
+    _sbRun(supabaseClient.from('installations').delete().eq('id', id), 'Não foi possível excluir a instalação no servidor.');
 }
 
 function _sbDeleteInstallsByInstalador(instaladorId) {
     if (!supabaseClient || app.demoMode) return;
-    supabaseClient.from('installations').delete().eq('instalador_id', instaladorId)
-        .catch(err => console.warn('[Supabase] delete installations do instalador falhou:', err));
+    _sbRun(supabaseClient.from('installations').delete().eq('instalador_id', instaladorId), 'Não foi possível remover as instalações do parceiro no servidor.');
 }
 
 function _mapComunicadoToSB(c) {
@@ -5635,14 +5652,12 @@ function _mapComunicadoToSB(c) {
 
 function _sbUpsertComunicado(c) {
     if (!supabaseClient || app.demoMode) return;
-    supabaseClient.from('comunicados').upsert(_mapComunicadoToSB(c))
-        .catch(err => console.warn('[Supabase] upsert comunicado falhou:', err));
+    _sbRun(supabaseClient.from('comunicados').upsert(_mapComunicadoToSB(c)), 'Não foi possível salvar o comunicado no servidor.');
 }
 
 function _sbDeleteComunicado(id) {
     if (!supabaseClient || app.demoMode) return;
-    supabaseClient.from('comunicados').delete().eq('id', id)
-        .catch(err => console.warn('[Supabase] delete comunicado falhou:', err));
+    _sbRun(supabaseClient.from('comunicados').delete().eq('id', id), 'Não foi possível excluir o comunicado no servidor.');
 }
 
 // Marca comunicado como lido via RPC security definer — evita dar UPDATE
@@ -5650,8 +5665,7 @@ function _sbDeleteComunicado(id) {
 // e só o próprio uid do chamador).
 function _sbMarkComunicadoRead(comunicadoId) {
     if (!supabaseClient || app.demoMode) return;
-    supabaseClient.rpc('mark_comunicado_read', { p_comunicado_id: comunicadoId })
-        .catch(err => console.warn('[Supabase] mark_comunicado_read falhou:', err));
+    _sbRun(supabaseClient.rpc('mark_comunicado_read', { p_comunicado_id: comunicadoId }), 'Não foi possível registrar a leitura no servidor.');
 }
 
 function _mapNotifToSB(n) {
@@ -5668,8 +5682,7 @@ function _mapNotifToSB(n) {
 
 function _sbUpsertNotification(n) {
     if (!supabaseClient || app.demoMode) return;
-    supabaseClient.from('notifications').upsert(_mapNotifToSB(n))
-        .catch(err => console.warn('[Supabase] upsert notification falhou:', err));
+    _sbRun(supabaseClient.from('notifications').upsert(_mapNotifToSB(n)), 'Não foi possível salvar a notificação no servidor.');
 }
 
 // Convida usuário via Supabase Edge Function (usa service_role key no servidor).
@@ -14314,11 +14327,11 @@ async function saveUserModal(id) {
 
         // Sincroniza profile no Supabase (fire-and-forget)
         if (supabaseClient) {
-            supabaseClient.from('profiles').upsert({
+            _sbRun(supabaseClient.from('profiles').upsert({
                 id: u.id, name: nome, email: u.email, role,
                 partner_type: extra.partnerType || null,
                 data: { active, ...extra },
-            }).catch(err => console.warn('[Supabase] profile upsert failed:', err));
+            }), 'Não foi possível sincronizar o usuário no servidor.');
         }
 
     } else {
@@ -14372,11 +14385,11 @@ function toggleUserActive(id) {
                 .filter(k => u[k] !== undefined && u[k] !== '')
                 .map(k => [k, u[k]])
         )};
-        supabaseClient.from('profiles').upsert({
+        _sbRun(supabaseClient.from('profiles').upsert({
             id, name: u.name, email: u.email, role: u.role,
             partner_type: u.partnerType || null,
             data: profileData,
-        }).catch(err => console.warn('[Supabase] toggleActive upsert failed:', err));
+        }), 'Não foi possível sincronizar o status do usuário no servidor.');
     }
 }
 
@@ -14470,8 +14483,7 @@ async function saveGestorById(id) {
         saveState(); closeModal(); renderPresidenteGestores();
         showToast(`Gestor "${nome}" atualizado.`, 'success');
         if (supabaseClient && u) {
-            supabaseClient.from('profiles').upsert({ id, name: nome, email, role: 'gestor', data: { active: true, ...extra } })
-                .catch(err => console.warn('[Supabase] gestor upsert failed:', err));
+            _sbRun(supabaseClient.from('profiles').upsert({ id, name: nome, email, role: 'gestor', data: { active: true, ...extra } }), 'Não foi possível sincronizar o gestor no servidor.');
         }
     } else {
         const dupEmail = (app.state.users||[]).some(u=>u.email===email);
