@@ -155,8 +155,7 @@ const NAV_TREE = {
         { id: 'i_instalacoes', label: 'Instalações',    icon: '🔧', children: [
             { id: 'i_inst_pend',    label: 'Veículos Pendentes',    icon: '⏳', section: 'instaladorFotos' },
             { id: 'i_inst_ini',     label: 'Iniciar Instalação',    icon: '➕', action: () => openInstallationModal() },
-            { id: 'i_inst_hist',    label: 'Histórico',             icon: '📊', section: 'instaladorExtrato' },
-            { id: 'i_inst_foto',    label: 'Registro Fotográfico',  icon: '📷', section: 'instaladorFotos' }
+            { id: 'i_inst_hist',    label: 'Histórico',             icon: '📊', section: 'instaladorExtrato' }
         ]},
         { id: 'i_clientes',    label: 'Clientes',       icon: '🌐', children: [
             { id: 'i_cli_lista',    label: 'Lista de Clientes',     icon: '📋', section: 'instaladorClientes' },
@@ -3944,7 +3943,7 @@ function renderInstaladorFotos() {
     const content = document.getElementById('instaladorFotosContent');
     if (!content) return;
     const pending   = (app.state.pendingInstallations || []).filter(p => p.instaladorId === app.currentUser.id);
-    const completed = (app.state.photoInstallations  || []).filter(p => p.instaladorId === app.currentUser.id);
+    const completed = (app.state.installations || []).filter(p => p.instaladorId === app.currentUser.id);
 
     const pendingRows = pending.length ? pending.map(p => `
         <div class="pending-install-card">
@@ -3952,21 +3951,15 @@ function renderInstaladorFotos() {
                 <strong>${esc(p.clientName)}</strong>
                 <span class="text-muted" style="font-size:0.85rem;">${esc(p.plate || 'Placa não informada')} · Plano ${esc(p.plan)} · Aprovado em ${formatDate(p.approvedAt)}</span>
             </div>
-            <button class="primary-btn" data-action="start" data-id="${p.id}" style="flex-shrink:0;">📸 Iniciar</button>
+            <button class="primary-btn" data-action="start" data-id="${p.id}" style="flex-shrink:0;">🔧 Iniciar</button>
         </div>
     `).join('') : '<p class="text-muted" style="padding:12px 0;">Nenhuma instalação pendente no momento. As instalações aparecem aqui após o gestor aprovar uma venda de Rastreador Veicular.</p>';
 
-    const completedRows = completed.length ? [...completed].sort((a, b) => (b.completedAt || '').localeCompare(a.completedAt || '')).map(pi => `
+    const completedRows = completed.length ? [...completed].sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(pi => `
         <div class="photo-record-card">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px;">
-                <div>
-                    <strong>${esc(pi.clientName)}</strong>
-                    <div class="text-muted" style="font-size:0.83rem;">${esc(pi.plate)} · ${esc(pi.modelo || '')} · ${formatDate(pi.completedAt)}</div>
-                    <div class="text-muted" style="font-size:0.83rem;">Duração: ${formatDuration(pi.durationSeconds)} · Local: ${esc(pi.local || '—')}</div>
-                </div>
-                ${pi.photoVehicle ? `<img src="${pi.photoVehicle}" alt="Veículo" style="width:80px;height:60px;object-fit:cover;border-radius:10px;border:1px solid var(--border);">` : ''}
-            </div>
-            ${pi.notes ? `<div class="text-muted" style="font-size:0.84rem;">Obs: ${esc(pi.notes)}</div>` : ''}
+            <strong>${esc(pi.clientName)}</strong>
+            <div class="text-muted" style="font-size:0.83rem;">${esc(pi.plate || '')} · ${formatDate(pi.date)}</div>
+            ${pi.notes ? `<div class="text-muted" style="font-size:0.84rem;">${esc(pi.notes)}</div>` : ''}
         </div>
     `).join('') : '';
 
@@ -3984,7 +3977,7 @@ function openPhotoInstallModal(pendingInstId) {
     const pInst = (app.state.pendingInstallations || []).find(p => p.id === pendingInstId);
     if (!pInst) return;
     const startTime = Date.now();
-    showModal(`📸 Instalação — ${esc(pInst.clientName)}`, `
+    showModal(`🔧 Instalação — ${esc(pInst.clientName)}`, `
         <div style="background:#f0f4ff;border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
             <div style="font-size:1.5rem;">⏱️</div>
             <div>
@@ -4004,26 +3997,6 @@ function openPhotoInstallModal(pendingInstId) {
                     <option value="Outro">Outro</option>
                 </select>
             </div>
-            <div class="field full-width">
-                <label>Foto do veículo</label>
-                <div class="photo-input-group">
-                    <button type="button" class="photo-opt-btn" data-input="piPhotoVehicle" data-capture="true">📷 Tirar foto</button>
-                    <button type="button" class="photo-opt-btn" data-input="piPhotoVehicle" data-capture="false">🖼️ Escolher da galeria</button>
-                    <input id="piPhotoVehicle" type="file" accept="image/*" style="display:none;">
-                    <span id="piPhotoVehicleName" class="photo-file-name"></span>
-                </div>
-                <div id="piPhotoVehiclePreview" class="photo-preview-thumb"></div>
-            </div>
-            <div class="field full-width">
-                <label>Foto do equipamento instalado</label>
-                <div class="photo-input-group">
-                    <button type="button" class="photo-opt-btn" data-input="piPhotoEquip" data-capture="true">📷 Tirar foto</button>
-                    <button type="button" class="photo-opt-btn" data-input="piPhotoEquip" data-capture="false">🖼️ Escolher da galeria</button>
-                    <input id="piPhotoEquip" type="file" accept="image/*" style="display:none;">
-                    <span id="piPhotoEquipName" class="photo-file-name"></span>
-                </div>
-                <div id="piPhotoEquipPreview" class="photo-preview-thumb"></div>
-            </div>
             <div class="field full-width"><label>Observações</label><textarea id="piNotes" rows="2" placeholder="Detalhes da instalação..."></textarea></div>
             <div class="actions full-width" style="margin-top:8px;">
                 <button type="submit" class="primary-btn">✓ Concluir instalação</button>
@@ -4039,44 +4012,6 @@ function openPhotoInstallModal(pendingInstId) {
         const ss = String(elapsed % 60).padStart(2, '0');
         timerEl.textContent = `${mm}:${ss}`;
     }, 1000);
-    // Photo input: camera vs gallery buttons
-    document.querySelectorAll('.photo-opt-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const input = document.getElementById(btn.dataset.input);
-            if (!input) return;
-            if (btn.dataset.capture === 'true') {
-                input.setAttribute('capture', 'environment');
-            } else {
-                input.removeAttribute('capture');
-            }
-            input.click();
-        });
-    });
-    ['piPhotoVehicle', 'piPhotoEquip'].forEach(id => {
-        const input = document.getElementById(id);
-        if (!input) return;
-        input.addEventListener('change', e => {
-            const file = e.target.files[0];
-            const nameEl   = document.getElementById(id + 'Name');
-            const previewEl = document.getElementById(id + 'Preview');
-            if (nameEl) nameEl.textContent = file ? file.name : '';
-            if (previewEl) {
-                if (file) {
-                    const url = URL.createObjectURL(file);
-                    previewEl.innerHTML = `
-                        <img src="${url}" alt="preview" style="max-width:120px;max-height:90px;border-radius:10px;border:1px solid var(--border);margin-top:6px;display:block;">
-                        <button type="button" class="retake-btn" data-retake="${id}">🔄 Tirar novamente</button>
-                    `;
-                    previewEl.querySelector('.retake-btn').addEventListener('click', () => {
-                        const inp = document.getElementById(id);
-                        if (inp) { inp.setAttribute('capture','environment'); inp.value = ''; inp.click(); }
-                    });
-                } else {
-                    previewEl.innerHTML = '';
-                }
-            }
-        });
-    });
     document.getElementById('closeModalBtn').addEventListener('click', () => clearInterval(timerInterval), { once: true });
     document.getElementById('photoInstallForm').addEventListener('submit', async e => {
         e.preventDefault();
@@ -4093,28 +4028,12 @@ async function handlePhotoInstallSave(pendingInstId, pInst, durationSeconds) {
     const errEl  = document.getElementById('piError');
     errEl.textContent = '';
     if (!plate || !modelo || !local) { errEl.textContent = 'Preencha todos os campos obrigatórios.'; return; }
-    const _pvFile = document.getElementById('piPhotoVehicle').files[0];
-    const _peFile = document.getElementById('piPhotoEquip').files[0];
-    if (_pvFile || _peFile) {
-        const _estSize = ((_pvFile?.size || 0) + (_peFile?.size || 0)) * 1.37;
-        const _sc = checkStorageSpace(_estSize);
-        if (!_sc.ok) { errEl.textContent = _sc.message; return; }
-    }
-    const toBase64 = file => new Promise(resolve => {
-        if (!file) return resolve(null);
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.readAsDataURL(file);
-    });
-    const photoVehicle = await toBase64(document.getElementById('piPhotoVehicle').files[0]);
-    const photoEquip   = await toBase64(document.getElementById('piPhotoEquip').files[0]);
-    if (!app.state.photoInstallations) app.state.photoInstallations = [];
-    app.state.photoInstallations.push({ id: `phi_${Date.now()}`, pendingInstId, instaladorId: app.currentUser.id, clientId: pInst.clientId, clientName: pInst.clientName, plate, modelo, local, notes, photoVehicle, photoEquip, durationSeconds, completedAt: todayISO() });
     if (!app.state.installations) app.state.installations = [];
+    const fullNotes = [`${modelo} · ${local}`, notes].filter(Boolean).join(' — ');
     const newInstall = {
         id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `install_${Date.now()}`,
         instaladorId: app.currentUser.id, clientId: pInst.clientId || null, clientName: pInst.clientName,
-        plate, date: todayISO(), notes
+        plate, date: todayISO(), notes: fullNotes
     };
     app.state.installations.push(newInstall);
     app.state.pendingInstallations = (app.state.pendingInstallations || []).filter(p => p.id !== pendingInstId);
@@ -8387,7 +8306,7 @@ function renderInstPendentesList() {
         </tr>`;
     }).join('') : `<tr><td colspan="4" style="text-align:center;color:var(--text-soft);">Nenhuma instalação pendente.</td></tr>`;
     el.innerHTML = `
-        <div class="section-header"><div><h2>Instalações Pendentes</h2><p>Veículos aguardando registro fotográfico.</p></div></div>
+        <div class="section-header"><div><h2>Instalações Pendentes</h2><p>Veículos aguardando conclusão da instalação.</p></div></div>
         <div class="card" style="overflow-x:auto;">
             <table>
                 <thead><tr><th>Cliente</th><th>Instalador</th><th>Placa</th><th>Data</th></tr></thead>
