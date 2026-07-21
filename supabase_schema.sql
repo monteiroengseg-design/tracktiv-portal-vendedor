@@ -1013,3 +1013,27 @@ values
   ('client_redemptions', '[]'),
   ('meta_alerts_sent', '{}')
 on conflict (key) do update set value = excluded.value, updated_at = now();
+
+-- ----------------------------------------------------------------
+-- Migração: reativa "Meu Link" (cadastro público sem sessão autenticada)
+-- Execute este bloco isolado no SQL Editor do Supabase — idempotente,
+-- pode rodar mais de uma vez sem erro.
+-- ----------------------------------------------------------------
+alter table public.clients add column if not exists from_public_form boolean default false;
+
+drop policy if exists clients_insert_public_lead on public.clients;
+create policy clients_insert_public_lead on public.clients
+  for insert
+  to anon
+  with check (
+    stage = 'Novo Lead'
+    and instalador_id is null
+    and closed_date is null
+    and (
+      consultant_id is null
+      or exists (
+        select 1 from public.profiles p
+        where p.id = consultant_id and p.role = 'consultor'
+      )
+    )
+  );

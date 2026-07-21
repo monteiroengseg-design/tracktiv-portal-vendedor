@@ -147,6 +147,7 @@ const NAV_TREE = {
         ]},
         { id: 'c_metas',       label: 'Minhas Metas',   icon: '🎯', render: () => renderConsultorMetas() },
         { id: 'c_mural',       label: 'Mural',          icon: '🏆', render: () => renderMural() },
+        { id: 'c_link',        label: 'Meu Link',        icon: '🔗', render: () => renderMeuLink() },
         { id: 'c_comunicados', label: 'Comunicados',     icon: '📢', render: () => renderComunicadosMural() },
         { id: 'c_mensagens',   label: 'Mensagens',      icon: '💬', action: () => openChatOverlay('gestor') }
     ],
@@ -5424,6 +5425,7 @@ function _mapClientFromSB(row) {
         notes:        row.notes          || '',
         stage:        row.stage          || 'Novo Lead',
         closedDate:   row.closed_date    || null,
+        fromPublicForm: row.from_public_form || false,
         createdAt:    row.created_at ? row.created_at.substring(0, 10) : todayISO(),
     };
 }
@@ -5451,6 +5453,7 @@ function _mapClientToSB(c) {
         notes:         c.notes         || '',
         stage:         c.stage         || 'Novo Lead',
         closed_date:   c.closedDate    || null,
+        from_public_form: c.fromPublicForm || false,
         created_at:    c.createdAt     || todayISO(),
     };
 }
@@ -13138,28 +13141,9 @@ function checkPublicCadastroParam() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('cadastro');
     if (!code) return false;
-    // Feature desativada em 2026-07-20: o formulário público não tinha como
-    // gravar o cadastro em lugar nenhum acessível ao consultor (rodava sem
-    // sessão autenticada), então a tela de "sucesso" enganava o visitante
-    // dizendo que o consultor tinha sido notificado quando não era verdade.
-    // Mostra uma mensagem honesta em vez do formulário até isso ser refeito.
-    showLinkIndisponivelScreen();
+    const consultor = resolveConsultorFromCode(code);
+    showPublicCadastroForm(consultor, code);
     return true;
-}
-
-function showLinkIndisponivelScreen() {
-    const overlay = document.createElement('div');
-    overlay.className = 'public-cadastro-screen';
-    document.body.appendChild(overlay);
-    const loginEl = document.getElementById('loginScreen');
-    if (loginEl) loginEl.style.display = 'none';
-    overlay.innerHTML = `
-    <div class="public-form-container" style="text-align:center;padding:48px 32px;">
-        <div style="font-size:1.8rem;margin-bottom:20px;">📡 <span style="font-weight:800;">Tracktiv</span></div>
-        <h2 style="color:var(--primary);margin-bottom:12px;">Cadastro por link indisponível no momento</h2>
-        <p style="color:var(--text-soft);margin-bottom:8px;">Esse formulário está temporariamente fora do ar.</p>
-        <p style="color:var(--text-soft);margin-bottom:28px;">Entre em contato diretamente com seu consultor Tracktiv ou fale com a gente pelo site oficial.</p>
-    </div>`;
 }
 
 function showPublicCadastroForm(consultor, code) {
@@ -13270,7 +13254,7 @@ function showPublicCadastroForm(consultor, code) {
             return;
         }
         const newClient = {
-            id:           `pub_${Date.now()}`,
+            id:           (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `pub_${Date.now()}`,
             consultantId: cons?.id || null,
             instaladorId: null,
             name:         d.name,
@@ -13299,9 +13283,13 @@ function showPublicCadastroForm(consultor, code) {
                 `Novo cadastro recebido pelo seu link!\n\nNome: ${d.name}\nTelefone: ${d.phone || '—'}\nServiço: ${d.product || '—'}\n\nAcesse o portal para acompanhar este lead.\n\n— Portal Tracktiv`);
         }
         saveState();
+        _sbUpsertClient(newClient);
         delete window._pubFormData;
 
         // Show success screen
+        const nextSteps = cons
+            ? `• Seu consultor recebeu uma notificação<br>• Em até 24h entraremos em contato<br>• Seus dados estão seguros conosco`
+            : `• Nossa equipe recebeu seu cadastro<br>• Em até 24h entraremos em contato<br>• Seus dados estão seguros conosco`;
         overlay.innerHTML = `
         <div class="public-form-container" style="text-align:center;padding:48px 32px;">
             <div style="font-size:4rem;margin-bottom:20px;">🎉</div>
@@ -13310,9 +13298,7 @@ function showPublicCadastroForm(consultor, code) {
             <p style="color:var(--text-soft);margin-bottom:28px;">Em breve um de nossos consultores entrará em contato para apresentar as melhores soluções para você.</p>
             <div style="background:var(--success-bg);border:1px solid var(--success-border);border-radius:12px;padding:16px 20px;margin-bottom:28px;text-align:left;font-size:0.9rem;color:#065f46;">
                 <strong>✅ O que acontece agora?</strong><br>
-                • Seu consultor recebeu uma notificação<br>
-                • Em até 24h entraremos em contato<br>
-                • Seus dados estão seguros conosco
+                ${nextSteps}
             </div>
             <p style="color:var(--text-muted);font-size:0.85rem;">© Tracktiv — Rastreamento e Segurança Veicular</p>
         </div>`;
