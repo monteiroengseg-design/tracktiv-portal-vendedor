@@ -628,6 +628,21 @@ alter table public.executive_payments enable row level security;
 alter table public.executive_clients enable row level security;
 alter table public.executive_sales enable row level security;
 alter table public.app_state_entries enable row level security;
+alter table public.tecnico_clients enable row level security;
+
+create policy tecnico_clients_select on public.tecnico_clients
+  for select using (
+    tecnico_id = auth.uid()
+    or (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
+  );
+create policy tecnico_clients_insert_admin on public.tecnico_clients
+  for insert with check (
+    (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
+  );
+create policy tecnico_clients_delete_admin on public.tecnico_clients
+  for delete using (
+    (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
+  );
 
 create policy profiles_select_authenticated on public.profiles
   for select using (true);

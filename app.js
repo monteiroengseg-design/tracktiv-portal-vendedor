@@ -4589,6 +4589,8 @@ function saveEncaminharTecnico(clientId) {
     if (!app.state.tecnicoClients[newTecId].includes(clientId)) {
         app.state.tecnicoClients[newTecId].push(clientId);
     }
+    _sbUnassignClientFromAllTecnicos(clientId);
+    _sbAssignClientToTecnico(newTecId, clientId);
 
     // Record history
     if (!app.state.clientTecnicoHistory) app.state.clientTecnicoHistory = {};
@@ -5524,16 +5526,17 @@ function _mapNotifFromSB(row) {
 async function loadSupabaseData(user) {
     if (!supabaseClient || app.demoMode) return;
     try {
-        const [clientsRes, profilesRes, installRes, chamadosRes, comunicadosRes, notifsRes] = await Promise.all([
+        const [clientsRes, profilesRes, installRes, chamadosRes, comunicadosRes, notifsRes, tecnicoClientsRes] = await Promise.all([
             supabaseClient.from('clients').select('*'),
             supabaseClient.from('profiles').select('*'),
             supabaseClient.from('installations').select('*'),
             supabaseClient.from('chamados').select('*'),
             supabaseClient.from('comunicados').select('*').order('criado_em', { ascending: false }),
             supabaseClient.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
+            supabaseClient.from('tecnico_clients').select('*'),
         ]);
 
-        const failedRes = [clientsRes, profilesRes, installRes, chamadosRes, comunicadosRes, notifsRes].find(r => r.error);
+        const failedRes = [clientsRes, profilesRes, installRes, chamadosRes, comunicadosRes, notifsRes, tecnicoClientsRes].find(r => r.error);
         if (failedRes) {
             console.warn('[Supabase] loadSupabaseData retornou erro:', failedRes.error);
             showToast('Não foi possível buscar os dados mais recentes do servidor — mostrando os dados salvos neste aparelho, que podem estar desatualizados.', 'warning', 7000);
@@ -5544,6 +5547,12 @@ async function loadSupabaseData(user) {
         if (chamadosRes.data)   app.state.chamados      = chamadosRes.data.map(_mapChamadoFromSB);
         if (comunicadosRes.data) app.state.comunicados  = comunicadosRes.data.map(_mapComunicadoFromSB);
         if (notifsRes.data)     app.state.notifications = notifsRes.data.map(_mapNotifFromSB);
+        if (tecnicoClientsRes.data) {
+            app.state.tecnicoClients = tecnicoClientsRes.data.reduce((acc, row) => {
+                (acc[row.tecnico_id] = acc[row.tecnico_id] || []).push(row.client_id);
+                return acc;
+            }, {});
+        }
 
         if (profilesRes.data) {
             const prodUsers = profilesRes.data.map(_mapProfileFromSB);
@@ -5682,6 +5691,31 @@ function _mapNotifToSB(n) {
 function _sbUpsertNotification(n) {
     if (!supabaseClient || app.demoMode) return;
     _sbRun(supabaseClient.from('notifications').upsert(_mapNotifToSB(n)), 'Não foi possível salvar a notificação no servidor.');
+}
+
+// ─── Write-through: atribuição técnico ↔ cliente ──────────────────────────────
+
+function _sbUnassignClientFromAllTecnicos(clientId) {
+    if (!supabaseClient || app.demoMode) return;
+    _sbRun(supabaseClient.from('tecnico_clients').delete().eq('client_id', clientId),
+        'Não foi possível atualizar a atribuição de técnico no servidor.');
+}
+
+function _sbAssignClientToTecnico(tecnicoId, clientId) {
+    if (!supabaseClient || app.demoMode) return;
+    _sbRun(supabaseClient.from('tecnico_clients').upsert({ tecnico_id: tecnicoId, client_id: clientId }),
+        'Não foi possível atribuir o cliente ao técnico no servidor.');
+}
+
+// Substitui a lista inteira de clientes atribuídos a um técnico (usado na
+// atribuição em massa) — apaga tudo desse técnico e insere a seleção atual.
+async function _sbReplaceTecnicoClients(tecnicoId, clientIds) {
+    if (!supabaseClient || app.demoMode) return;
+    const del = await Promise.resolve(supabaseClient.from('tecnico_clients').delete().eq('tecnico_id', tecnicoId));
+    if (del.error) { console.warn('[Supabase]', 'Não foi possível atualizar clientes do técnico no servidor.', del.error); _sbWriteError('Não foi possível atualizar clientes do técnico no servidor.'); return; }
+    if (!clientIds.length) return;
+    _sbRun(supabaseClient.from('tecnico_clients').insert(clientIds.map(cId => ({ tecnico_id: tecnicoId, client_id: cId }))),
+        'Não foi possível atualizar clientes do técnico no servidor.');
 }
 
 // Convida usuário via Supabase Edge Function (usa service_role key no servidor).
@@ -10211,6 +10245,7 @@ function deleteTecnico(tecnicoId) {
     if (app.state.tecnicoClients) delete app.state.tecnicoClients[tecnicoId];
     saveState();
     renderGestorTecnicos();
+    _sbReplaceTecnicoClients(tecnicoId, []);
 }
 
 function openAssignTecnicoClientModal(tecnicoId) {
@@ -10244,6 +10279,7 @@ function saveAssignTecnicoClients(tecnicoId) {
     saveState();
     closeModal();
     renderGestorTecnicos();
+    _sbReplaceTecnicoClients(tecnicoId, selected);
 }
 
 function renderGestorChamados() {
