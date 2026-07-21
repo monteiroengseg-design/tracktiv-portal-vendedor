@@ -5593,20 +5593,24 @@ function _sbWriteError(msg) {
 // falha: rede fora do ar (a promise rejeita, cai no .catch) e requisição
 // concluída mas recusada pelo servidor — ex: RLS/permissão (a promise resolve
 // normalmente com { error } preenchido, sem nunca rejeitar).
-function _sbRun(promiseLike, errMsg) {
+// Se successMsg for passado, mostra também uma confirmação visível (✅ verde)
+// quando a escrita realmente chegar no servidor — sem isso o usuário só via
+// o "salvo" local, sem saber se tinha ido pra nuvem de verdade.
+function _sbRun(promiseLike, errMsg, successMsg) {
     Promise.resolve(promiseLike).then(res => {
         if (res && res.error) { console.warn('[Supabase]', errMsg, res.error); _sbWriteError(errMsg); }
+        else if (successMsg) { showToast(successMsg, 'success', 2500); }
     }).catch(err => { console.warn('[Supabase]', errMsg, err); _sbWriteError(errMsg); });
 }
 
 function _sbUpsertClient(c) {
     if (!supabaseClient || app.demoMode) return;
-    _sbRun(supabaseClient.from('clients').upsert(_mapClientToSB(c)), 'Não foi possível salvar o cliente no servidor.');
+    _sbRun(supabaseClient.from('clients').upsert(_mapClientToSB(c)), 'Não foi possível salvar o cliente no servidor.', 'Cliente salvo no servidor.');
 }
 
 function _sbDeleteClient(id) {
     if (!supabaseClient || app.demoMode) return;
-    _sbRun(supabaseClient.from('clients').delete().eq('id', id), 'Não foi possível excluir o cliente no servidor.');
+    _sbRun(supabaseClient.from('clients').delete().eq('id', id), 'Não foi possível excluir o cliente no servidor.', 'Cliente removido do servidor.');
 }
 
 function _mapChamadoToSB(ch) {
@@ -5626,7 +5630,7 @@ function _mapChamadoToSB(ch) {
 
 function _sbUpsertChamado(ch) {
     if (!supabaseClient || app.demoMode) return;
-    _sbRun(supabaseClient.from('chamados').upsert(_mapChamadoToSB(ch)), 'Não foi possível salvar o chamado no servidor.');
+    _sbRun(supabaseClient.from('chamados').upsert(_mapChamadoToSB(ch)), 'Não foi possível salvar o chamado no servidor.', 'Chamado salvo no servidor.');
 }
 
 function _mapInstallToSB(i) {
@@ -5644,12 +5648,12 @@ function _mapInstallToSB(i) {
 
 function _sbUpsertInstall(i) {
     if (!supabaseClient || app.demoMode) return;
-    _sbRun(supabaseClient.from('installations').upsert(_mapInstallToSB(i)), 'Não foi possível salvar a instalação no servidor.');
+    _sbRun(supabaseClient.from('installations').upsert(_mapInstallToSB(i)), 'Não foi possível salvar a instalação no servidor.', 'Instalação salva no servidor.');
 }
 
 function _sbDeleteInstall(id) {
     if (!supabaseClient || app.demoMode) return;
-    _sbRun(supabaseClient.from('installations').delete().eq('id', id), 'Não foi possível excluir a instalação no servidor.');
+    _sbRun(supabaseClient.from('installations').delete().eq('id', id), 'Não foi possível excluir a instalação no servidor.', 'Instalação removida do servidor.');
 }
 
 function _sbDeleteInstallsByInstalador(instaladorId) {
@@ -5671,12 +5675,12 @@ function _mapComunicadoToSB(c) {
 
 function _sbUpsertComunicado(c) {
     if (!supabaseClient || app.demoMode) return;
-    _sbRun(supabaseClient.from('comunicados').upsert(_mapComunicadoToSB(c)), 'Não foi possível salvar o comunicado no servidor.');
+    _sbRun(supabaseClient.from('comunicados').upsert(_mapComunicadoToSB(c)), 'Não foi possível salvar o comunicado no servidor.', 'Comunicado salvo no servidor.');
 }
 
 function _sbDeleteComunicado(id) {
     if (!supabaseClient || app.demoMode) return;
-    _sbRun(supabaseClient.from('comunicados').delete().eq('id', id), 'Não foi possível excluir o comunicado no servidor.');
+    _sbRun(supabaseClient.from('comunicados').delete().eq('id', id), 'Não foi possível excluir o comunicado no servidor.', 'Comunicado removido do servidor.');
 }
 
 // Marca comunicado como lido via RPC security definer — evita dar UPDATE
@@ -5782,12 +5786,12 @@ function _mapClientDocFromSB(row) {
 
 function _sbUpsertClientDocumentMeta(d) {
     if (!supabaseClient || app.demoMode) return;
-    _sbRun(supabaseClient.from('client_documents').upsert(_mapClientDocToSB(d)), 'Não foi possível salvar o documento no servidor.');
+    _sbRun(supabaseClient.from('client_documents').upsert(_mapClientDocToSB(d)), 'Não foi possível salvar o documento no servidor.', 'Documento salvo no servidor.');
 }
 
 function _sbDeleteClientDocumentMeta(id, storagePath) {
     if (!supabaseClient || app.demoMode) return;
-    _sbRun(supabaseClient.from('client_documents').delete().eq('id', id), 'Não foi possível excluir o documento no servidor.');
+    _sbRun(supabaseClient.from('client_documents').delete().eq('id', id), 'Não foi possível excluir o documento no servidor.', 'Documento removido do servidor.');
     if (storagePath) {
         supabaseClient.storage.from('client-documents').remove([storagePath]).then(({ error }) => {
             if (error) { console.warn('[Supabase] remove storage falhou:', error); _sbWriteError('Não foi possível excluir o arquivo do servidor.'); }
