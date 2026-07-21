@@ -4470,7 +4470,7 @@ function openClientProfile(clientId) {
                 <div class="profile-field"><span>Mensalidade</span><strong>R$ ${formatCurrency(c.monthlyFee)}</strong></div>
                 <div class="profile-field"><span>Melhor data pgto</span><strong>${esc(c.paymentDay || '—')}</strong></div>
                 <div class="profile-field"><span>Etapa</span><strong>${esc(c.stage)}</strong></div>
-                ${c.plates && c.plates.length ? `<div class="profile-field" style="grid-column:1/-1"><span>Placas</span><strong>${c.plates.map(p => esc(p)).join(', ')}</strong></div>` : ''}
+                ${c.plates && c.plates.length ? `<div class="profile-field" style="grid-column:1/-1"><span>Placas</span><strong>${esc(c.plates)}</strong></div>` : ''}
                 ${c.coupon ? `<div class="profile-field"><span>Cupom</span><strong>${esc(c.coupon)}</strong></div>` : ''}
             </div>
         </div>
