@@ -344,15 +344,29 @@ create table if not exists public.client_documents (
   id uuid primary key,
   client_id uuid references public.clients(id),
   category text,
+  subfolder text,
   name text,
   file_name text,
   mime_type text,
   size int,
+  storage_path text,
   uploaded_at date,
   uploaded_by text,
+  uploaded_by_role text,
+  viewed_by uuid[] default '{}',
   notes text,
-  data bytea
+  emitted_at date,
+  expires_at date,
+  no_expiry boolean default false,
+  doc_group_id uuid,
+  version int default 1
 );
+
+-- Bucket privado no Storage — arquivo em si fica aqui, não na tabela.
+-- Caminho: {client_id}/{doc_id}-{nome do arquivo}
+insert into storage.buckets (id, name, public)
+values ('client-documents', 'client-documents', false)
+on conflict (id) do nothing;
 
 -- ----------------------------------------------------------------
 -- Chamados (tickets)
@@ -722,10 +736,46 @@ create policy client_documents_select_related on public.client_documents
     or (select consultant_id from public.clients where id = public.client_documents.client_id) = auth.uid()
     or (select instalador_id from public.clients where id = public.client_documents.client_id) = auth.uid()
     or (select linked_client_id from public.profiles where id = auth.uid()) = public.client_documents.client_id
+    or exists (
+      select 1 from public.tecnico_clients tc
+      where tc.tecnico_id = auth.uid() and tc.client_id = public.client_documents.client_id
+    )
   );
 create policy client_documents_insert_allowed on public.client_documents
   for insert with check (
     (select role from public.profiles where id = auth.uid()) in ('presidente','gestor','consultor','instalador')
+  );
+create policy client_documents_update_allowed on public.client_documents
+  for update using (
+    (select role from public.profiles where id = auth.uid()) in ('presidente','gestor','consultor','instalador')
+  );
+create policy client_documents_delete_allowed on public.client_documents
+  for delete using (
+    (select role from public.profiles where id = auth.uid()) in ('presidente','gestor','consultor','instalador')
+  );
+
+create policy client_documents_storage_select on storage.objects
+  for select using (
+    bucket_id = 'client-documents' and (
+      (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
+      or exists (
+        select 1 from public.tecnico_clients tc
+        where tc.tecnico_id = auth.uid() and tc.client_id::text = (storage.foldername(name))[1]
+      )
+      or (select linked_client_id from public.profiles where id = auth.uid())::text = (storage.foldername(name))[1]
+      or (select consultant_id from public.clients where id::text = (storage.foldername(name))[1]) = auth.uid()
+      or (select instalador_id from public.clients where id::text = (storage.foldername(name))[1]) = auth.uid()
+    )
+  );
+create policy client_documents_storage_insert on storage.objects
+  for insert with check (
+    bucket_id = 'client-documents'
+    and (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
+  );
+create policy client_documents_storage_delete on storage.objects
+  for delete using (
+    bucket_id = 'client-documents'
+    and (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
   );
 
 create policy notifications_select_owner on public.notifications

@@ -5526,7 +5526,7 @@ function _mapNotifFromSB(row) {
 async function loadSupabaseData(user) {
     if (!supabaseClient || app.demoMode) return;
     try {
-        const [clientsRes, profilesRes, installRes, chamadosRes, comunicadosRes, notifsRes, tecnicoClientsRes] = await Promise.all([
+        const [clientsRes, profilesRes, installRes, chamadosRes, comunicadosRes, notifsRes, tecnicoClientsRes, clientDocsRes] = await Promise.all([
             supabaseClient.from('clients').select('*'),
             supabaseClient.from('profiles').select('*'),
             supabaseClient.from('installations').select('*'),
@@ -5534,9 +5534,10 @@ async function loadSupabaseData(user) {
             supabaseClient.from('comunicados').select('*').order('criado_em', { ascending: false }),
             supabaseClient.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
             supabaseClient.from('tecnico_clients').select('*'),
+            supabaseClient.from('client_documents').select('*'),
         ]);
 
-        const failedRes = [clientsRes, profilesRes, installRes, chamadosRes, comunicadosRes, notifsRes, tecnicoClientsRes].find(r => r.error);
+        const failedRes = [clientsRes, profilesRes, installRes, chamadosRes, comunicadosRes, notifsRes, tecnicoClientsRes, clientDocsRes].find(r => r.error);
         if (failedRes) {
             console.warn('[Supabase] loadSupabaseData retornou erro:', failedRes.error);
             showToast('Não foi possível buscar os dados mais recentes do servidor — mostrando os dados salvos neste aparelho, que podem estar desatualizados.', 'warning', 7000);
@@ -5552,6 +5553,16 @@ async function loadSupabaseData(user) {
                 (acc[row.tecnico_id] = acc[row.tecnico_id] || []).push(row.client_id);
                 return acc;
             }, {});
+        }
+        if (clientDocsRes.data) {
+            const docs = clientDocsRes.data.map(_mapClientDocFromSB);
+            const paths = docs.map(d => d.storagePath).filter(Boolean);
+            if (paths.length) {
+                const { data: signed } = await supabaseClient.storage.from('client-documents').createSignedUrls(paths, 60 * 60 * 24);
+                const urlByPath = new Map((signed || []).map(s => [s.path, s.signedUrl]));
+                docs.forEach(d => { if (d.storagePath) d.data = urlByPath.get(d.storagePath) || null; });
+            }
+            app.state.clientDocuments = docs;
         }
 
         if (profilesRes.data) {
@@ -5716,6 +5727,93 @@ async function _sbReplaceTecnicoClients(tecnicoId, clientIds) {
     if (!clientIds.length) return;
     _sbRun(supabaseClient.from('tecnico_clients').insert(clientIds.map(cId => ({ tecnico_id: tecnicoId, client_id: cId }))),
         'Não foi possível atualizar clientes do técnico no servidor.');
+}
+
+// ─── Write-through: documentos de cliente (Supabase Storage + tabela) ─────────
+
+function _mapClientDocToSB(d) {
+    return {
+        id: d.id,
+        client_id: d.clientId,
+        category: d.category || '',
+        subfolder: d.subfolder || '',
+        name: d.name,
+        file_name: d.fileName || '',
+        mime_type: d.type || '',
+        size: d.size || 0,
+        storage_path: d.storagePath || null,
+        uploaded_at: d.uploadedAt || todayISO(),
+        uploaded_by: d.uploadedBy || '',
+        uploaded_by_role: d.uploadedByRole || '',
+        viewed_by: d.viewedBy || [],
+        notes: d.notes || '',
+        emitted_at: d.emittedAt || null,
+        expires_at: d.expiresAt || null,
+        no_expiry: d.noExpiry || false,
+        doc_group_id: d.docGroupId || d.id,
+        version: d.version || 1,
+    };
+}
+
+function _mapClientDocFromSB(row) {
+    return {
+        id: row.id,
+        clientId: row.client_id,
+        category: row.category || '',
+        subfolder: row.subfolder || '',
+        name: row.name,
+        fileName: row.file_name || '',
+        type: row.mime_type || '',
+        size: row.size || 0,
+        storagePath: row.storage_path || null,
+        data: null, // preenchida logo em seguida com uma URL assinada (ver loadSupabaseData)
+        uploadedAt: row.uploaded_at,
+        uploadedBy: row.uploaded_by || '',
+        uploadedByRole: row.uploaded_by_role || '',
+        viewedBy: row.viewed_by || [],
+        notes: row.notes || '',
+        emittedAt: row.emitted_at,
+        expiresAt: row.expires_at,
+        noExpiry: row.no_expiry || false,
+        docGroupId: row.doc_group_id,
+        version: row.version || 1,
+    };
+}
+
+function _sbUpsertClientDocumentMeta(d) {
+    if (!supabaseClient || app.demoMode) return;
+    _sbRun(supabaseClient.from('client_documents').upsert(_mapClientDocToSB(d)), 'Não foi possível salvar o documento no servidor.');
+}
+
+function _sbDeleteClientDocumentMeta(id, storagePath) {
+    if (!supabaseClient || app.demoMode) return;
+    _sbRun(supabaseClient.from('client_documents').delete().eq('id', id), 'Não foi possível excluir o documento no servidor.');
+    if (storagePath) {
+        supabaseClient.storage.from('client-documents').remove([storagePath]).then(({ error }) => {
+            if (error) { console.warn('[Supabase] remove storage falhou:', error); _sbWriteError('Não foi possível excluir o arquivo do servidor.'); }
+        });
+    }
+}
+
+// Envia o arquivo pro bucket. Retorna o storage_path em sucesso, ou null (e já
+// avisa o usuário) se falhar.
+async function _sbUploadClientDocFile(clientId, docId, file) {
+    if (!supabaseClient || app.demoMode) return null;
+    const path = `${clientId}/${docId}-${file.name}`;
+    const { error } = await supabaseClient.storage.from('client-documents').upload(path, file, { upsert: true });
+    if (error) {
+        console.warn('[Supabase] upload de documento falhou:', error);
+        _sbWriteError('Não foi possível enviar o arquivo pro servidor.');
+        return null;
+    }
+    return path;
+}
+
+async function _sbGetDocSignedUrl(storagePath) {
+    if (!supabaseClient || !storagePath) return null;
+    const { data, error } = await supabaseClient.storage.from('client-documents').createSignedUrl(storagePath, 60 * 60 * 24);
+    if (error) { console.warn('[Supabase] signed url falhou:', error); return null; }
+    return data?.signedUrl || null;
 }
 
 // Convida usuário via Supabase Edge Function (usa service_role key no servidor).
@@ -6882,7 +6980,7 @@ function openDocUploadModal(clienteUserId) {
         </div>
     `);
     document.getElementById('cancelDocBtn').addEventListener('click', closeModal);
-    document.getElementById('saveDocBtn').addEventListener('click', () => {
+    document.getElementById('saveDocBtn').addEventListener('click', async () => {
         const name  = document.getElementById('docName').value.trim();
         const folderVal = document.getElementById('docCat').value;
         const [cat, subfolder] = folderVal.includes('|') ? folderVal.split('|') : [folderVal, ''];
@@ -6892,49 +6990,55 @@ function openDocUploadModal(clienteUserId) {
         const expiresAt  = noExpiry ? null : (document.getElementById('docExpiresAt').value || null);
         const file  = document.getElementById('docFile').files[0];
         const err   = document.getElementById('docUploadError');
+        const saveBtn = document.getElementById('saveDocBtn');
         err.textContent = '';
         if (!name) { err.textContent = 'Nome do documento é obrigatório.'; return; }
         if (!noExpiry && !expiresAt) { err.textContent = 'Informe a data de validade ou marque "Sem validade".'; return; }
         if (file && file.size > 1048576) { err.textContent = 'Arquivo muito grande. Máximo 1 MB.'; return; }
+
+        if (!app.state.clientDocuments) app.state.clientDocuments = [];
+        const newId      = `cdoc_${Date.now()}`;
+        const existing   = (app.state.clientDocuments).find(d => d.clientId === cu.clientId && d.category === cat && d.name.toLowerCase() === name.toLowerCase() && !d._archived);
+        const docGroupId = existing ? (existing.docGroupId || existing.id) : newId;
+
+        let storagePath = existing?.storagePath || null;
+        let fileUrl     = existing?.data || null;
         if (file) {
-            const _sc = checkStorageSpace(file.size);
-            if (!_sc.ok) { err.textContent = _sc.message; return; }
+            saveBtn.disabled = true; saveBtn.textContent = 'Enviando…';
+            storagePath = await _sbUploadClientDocFile(cu.clientId, newId, file);
+            fileUrl     = storagePath ? await _sbGetDocSignedUrl(storagePath) : null;
+            saveBtn.disabled = false; saveBtn.textContent = 'Salvar documento';
         }
-        const saveDoc = (data) => {
-            if (!app.state.clientDocuments) app.state.clientDocuments = [];
-            const newId       = `cdoc_${Date.now()}`;
-            const existing    = (app.state.clientDocuments).find(d => d.clientId === cu.clientId && d.category === cat && d.name.toLowerCase() === name.toLowerCase() && !d._archived);
-            const docGroupId  = existing ? (existing.docGroupId || existing.id) : newId;
-            if (existing) archiveDocVersion(existing);
-            app.state.clientDocuments = app.state.clientDocuments.filter(d => d.id !== existing?.id);
-            const nextVer = existing ? ((existing.version || 1) + 1) : 1;
-            app.state.clientDocuments.push({
-                id: newId, clientId: cu.clientId, category: cat,
-                subfolder: subfolder || '', name,
-                fileName: file ? file.name : name, data: data || null, type: file ? file.type : '',
-                size: file ? file.size : 0, uploadedAt: todayISO(),
-                uploadedBy: app.currentUser.name, uploadedByRole: 'gestor',
-                viewedBy: [], notes,
-                emittedAt, expiresAt, noExpiry, docGroupId, version: nextVer
-            });
-            addNotification(cu.id, 'new_document', `📄 Novo documento disponível: "${name}"`, null);
-            saveState(); closeModal(); renderGestorClientesPortal();
+
+        if (existing) archiveDocVersion(existing);
+        app.state.clientDocuments = app.state.clientDocuments.filter(d => d.id !== existing?.id);
+        const nextVer = existing ? ((existing.version || 1) + 1) : 1;
+        const newDoc = {
+            id: newId, clientId: cu.clientId, category: cat,
+            subfolder: subfolder || '', name,
+            fileName: file ? file.name : (existing?.fileName || name),
+            data: fileUrl, storagePath,
+            type: file ? file.type : (existing?.type || ''),
+            size: file ? file.size : (existing?.size || 0),
+            uploadedAt: todayISO(),
+            uploadedBy: app.currentUser.name, uploadedByRole: app.currentUser.role,
+            viewedBy: [], notes,
+            emittedAt, expiresAt, noExpiry, docGroupId, version: nextVer
         };
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = e => saveDoc(e.target.result);
-            reader.readAsDataURL(file);
-        } else {
-            saveDoc(null);
-        }
+        app.state.clientDocuments.push(newDoc);
+        addNotification(cu.id, 'new_document', `📄 Novo documento disponível: "${name}"`, null);
+        saveState(); closeModal(); renderGestorClientesPortal();
+        _sbUpsertClientDocumentMeta(newDoc);
     });
 }
 
 function deleteClienteDoc(docId, clienteUserId) {
     if (!confirm('Remover este documento?')) return;
+    const doc = (app.state.clientDocuments || []).find(d => d.id === docId);
     app.state.clientDocuments = (app.state.clientDocuments || []).filter(d => d.id !== docId);
     saveState();
     openDocUploadModal(clienteUserId);
+    _sbDeleteClientDocumentMeta(docId, doc?.storagePath);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -7846,6 +7950,9 @@ function bibPreviewDoc(docId) {
     if (!doc || !doc.data) return;
     if (doc.type && doc.type.includes('image')) {
         showModal(esc(doc.name), `<div style="text-align:center;"><img src="${doc.data}" style="max-width:100%;max-height:70vh;border-radius:8px;"></div>`);
+    } else if (doc.storagePath) {
+        // Documento vindo do Storage — doc.data já é uma URL assinada real, abre direto.
+        window.open(doc.data, '_blank');
     } else {
         const arr = doc.data.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]);
         let n = bstr.length; const u8 = new Uint8Array(n);
@@ -20106,7 +20213,7 @@ function openRenovarDocModal(docId, clienteUserId) {
     if (doc.noExpiry) document.getElementById('renExpiresAtWrap').style.display = 'none';
 }
 
-function saveRenovarDoc(docId, clienteUserId) {
+async function saveRenovarDoc(docId, clienteUserId) {
     const cu  = (app.state.users || []).find(u => u.id === clienteUserId);
     const doc = (app.state.clientDocuments || []).find(d => d.id === docId);
     const err = document.getElementById('renErr');
@@ -20116,32 +20223,32 @@ function saveRenovarDoc(docId, clienteUserId) {
     const expiresAt = noExpiry ? null : (document.getElementById('renExpiresAt').value || null);
     if (!noExpiry && !expiresAt) { err.textContent = 'Informe a data de validade ou marque "Sem validade".'; return; }
     const file = document.getElementById('renFile').files[0];
+    if (file && file.size > 1048576) { err.textContent = 'Arquivo muito grande. Máximo 1 MB.'; return; }
 
-    const doRenew = (newData) => {
-        archiveDocVersion(doc);
-        doc.emittedAt  = emittedAt;
-        doc.expiresAt  = expiresAt;
-        doc.noExpiry   = noExpiry;
-        doc.uploadedAt = todayISO();
-        doc.uploadedBy = app.currentUser.name;
-        doc.version    = (doc.version || 1) + 1;
-        if (newData) { doc.data = newData; doc.fileName = file.name; doc.size = file.size; doc.type = file.type; }
-        // Clear old expiry alerts for this doc
-        Object.keys(app.state.docExpiryAlertsSent || {}).forEach(k => { if (k.startsWith(docId + '_')) delete app.state.docExpiryAlertsSent[k]; });
-        addNotification(cu.id, 'new_document', `📄 Documento renovado: "${doc.name}"`, null);
-        saveState(); closeModal(); openDocUploadModal(clienteUserId);
-        showToast('Documento renovado com sucesso!', 'success');
-    };
-
+    let newUrl = null;
     if (file) {
-        const sc = checkStorageSpace(file.size);
-        if (!sc.ok) { err.textContent = sc.message; return; }
-        const reader = new FileReader();
-        reader.onload = e => doRenew(e.target.result);
-        reader.readAsDataURL(file);
-    } else {
-        doRenew(null);
+        const btn = document.querySelector('#modalContent .primary-btn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+        const path = await _sbUploadClientDocFile(doc.clientId, doc.id, file);
+        newUrl = path ? await _sbGetDocSignedUrl(path) : null;
+        if (path) doc.storagePath = path;
+        if (btn) { btn.disabled = false; btn.textContent = '🔄 Renovar'; }
     }
+
+    archiveDocVersion(doc);
+    doc.emittedAt  = emittedAt;
+    doc.expiresAt  = expiresAt;
+    doc.noExpiry   = noExpiry;
+    doc.uploadedAt = todayISO();
+    doc.uploadedBy = app.currentUser.name;
+    doc.version    = (doc.version || 1) + 1;
+    if (newUrl) { doc.data = newUrl; doc.fileName = file.name; doc.size = file.size; doc.type = file.type; }
+    // Clear old expiry alerts for this doc
+    Object.keys(app.state.docExpiryAlertsSent || {}).forEach(k => { if (k.startsWith(docId + '_')) delete app.state.docExpiryAlertsSent[k]; });
+    addNotification(cu.id, 'new_document', `📄 Documento renovado: "${doc.name}"`, null);
+    saveState(); closeModal(); openDocUploadModal(clienteUserId);
+    showToast('Documento renovado com sucesso!', 'success');
+    _sbUpsertClientDocumentMeta(doc);
 }
 
 function renderDocsAVencer(role) {
