@@ -4598,6 +4598,12 @@ async function handleConsultorSave(e) {
         if (pass) u.password = pass;
         addAuditLog('consultor_update', { id: app.editingConsultantId, name });
         showToast(`Dados de "${name}" atualizados.`, 'success');
+        if (supabaseClient) {
+            _sbRun(supabaseClient.from('profiles').upsert({
+                id: u.id, name, email, role: 'consultor',
+                data: { active: u.active !== false, ...extra }
+            }), 'Não foi possível sincronizar o consultor no servidor.', 'Consultor sincronizado no servidor.');
+        }
     } else {
         const inviteMode = document.getElementById('cInviteMode')?.checked ?? true;
         if (inviteMode && supabaseClient && !app.demoMode) {
@@ -4919,8 +4925,16 @@ async function handleParceiroSave(e) {
 
     const typeLabel = partnerType === 'indicador' ? 'Parceiro Indicador' : 'Parceiro Instalador';
     if (app.editingInstaladorId) {
-        Object.assign(app.state.users.find(u => u.id === app.editingInstaladorId), data);
+        const u = app.state.users.find(u => u.id === app.editingInstaladorId);
+        Object.assign(u, data);
         showToast(`Dados de "${name}" atualizados.`, 'success');
+        if (supabaseClient) {
+            const { password: _pw, createdAt: _ca, ...rest } = u;
+            _sbRun(supabaseClient.from('profiles').upsert({
+                id: u.id, name, email, role: 'instalador', partner_type: partnerType,
+                data: { active: u.active !== false, ...rest }
+            }), 'Não foi possível sincronizar o parceiro no servidor.', 'Parceiro sincronizado no servidor.');
+        }
     } else {
         const inviteMode = document.getElementById('iInviteMode')?.checked ?? true;
         if (inviteMode && supabaseClient && !app.demoMode) {
@@ -6781,6 +6795,12 @@ function openGestorClienteModal(id = null) {
         if (id) {
             const u = app.state.users.find(u => u.id === id);
             Object.assign(u, { name, email, password: pass, referralCode: refCode || u.referralCode, clientId: clientId || u.clientId, contractedServices });
+            if (supabaseClient) {
+                _sbRun(supabaseClient.from('profiles').upsert({
+                    id: u.id, name, email, role: 'cliente',
+                    data: { active: u.active !== false, referralCode: u.referralCode, clientId: u.clientId, contractedServices, points: u.points || 0 }
+                }), 'Não foi possível sincronizar o cliente no servidor.', 'Cliente sincronizado no servidor.');
+            }
         } else {
             const uid = `cliente_${Date.now()}`;
             const autoCode = name.replace(/\s+/g,'').toUpperCase().slice(0,8) + Math.floor(Math.random()*90+10);
@@ -10192,6 +10212,12 @@ async function saveTecnico(e, tecnicoId) {
         if (senha) u.password = senha;
         showToast(`Dados de "${nome}" atualizados.`, 'success');
         saveState(); closeModal(); renderGestorTecnicos();
+        if (supabaseClient) {
+            _sbRun(supabaseClient.from('profiles').upsert({
+                id: u.id, name: nome, email, role: 'tecnico',
+                data: { active: u.active !== false, cpf, phone: tel, whatsapp: wa, specialty: esp, qualifications: quals }
+            }), 'Não foi possível sincronizar o técnico no servidor.', 'Técnico sincronizado no servidor.');
+        }
     } else {
         if (users.find(x => x.email === email)) { showToast('Este e-mail já está cadastrado no sistema.', 'error'); return; }
         const inviteMode = document.getElementById('tecInviteMode')?.checked ?? true;
