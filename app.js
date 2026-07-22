@@ -107,7 +107,6 @@ const NAV_TREE = {
             { id: 'g_cfg_usuarios',      label: 'Usuários e Acessos',icon: '🔐', render: () => renderGerenciarUsuarios() }
         ]},
         { id: 'g_produtos_cfg', label: 'Produtos',        icon: '📦', render: () => renderGestorProdutos() },
-        { id: 'g_mural',       label: 'Mural e Desafios',icon: '🏆', render: () => renderGestorMuralConfig() },
         { id: 'g_comunicados', label: 'Comunicados',     icon: '📢', render: () => renderGestorComunicados() },
         { id: 'g_followups',   label: 'Follow-ups',      icon: '📅', render: () => renderFollowUpCalendar() },
         { id: 'g_mensagens',   label: 'Mensagens',       icon: '💬', render: () => renderGestorChatPage() }
@@ -146,7 +145,6 @@ const NAV_TREE = {
             { id: 'c_ind_minha',    label: 'Minha Indicação',   icon: '📋', render: () => renderMinhaIndicacao() }
         ]},
         { id: 'c_metas',       label: 'Minhas Metas',   icon: '🎯', render: () => renderConsultorMetas() },
-        { id: 'c_mural',       label: 'Mural',          icon: '🏆', render: () => renderMural() },
         { id: 'c_comunicados', label: 'Comunicados',     icon: '📢', render: () => renderComunicadosMural() },
         { id: 'c_mensagens',   label: 'Mensagens',      icon: '💬', action: () => openChatOverlay('gestor') }
     ],
@@ -171,7 +169,6 @@ const NAV_TREE = {
             { id: 'i_trei_cert',    label: 'Meu Certificado',       icon: '🏅', render: () => renderConsCertificados() }
         ]},
         { id: 'i_produtos',    label: 'Produtos',       icon: '📦', section: 'consultorProdutos' },
-        { id: 'i_mural',       label: 'Mural',          icon: '🏆', render: () => renderMural() },
         { id: 'i_comunicados', label: 'Comunicados',     icon: '📢', render: () => renderComunicadosMural() },
         { id: 'i_mensagens',   label: 'Mensagens',      icon: '💬', action: () => openChatOverlay('gestor') }
     ],
@@ -250,8 +247,6 @@ const MODULE_DEFINITIONS = [
       navMap: { gestor: ['g_parceiros'], consultor: ['c_indicacoes'], instalador: ['*'], tecnico: [] } },
     { key: 'portal_cliente',name: 'Portal do Cliente',        icon: '🌐', desc: 'Portal de autoatendimento do cliente final',
       navMap: { gestor: [], consultor: [], instalador: [], tecnico: [], cliente: ['*'] } },
-    { key: 'mural',         name: 'Mural e Desafios',         icon: '🏆', desc: 'Ranking, metas, desafios e feed de vendas',
-      navMap: { gestor: ['g_mural'], consultor: ['c_mural'], instalador: ['i_mural'], tecnico: [] } },
     { key: 'relatorios',    name: 'Relatórios',               icon: '📊', desc: 'Relatórios, análises e histórico de desempenho',
       navMap: { gestor: ['g_vendas'], consultor: [], instalador: [], tecnico: [] } },
     { key: 'comunicados',   name: 'Comunicados',              icon: '📢', desc: 'Comunicados e avisos internos para a equipe',
@@ -1638,36 +1633,6 @@ const sampleState = {
           comissao: { tipo: 'percentual', valor: 10, recorrencia: 5 }, visibilidade: ['consultor'] }
     ],
     formConfigs: {},
-    muralConfig: {
-        enabled: true,
-        showRanking: true,
-        showMeta: true,
-        showFeed: true,
-        showChallenges: true,
-        showComissions: false,
-        hideFeedNames: false,
-        metaValue: 10
-    },
-    challenges: [
-        {
-            id: 'ch_demo1',
-            title: '🚀 Sprint de Vendas — Junho',
-            description: 'Feche 3 contratos no mês e ganhe o prêmio!',
-            type: 'vendas',
-            goal: 3,
-            startDate: '2026-06-01',
-            endDate: '2026-06-30',
-            prize: 'Jantar para 2 + R$ 200 em crédito Tracktiv',
-            prizeVisible: true,
-            visibility: 'publico',
-            status: 'ativo',
-            createdAt: '2026-06-01'
-        }
-    ],
-    salesFeed: [
-        { id: 'feed_demo1', consultorName: 'Laura Mendes', consultorId: 'consultor_1', clientName: 'Auto Prime', plan: 'Profissional', date: '2026-06-01', timestamp: 1748779200000 },
-        { id: 'feed_demo2', consultorName: 'Bruno Silva', consultorId: 'consultor_2', clientName: 'SmartFleet', plan: 'Controle Total', date: '2026-06-01', timestamp: 1748775600000 }
-    ],
     auditLog: [],
     presidenteConfig: { companyName: 'Tracktiv', cnpj: '', address: '', email: '', phone: '', logo: '' },
     commissionRules: {
@@ -1722,8 +1687,7 @@ const cleanState = {
     pendingApprovals: [], productCommissions: {}, pendingUsers: [], pendingInstallations: [],
     photoInstallations: [], trainingProgress: {}, reengagementQueue: [], recoveryHistory: [],
     churnAlertsSent: {}, indicadorReferrals: [],
-    muralConfig: { enabled: true, showRanking: true, showMeta: true, showFeed: true, showChallenges: true, showComissions: false, hideFeedNames: false, metaValue: 10 },
-    challenges: [], salesFeed: [], auditLog: [],
+    auditLog: [],
     presidenteConfig: { companyName: 'Tracktiv', cnpj: '', address: '', email: '', phone: '', logo: '' },
     commissionRules: {
         consultorFirstSale: 50,
@@ -2121,10 +2085,6 @@ function loadState() {
                 if (u.active === undefined) u.active = true;
                 if (!u.createdAt) u.createdAt = '';
             });
-            // Migração: Mural e Desafios / Link de Cadastro
-            if (!app.state.muralConfig) app.state.muralConfig = { enabled: true, showRanking: true, showMeta: true, showFeed: true, showChallenges: true, showComissions: false, hideFeedNames: false, metaValue: 10 };
-            if (!app.state.challenges)  app.state.challenges  = [];
-            if (!app.state.salesFeed)   app.state.salesFeed   = [];
             // Migração: campos do Presidente
             if (!app.state.auditLog)          app.state.auditLog          = [];
             if (!app.state.presidenteConfig)  app.state.presidenteConfig  = { companyName: 'Tracktiv', cnpj: '', address: '', email: '', phone: '', logo: '' };
@@ -3694,9 +3654,6 @@ function approveSale(approvalId) {
     if (approval.instaladorId) addNotification(approval.instaladorId, 'install_pending', `🔧 Novo veículo aprovado para instalação: ${client.name} — ${client.plates || 'placa a informar'}`, { section: 'instaladorFotos' });
     // Checar metas após aprovar venda
     if (approval.consultantId) checkMetaAlerts(approval.consultantId);
-    // Feed de vendas do mural
-    const consultorObj = (app.state.users || []).find(u => u.id === approval.consultantId);
-    addToSalesFeed(client, consultorObj);
     saveState(); renderAppViews();
     showToast(`Venda de "${client.name}" aprovada com sucesso!`, 'success');
 }
@@ -4839,11 +4796,6 @@ function updateClientStage(id, stage) {
     c.stage = stage;
     if (stage === 'Fechado') {
         c.closedDate = todayISO();
-        // Feed de vendas do mural
-        const _feedUser = c.consultantId
-            ? (app.state.users || []).find(u => u.id === c.consultantId)
-            : app.currentUser;
-        addToSalesFeed(c, _feedUser);
     } else { delete c.closedDate; delete c.awaitingApproval; }
     saveState(); renderAppViews();
     _sbUpsertClient(c);
@@ -12768,416 +12720,6 @@ function renderIndicadorRegras() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   MURAL DE PERFORMANCE E DESAFIOS
-═══════════════════════════════════════════════════════════════════ */
-
-function addToSalesFeed(client, consultor) {
-    if (!client || !consultor) return;
-    if (!app.state.salesFeed) app.state.salesFeed = [];
-    app.state.salesFeed.unshift({
-        id: `feed_${Date.now()}`,
-        consultorName: consultor.name || '',
-        consultorId: consultor.id || '',
-        clientName: client.name || '',
-        plan: client.plan || '',
-        date: todayISO(),
-        timestamp: Date.now()
-    });
-    // Keep only last 50
-    if (app.state.salesFeed.length > 50) app.state.salesFeed = app.state.salesFeed.slice(0, 50);
-}
-
-function getMuralRanking() {
-    const consultores = (app.state.users || []).filter(u => u.role === 'consultor');
-    const month = getCurrentMonthKey();
-    return consultores.map(u => {
-        const sales = (app.state.clients || []).filter(c => c.consultantId === u.id && c.stage === 'Fechado' && (c.closedDate || '').startsWith(month));
-        const revenue = sales.reduce((s, c) => s + (c.monthlyFee || 0), 0);
-        const points = sales.length * 100 + Math.round(revenue);
-        return { id: u.id, name: u.name, sales: sales.length, revenue, points };
-    }).sort((a, b) => b.points - a.points);
-}
-
-function getChallengeProgress(challenge, userId) {
-    const month = getCurrentMonthKey();
-    const start = challenge.startDate;
-    const end = challenge.endDate;
-    const inRange = (d) => d && d >= start && d <= end;
-    if (challenge.type === 'vendas') {
-        const count = (app.state.clients || []).filter(c =>
-            c.consultantId === userId && c.stage === 'Fechado' && inRange(c.closedDate)
-        ).length;
-        return { current: count, goal: challenge.goal, pct: Math.min(100, Math.round(count / challenge.goal * 100)) };
-    }
-    if (challenge.type === 'clientes') {
-        const count = (app.state.clients || []).filter(c =>
-            c.consultantId === userId && inRange(c.createdAt)
-        ).length;
-        return { current: count, goal: challenge.goal, pct: Math.min(100, Math.round(count / challenge.goal * 100)) };
-    }
-    if (challenge.type === 'treinamentos') {
-        const done = Object.values((app.state.trainingProgress || {})[userId] || {}).filter(Boolean).length;
-        return { current: done, goal: challenge.goal, pct: Math.min(100, Math.round(done / challenge.goal * 100)) };
-    }
-    return { current: 0, goal: challenge.goal, pct: 0 };
-}
-
-function getDaysLeft(endDate) {
-    if (!endDate) return 0;
-    const diff = new Date(endDate + 'T23:59:59') - new Date();
-    return Math.max(0, Math.ceil(diff / 86400000));
-}
-
-function getMonthDaysLeft() {
-    const now = new Date();
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return Math.max(0, lastDay.getDate() - now.getDate());
-}
-
-function renderMural() {
-    const cfg = app.state.muralConfig || {};
-    const el = document.getElementById('dynamicContent');
-    if (!el) return;
-
-    if (!cfg.enabled) {
-        el.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-soft);">
-            <div style="font-size:3rem;margin-bottom:16px;">🏆</div>
-            <h2 style="color:var(--text);">Mural temporariamente desativado</h2>
-            <p>O gestor desativou o mural de performance. Volte em breve!</p>
-        </div>`;
-        showSection('dynamicContent');
-        return;
-    }
-
-    const role = app.currentUser?.role;
-    const userId = app.currentUser?.id;
-    const ranking = getMuralRanking();
-    const month = getCurrentMonthKey();
-    const totalSales = (app.state.clients || []).filter(c => c.stage === 'Fechado' && (c.closedDate || '').startsWith(month)).length;
-    const metaValue = cfg.metaValue || 0;
-    const metaPct = metaValue > 0 ? Math.min(100, Math.round(totalSales / metaValue * 100)) : 0;
-    const daysLeft = getMonthDaysLeft();
-    const daysPassed = new Date().getDate() - 1 || 1;
-    const projection = daysPassed > 0 ? Math.round(totalSales / daysPassed * (daysPassed + daysLeft)) : 0;
-    const medals = ['🥇', '🥈', '🥉'];
-    const feed = (app.state.salesFeed || []).slice(0, 10);
-    const challenges = (app.state.challenges || []).filter(c => c.status === 'ativo' && c.visibility !== 'privado');
-
-    let html = `<div class="mural-wrapper">
-        <div class="mural-header">
-            <div class="mural-header-left">
-                <span class="mural-badge-live">● AO VIVO</span>
-                <h1>Mural de Performance</h1>
-                <span class="mural-subtitle">${getCurrentMonthLabel()}</span>
-            </div>
-            <div class="mural-header-right">
-                <div class="mural-stat-chip"><span>${daysLeft}</span><small>dias restantes</small></div>
-            </div>
-        </div>`;
-
-    // META DO MÊS
-    if (cfg.showMeta && metaValue > 0) {
-        const metaColor = metaPct >= 100 ? '#10b981' : metaPct >= 60 ? '#f5820d' : '#ef4444';
-        html += `
-        <div class="mural-section">
-            <div class="mural-section-title">🎯 Meta da Equipe — ${getCurrentMonthLabel()}</div>
-            <div class="mural-meta-card">
-                <div class="mural-meta-numbers">
-                    <div class="mural-meta-big">${totalSales}<span class="mural-meta-sep">/</span><span class="mural-meta-goal">${metaValue}</span></div>
-                    <div class="mural-meta-labels"><span>vendas fechadas</span><span>meta do mês</span></div>
-                </div>
-                <div class="mural-meta-bar-wrap">
-                    <div class="mural-meta-bar-track">
-                        <div class="mural-meta-bar-fill" style="width:${metaPct}%;background:${metaColor};"></div>
-                        <span class="mural-meta-pct">${metaPct}%</span>
-                    </div>
-                </div>
-                <div class="mural-meta-info">
-                    <span>📅 ${daysLeft} dias restantes</span>
-                    <span>📈 Projeção: <strong>${projection} vendas</strong></span>
-                    ${metaPct >= 100 ? '<span class="mural-achieved">🎉 META BATIDA!</span>' : ''}
-                </div>
-            </div>
-        </div>`;
-    }
-
-    // RANKING
-    if (cfg.showRanking && ranking.length) {
-        const myRankIdx = ranking.findIndex(r => r.id === userId);
-        html += `
-        <div class="mural-section">
-            <div class="mural-section-title">🏆 Ranking do Mês</div>
-            <div class="mural-ranking-list">`;
-        ranking.forEach((r, i) => {
-            const isMe = r.id === userId;
-            html += `
-                <div class="mural-rank-row${isMe ? ' mural-rank-me' : ''}">
-                    <div class="mural-rank-pos">${medals[i] || `#${i+1}`}</div>
-                    <div class="mural-rank-name">${esc(r.name)}${isMe ? ' <span class="mural-you-badge">você</span>' : ''}</div>
-                    <div class="mural-rank-stats">
-                        <span class="mural-rank-sales">${r.sales} <small>venda${r.sales !== 1 ? 's' : ''}</small></span>
-                        <span class="mural-rank-pts">${r.points.toLocaleString('pt-BR')} pts</span>
-                    </div>
-                </div>`;
-        });
-        html += `</div></div>`;
-    }
-
-    // DESAFIOS
-    if (cfg.showChallenges && challenges.length) {
-        html += `<div class="mural-section"><div class="mural-section-title">⚡ Desafios Ativos</div><div class="mural-challenges-grid">`;
-        challenges.forEach(ch => {
-            const prog = (role === 'consultor' || (role === 'instalador' && app.currentUser?.partnerType !== 'indicador'))
-                ? getChallengeProgress(ch, userId) : { current: 0, goal: ch.goal, pct: 0 };
-            const days = getDaysLeft(ch.endDate);
-            const typeLabel = { vendas: 'vendas', clientes: 'cadastros', treinamentos: 'treinamentos' }[ch.type] || ch.type;
-            const isWinner = prog.pct >= 100;
-            html += `
-            <div class="mural-challenge-card${isWinner ? ' mural-challenge-won' : ''}">
-                ${isWinner ? '<div class="mural-challenge-ribbon">🏅 CONCLUÍDO!</div>' : ''}
-                <div class="mural-challenge-title">${esc(ch.title)}</div>
-                <div class="mural-challenge-desc">${esc(ch.description)}</div>
-                <div class="mural-challenge-progress">
-                    <div class="mural-prog-track"><div class="mural-prog-fill" style="width:${prog.pct}%"></div></div>
-                    <div class="mural-prog-label">${prog.current}/${prog.goal} ${typeLabel} — ${prog.pct}%</div>
-                </div>
-                <div class="mural-challenge-footer">
-                    ${ch.prizeVisible ? `<div class="mural-prize">🎁 ${esc(ch.prize)}</div>` : '<div class="mural-prize">🎁 Prêmio surpresa!</div>'}
-                    <div class="mural-deadline">${days > 0 ? `⏰ ${days} dias restantes` : '🔔 Encerrado'}</div>
-                </div>
-                ${prog.pct >= 100 ? '' : prog.pct >= 50 ? `<div class="mural-trak-tip">💪 Faltam <strong>${prog.goal - prog.current}</strong> ${typeLabel} para você ganhar o prêmio!</div>`
-                    : `<div class="mural-trak-tip">🚀 Você está em <strong>${prog.current}/${prog.goal}</strong> — bora acelerar!</div>`}
-            </div>`;
-        });
-        html += `</div></div>`;
-    }
-
-    // FEED DE VENDAS
-    if (cfg.showFeed && feed.length) {
-        html += `
-        <div class="mural-section">
-            <div class="mural-section-title">🔥 Últimas Vendas</div>
-            <div class="mural-feed">`;
-        feed.forEach((f, idx) => {
-            const name = cfg.hideFeedNames ? '🕵️ Consultor' : esc(f.consultorName);
-            const client = cfg.hideFeedNames ? 'um novo cliente' : esc(f.clientName);
-            html += `
-            <div class="mural-feed-item" style="animation-delay:${idx * 0.06}s">
-                <span class="mural-feed-fire">🔥</span>
-                <span class="mural-feed-text"><strong>${name}</strong> fechou ${client} — <span class="mural-feed-plan">${esc(f.plan)}</span></span>
-                <span class="mural-feed-time">${formatDate(f.date)}</span>
-            </div>`;
-        });
-        html += `</div></div>`;
-    }
-
-    html += `</div>`;
-    el.innerHTML = html;
-    showSection('dynamicContent');
-}
-
-function renderGestorMuralConfig() {
-    const cfg = app.state.muralConfig || {};
-    const challenges = app.state.challenges || [];
-    const el = document.getElementById('dynamicContent');
-    if (!el) return;
-
-    const toggle = (key, label) => `
-        <label class="mural-toggle-row">
-            <span>${label}</span>
-            <label class="toggle-switch">
-                <input type="checkbox" data-cfg="${key}" ${cfg[key] ? 'checked' : ''}>
-                <span class="toggle-slider"></span>
-            </label>
-        </label>`;
-
-    const challengeRows = challenges.length
-        ? challenges.map(ch => {
-            const allParticipants = (app.state.users || []).filter(u => u.role === 'consultor');
-            const leaders = allParticipants.map(u => {
-                const p = getChallengeProgress(ch, u.id);
-                return { name: u.name, ...p };
-            }).sort((a, b) => b.current - a.current).slice(0, 3);
-            const statusBadge = { ativo: 'badge-active', pausado: 'badge-warn', encerrado: 'badge-danger' }[ch.status] || 'badge-warn';
-            return `
-            <div class="mural-admin-challenge-card">
-                <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-weight:700;font-size:1rem;margin-bottom:4px;">${esc(ch.title)}</div>
-                        <div style="color:var(--text-soft);font-size:0.88rem;margin-bottom:8px;">${esc(ch.description)}</div>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:0.82rem;color:var(--text-muted);">
-                            <span>🎯 Meta: ${ch.goal} ${ch.type}</span>
-                            <span>📅 ${formatDate(ch.startDate)} → ${formatDate(ch.endDate)}</span>
-                            <span>🎁 ${ch.prize}</span>
-                            <span>⏰ ${getDaysLeft(ch.endDate)} dias restantes</span>
-                        </div>
-                        ${leaders.length ? `<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
-                            ${['🥇','🥈','🥉'].slice(0,leaders.length).map((m,i) => `<span style="font-size:0.8rem;background:var(--surface-3);padding:2px 8px;border-radius:99px;">${m} ${esc(leaders[i].name)}: ${leaders[i].current}/${ch.goal}</span>`).join('')}
-                        </div>` : ''}
-                    </div>
-                    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;">
-                        <span class="badge ${statusBadge}">${ch.status}</span>
-                        <div style="display:flex;gap:6px;">
-                            <button class="small-btn" data-action="edit-ch" data-id="${ch.id}">Editar</button>
-                            <button class="small-btn" data-action="toggle-ch" data-id="${ch.id}" data-status="${ch.status}">${ch.status === 'ativo' ? 'Pausar' : 'Ativar'}</button>
-                            <button class="small-btn danger-btn" data-action="end-ch" data-id="${ch.id}">Encerrar</button>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
-        }).join('')
-        : `<div style="text-align:center;padding:28px;color:var(--text-soft);">Nenhum desafio criado ainda. Crie o primeiro!</div>`;
-
-    el.innerHTML = `
-        <div class="section-header" style="margin-bottom:24px;">
-            <h2>🏆 Mural e Desafios</h2>
-            <p>Configure o painel de performance da equipe e crie desafios motivacionais.</p>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
-            <div class="card">
-                <h3 style="margin-bottom:16px;">Controles do Mural</h3>
-                ${toggle('enabled', '🟢 Mural ativado para a equipe')}
-                <div style="height:1px;background:var(--border);margin:12px 0;"></div>
-                <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">Seções visíveis:</p>
-                ${toggle('showRanking', '🏆 Ranking dos consultores')}
-                ${toggle('showMeta', '🎯 Meta do mês')}
-                ${toggle('showFeed', '🔥 Feed de últimas vendas')}
-                ${toggle('showChallenges', '⚡ Desafios ativos')}
-                ${toggle('showComissions', '💰 Comissões acumuladas')}
-                <div style="height:1px;background:var(--border);margin:12px 0;"></div>
-                ${toggle('hideFeedNames', '🕵️ Ocultar nomes no feed de vendas')}
-            </div>
-            <div class="card">
-                <h3 style="margin-bottom:16px;">Meta Global do Mês</h3>
-                <p style="color:var(--text-soft);font-size:0.9rem;margin-bottom:12px;">Defina quantas vendas a equipe precisa fechar no mês para bater a meta.</p>
-                <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
-                    <input type="number" id="muralMetaInput" min="1" max="9999" value="${cfg.metaValue || 0}" style="width:100px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:1.1rem;font-weight:700;">
-                    <span style="color:var(--text-soft);">vendas no mês</span>
-                    <button class="primary-btn" id="saveMuralMetaBtn">Salvar</button>
-                </div>
-                <div style="margin-top:12px;">
-                    <button class="secondary-btn" onclick="renderMural()">👁️ Visualizar Mural</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-                <h3>⚡ Desafios</h3>
-                <button class="primary-btn" id="newChallengeBtn">+ Criar Desafio</button>
-            </div>
-            <div id="challengeList">${challengeRows}</div>
-        </div>
-    `;
-    showSection('dynamicContent');
-
-    // Toggle switches
-    el.querySelectorAll('input[data-cfg]').forEach(inp => {
-        inp.addEventListener('change', () => {
-            const key = inp.dataset.cfg;
-            app.state.muralConfig[key] = inp.checked;
-            saveState();
-        });
-    });
-
-    // Meta save
-    document.getElementById('saveMuralMetaBtn').addEventListener('click', () => {
-        const v = parseInt(document.getElementById('muralMetaInput').value) || 0;
-        app.state.muralConfig.metaValue = v;
-        saveState();
-        document.getElementById('saveMuralMetaBtn').textContent = '✓ Salvo';
-        setTimeout(() => { if (document.getElementById('saveMuralMetaBtn')) document.getElementById('saveMuralMetaBtn').textContent = 'Salvar'; }, 1500);
-    });
-
-    // New challenge
-    document.getElementById('newChallengeBtn').addEventListener('click', () => openDesafioModal(null));
-
-    // Challenge actions
-    el.querySelectorAll('[data-action="edit-ch"]').forEach(b => b.addEventListener('click', () => openDesafioModal(b.dataset.id)));
-    el.querySelectorAll('[data-action="toggle-ch"]').forEach(b => b.addEventListener('click', () => {
-        const ch = (app.state.challenges || []).find(c => c.id === b.dataset.id);
-        if (ch) { ch.status = ch.status === 'ativo' ? 'pausado' : 'ativo'; saveState(); renderGestorMuralConfig(); }
-    }));
-    el.querySelectorAll('[data-action="end-ch"]').forEach(b => b.addEventListener('click', () => {
-        if (!confirm('Encerrar este desafio?')) return;
-        const ch = (app.state.challenges || []).find(c => c.id === b.dataset.id);
-        if (ch) { ch.status = 'encerrado'; saveState(); renderGestorMuralConfig(); }
-    }));
-}
-
-function openDesafioModal(id) {
-    const ch = id ? (app.state.challenges || []).find(c => c.id === id) : null;
-    showModal(ch ? 'Editar desafio' : 'Criar novo desafio', `
-        <form id="desafioForm" class="form-grid">
-            <div class="field full-width"><label>Título *</label><input id="chTitle" type="text" value="${esc(ch?.title || '')}" required placeholder="Ex: Sprint de Vendas — Junho 🚀" /></div>
-            <div class="field full-width"><label>Descrição</label><textarea id="chDesc" rows="2" placeholder="Descreva o desafio e o que os consultores precisam fazer...">${esc(ch?.description || '')}</textarea></div>
-            <div class="field"><label>Tipo de meta *</label>
-                <select id="chType">
-                    <option value="vendas" ${ch?.type==='vendas'?'selected':''}>Vendas fechadas</option>
-                    <option value="clientes" ${ch?.type==='clientes'?'selected':''}>Clientes cadastrados</option>
-                    <option value="treinamentos" ${ch?.type==='treinamentos'?'selected':''}>Treinamentos concluídos</option>
-                </select>
-            </div>
-            <div class="field"><label>Valor da meta *</label><input id="chGoal" type="number" min="1" value="${ch?.goal || 5}" required /></div>
-            <div class="field"><label>Data de início *</label><input id="chStart" type="date" value="${ch?.startDate || todayISO()}" required /></div>
-            <div class="field"><label>Data de término *</label><input id="chEnd" type="date" value="${ch?.endDate || ''}" required /></div>
-            <div class="field full-width"><label>Prêmio</label><input id="chPrize" type="text" value="${esc(ch?.prize || '')}" placeholder="Ex: Jantar para 2 + R$ 300 em crédito" /></div>
-            <div class="field"><label>Visibilidade</label>
-                <select id="chVisibility">
-                    <option value="publico" ${ch?.visibility!=='privado'?'selected':''}>Público — visível para toda equipe</option>
-                    <option value="privado" ${ch?.visibility==='privado'?'selected':''}>Privado — apenas gestor</option>
-                </select>
-            </div>
-            <div class="field"><label>Prêmio visível para equipe?</label>
-                <select id="chPrizeVisible">
-                    <option value="1" ${ch?.prizeVisible!==false?'selected':''}>Sim — mostrar prêmio</option>
-                    <option value="0" ${ch?.prizeVisible===false?'selected':''}>Não — prêmio surpresa</option>
-                </select>
-            </div>
-            <div class="actions full-width">
-                <button type="submit" class="primary-btn">${ch ? 'Salvar alterações' : 'Criar desafio'}</button>
-                <button type="button" onclick="closeModal()" class="secondary-btn">Cancelar</button>
-            </div>
-            <div id="chError" class="error-text full-width"></div>
-        </form>
-    `);
-    document.getElementById('desafioForm').addEventListener('submit', e => {
-        e.preventDefault();
-        const title = document.getElementById('chTitle').value.trim();
-        const goal  = parseInt(document.getElementById('chGoal').value) || 0;
-        const start = document.getElementById('chStart').value;
-        const end   = document.getElementById('chEnd').value;
-        const err   = document.getElementById('chError');
-        err.textContent = '';
-        if (!title || !goal || !start || !end) { err.textContent = 'Preencha os campos obrigatórios.'; return; }
-        if (end < start) { err.textContent = 'A data de término deve ser após a data de início.'; return; }
-        const data = {
-            title,
-            description: document.getElementById('chDesc').value.trim(),
-            type:         document.getElementById('chType').value,
-            goal,
-            startDate:    start,
-            endDate:      end,
-            prize:        document.getElementById('chPrize').value.trim(),
-            prizeVisible: document.getElementById('chPrizeVisible').value === '1',
-            visibility:   document.getElementById('chVisibility').value,
-            status:       'ativo',
-            createdAt:    todayISO()
-        };
-        if (!app.state.challenges) app.state.challenges = [];
-        if (ch) {
-            Object.assign(app.state.challenges.find(c => c.id === ch.id), data);
-            showToast(`Desafio "${data.title}" atualizado.`, 'success');
-        } else {
-            app.state.challenges.push({ id: `ch_${Date.now()}`, ...data });
-            showToast(`Desafio "${data.title}" criado com sucesso!`, 'success');
-        }
-        saveState(); closeModal(); renderGestorMuralConfig();
-    });
-}
-
-/* ═══════════════════════════════════════════════════════════════════
    LINK DE CADASTRO DO CONSULTOR
 ═══════════════════════════════════════════════════════════════════ */
 
@@ -20724,7 +20266,6 @@ function renderGestorDashboardV2() {
     });
     var churnRisk = clients.filter(function(c) { return c.stage === 'Fechado' && calculateChurnScore(c) >= 70; });
     var gFus      = (app.state.followUps || []).filter(function(f) { return !f.done && f.date <= today; }).slice(0, 5);
-    var feed      = (app.state.salesFeed || []).slice().reverse().slice(0, 6);
 
     var maxFunnel = Math.max.apply(null, stageOrder.map(function(s) { return clients.filter(function(c) { return c.stage === s; }).length; }).concat([1]));
 
@@ -20774,18 +20315,6 @@ function renderGestorDashboardV2() {
                 '</div></div>';
         }).join('');
 
-    var feedHtml = feed.length === 0
-        ? '<p style="text-align:center;color:var(--text-soft);padding:16px;">Nenhuma atividade recente.</p>'
-        : feed.map(function(f) {
-            return '<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);">' +
-                '<span style="font-size:.85rem;">🏷️</span>' +
-                '<div style="flex:1;">' +
-                '<div style="font-size:.82rem;"><strong>' + esc((f.clientName || '').split(' ')[0]) + '</strong> → ' +
-                (f.stage === 'Fechado' ? '<span style="color:var(--success);">Fechado ✅</span>' : esc(f.stage || '')) + '</div>' +
-                '<div style="font-size:.72rem;color:var(--text-soft);">' + esc(f.consultorName || '') + ' · ' + formatDate(f.date || '') + '</div>' +
-                '</div></div>';
-        }).join('');
-
     el.innerHTML =
         '<div class="section-header"><h2>📊 Dashboard — ' + getCurrentMonthLabel() + '</h2>' +
         '<p style="color:var(--text-soft);font-size:.87rem;margin:0;">Visão geral da operação em tempo real</p></div>' +
@@ -20803,13 +20332,12 @@ function renderGestorDashboardV2() {
             '<div class="card"><h3 style="margin:0 0 14px;">🏆 Ranking de Consultores</h3>' + rankHtml + '</div>' +
             '<div class="card"><h3 style="margin:0 0 12px;">🚨 Alertas</h3>' + alertsHtml + '</div>' +
         '</div>' +
-        '<div class="dash-grid-2" style="margin-top:18px;">' +
+        '<div style="margin-top:18px;">' +
             '<div class="card">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
             '<h3 style="margin:0;">📅 Follow-ups pendentes</h3>' +
             '<button class="small-btn" onclick="showSection(\'dynamicContent\');typeof renderFollowUpCalendar===\'function\'&&renderFollowUpCalendar()">Ver todos</button>' +
             '</div>' + fuHtml + '</div>' +
-            '<div class="card"><h3 style="margin:0 0 12px;">⚡ Feed de atividades</h3>' + feedHtml + '</div>' +
         '</div>';
 
     initDashCounters();
