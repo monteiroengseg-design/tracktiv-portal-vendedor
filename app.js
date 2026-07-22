@@ -10235,15 +10235,23 @@ function openAssignTecnicoClientModal(tecnicoId) {
     if (!t) return;
     const allClients = app.state.clients || [];
     const assigned   = ((app.state.tecnicoClients || {})[tecnicoId] || []);
+    const quals      = t.qualifications || [];
+    const outOfScope = c => {
+        if (!quals.length) return false;
+        const seg = PRODUCT_SEGMENT_MAP[c.product];
+        return seg && !quals.includes(seg);
+    };
+    const anyOutOfScope = allClients.some(outOfScope);
     showModal(`Atribuir clientes — ${t.name}`, `
         <p class="text-muted" style="margin-bottom:14px;">Selecione os clientes que serão atendidos por este técnico:</p>
+        ${anyOutOfScope ? `<p style="background:#fff4e8;border-left:4px solid var(--accent);border-radius:6px;padding:8px 12px;font-size:0.85rem;margin-bottom:14px;">⚠️ Clientes marcados estão fora da especialidade cadastrada do técnico (${quals.length ? esc(quals.join(', ')) : '—'}) — se atribuídos, não vão aparecer na lista "Meus Clientes" dele.</p>` : ''}
         <div style="max-height:360px;overflow-y:auto;">
             ${allClients.length === 0
                 ? '<p class="text-muted">Nenhum cliente cadastrado.</p>'
                 : allClients.map(c => `
                     <label style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;">
                         <input type="checkbox" value="${c.id}" ${assigned.includes(c.id) ? 'checked' : ''} style="width:16px;height:16px;">
-                        <span><strong>${esc(c.name)}</strong> <small class="text-muted">${esc(c.product || '')}</small></span>
+                        <span><strong>${esc(c.name)}</strong> <small class="text-muted">${esc(c.product || '')}</small>${outOfScope(c) ? ' <small style="color:var(--accent);font-weight:600;">⚠️ fora da especialidade</small>' : ''}</span>
                     </label>`).join('')}
         </div>
         <div class="actions" style="margin-top:16px;">
