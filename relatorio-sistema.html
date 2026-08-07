@@ -140,10 +140,6 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
 .summary-hero { background: linear-gradient(135deg, #1a2e4a 0%, #2d4a6e 100%); color: #fff; border-radius: 16px; padding: 32px; margin-bottom: 28px; }
 .summary-hero h3 { color: #f5820d; margin: 0 0 12px; font-size: 1.1rem; }
 .summary-hero p  { color: rgba(255,255,255,.8); font-size: .95rem; margin: 0; line-height: 1.7; }
-.summary-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-.sk { text-align: center; padding: 16px; background: var(--bg, #f0f4f8); border-radius: 10px; }
-.sk .sk-v { font-size: 1.7rem; font-weight: 800; color: #f5820d; line-height: 1; margin-bottom: 4px; }
-.sk .sk-l { font-size: .72rem; color: rgba(255,255,255,.55); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
 
 /* ── FOOTER ── */
 .pg-footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: .75rem; color: #94a3b8; }
@@ -167,17 +163,17 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
 <div class="cover">
   <div class="cover-top">
     <div class="cover-logo">TRACKTIV</div>
-    <div class="cover-tag">Relatório Técnico Executivo</div>
-    <h1>Análise Completa do<br><em>Portal do Vendedor</em></h1>
-    <p class="cover-sub">Avaliação detalhada de pontos fortes, vulnerabilidades críticas e roadmap de implementações prioritárias para evolução do sistema.</p>
+    <div class="cover-tag">Relatório Técnico Executivo — Atualização</div>
+    <h1>Estado Atual do<br><em>Portal do Vendedor</em></h1>
+    <p class="cover-sub">Raio-x da migração para Supabase já em andamento, o que foi resolvido desde o último relatório e as urgências que precisam de decisão para o sistema avançar com segurança.</p>
   </div>
   <div class="cover-bottom">
     <div class="cover-meta">
-      <strong>Tracktiv Portal v3.0</strong>
-      Junho de 2026 &nbsp;·&nbsp; Uso Interno &nbsp;·&nbsp; Confidencial
+      <strong>Tracktiv Portal — Portal do Vendedor</strong>
+      Agosto de 2026 &nbsp;·&nbsp; Uso Interno &nbsp;·&nbsp; Confidencial
     </div>
     <div class="cover-score">
-      <div class="score-val">7.4</div>
+      <div class="score-val">8.3</div>
       <div class="score-lbl">Score Geral /10</div>
     </div>
   </div>
@@ -188,12 +184,12 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
   <div class="sec-head">
     <div class="ch-num">Sumário Executivo</div>
     <h2>Visão Geral da Avaliação</h2>
-    <p class="lead">O Portal do Vendedor da Tracktiv é um sistema SaaS maduro com funcionalidades avançadas de CRM, inteligência preditiva e gestão de parceiros. Esta análise identifica os principais vetores de crescimento e os riscos que precisam ser mitigados.</p>
+    <p class="lead">Desde o relatório de junho/2026, o maior risco identificado — persistência exclusiva em <code>localStorage</code> — deixou de existir. O sistema já roda sobre um backend real (Supabase: Postgres + Auth + Storage), com 22 tabelas, 39 políticas de RLS e write-through na maioria dos módulos críticos. Esta atualização foca no que mudou e, principalmente, no que ainda precisa de decisão urgente.</p>
   </div>
 
   <div class="summary-hero">
     <h3>Diagnóstico Geral</h3>
-    <p>O sistema apresenta <strong>excelente riqueza funcional</strong> para uma aplicação sem dependências externas, com destaque para o motor de churn preditivo, o sistema de assinatura digital com validade legal e os dashboards visuais por perfil. A maior vulnerabilidade estrutural é a <strong>persistência exclusiva em localStorage</strong>, que limita escalabilidade, colaboração em tempo real e segurança dos dados.</p>
+    <p>A migração para Supabase avançou de forma consistente ao longo de ~25 commits: autenticação real com sessão e RLS, clientes, instalações, chamados, comunicados, notificações e documentos de cliente (agora em Storage, não mais base64) já sincronizam com o servidor. O ponto de maior atenção agora não é mais "o sistema tem backend?" — é <strong>garantir que as peças novas (convite de usuário via Edge Function, sincronização em tempo real, exclusão segura de usuário) estejam realmente ativas em produção</strong> e não apenas no código local.</p>
   </div>
 
   <div class="score-grid">
@@ -201,7 +197,7 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
       <div class="sc-icon">⚙️</div>
       <div class="sc-area">Funcionalidades</div>
       <div class="sc-val">9.0</div>
-      <div class="sc-note">Riqueza excepcional de features</div>
+      <div class="sc-note">Riqueza excepcional, mantida</div>
     </div>
     <div class="score-card ok">
       <div class="sc-icon">🎨</div>
@@ -213,19 +209,19 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
       <div class="sc-icon">📱</div>
       <div class="sc-area">Responsividade</div>
       <div class="sc-val">7.5</div>
-      <div class="sc-note">Boa, mas mobile pode melhorar</div>
+      <div class="sc-note">Boa, mobile ainda sem PWA</div>
     </div>
-    <div class="score-card warn">
+    <div class="score-card ok">
       <div class="sc-icon">🔒</div>
       <div class="sc-area">Segurança</div>
-      <div class="sc-val">4.5</div>
-      <div class="sc-note">localStorage sem criptografia</div>
+      <div class="sc-val">7.6</div>
+      <div class="sc-note">↑ de 4.5 — Auth real + RLS + Edge Function ativa</div>
     </div>
-    <div class="score-card warn">
+    <div class="score-card ok">
       <div class="sc-icon">📡</div>
       <div class="sc-area">Escalabilidade</div>
-      <div class="sc-val">3.0</div>
-      <div class="sc-note">Sem backend real</div>
+      <div class="sc-val">7.5</div>
+      <div class="sc-note">↑ de 3.0 — Postgres real, falta realtime</div>
     </div>
     <div class="score-card ok">
       <div class="sc-icon">🤖</div>
@@ -239,238 +235,199 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
   <div class="bar-row"><div class="bar-lbl">Funcionalidades</div><div class="bar-track"><div class="bar-fill" style="width:90%;background:#10b981;"></div></div><div class="bar-val" style="color:#059669;">9.0</div></div>
   <div class="bar-row"><div class="bar-lbl">UX & Design</div><div class="bar-track"><div class="bar-fill" style="width:82%;background:#10b981;"></div></div><div class="bar-val" style="color:#059669;">8.2</div></div>
   <div class="bar-row"><div class="bar-lbl">Inteligência</div><div class="bar-track"><div class="bar-fill" style="width:80%;background:#3b82f6;"></div></div><div class="bar-val" style="color:#2563eb;">8.0</div></div>
+  <div class="bar-row"><div class="bar-lbl">Escalabilidade</div><div class="bar-track"><div class="bar-fill" style="width:75%;background:#3b82f6;"></div></div><div class="bar-val" style="color:#2563eb;">7.5</div></div>
   <div class="bar-row"><div class="bar-lbl">Responsividade</div><div class="bar-track"><div class="bar-fill" style="width:75%;background:#f59e0b;"></div></div><div class="bar-val" style="color:#d97706;">7.5</div></div>
-  <div class="bar-row"><div class="bar-lbl">Manutenibilidade</div><div class="bar-track"><div class="bar-fill" style="width:55%;background:#f59e0b;"></div></div><div class="bar-val" style="color:#d97706;">5.5</div></div>
-  <div class="bar-row"><div class="bar-lbl">Segurança</div><div class="bar-track"><div class="bar-fill" style="width:45%;background:#ef4444;"></div></div><div class="bar-val" style="color:#dc2626;">4.5</div></div>
-  <div class="bar-row"><div class="bar-lbl">Escalabilidade</div><div class="bar-track"><div class="bar-fill" style="width:30%;background:#ef4444;"></div></div><div class="bar-val" style="color:#dc2626;">3.0</div></div>
+  <div class="bar-row"><div class="bar-lbl">Segurança</div><div class="bar-track"><div class="bar-fill" style="width:76%;background:#f59e0b;"></div></div><div class="bar-val" style="color:#d97706;">7.6</div></div>
+  <div class="bar-row"><div class="bar-lbl">Manutenibilidade</div><div class="bar-track"><div class="bar-fill" style="width:48%;background:#ef4444;"></div></div><div class="bar-val" style="color:#dc2626;">4.8</div></div>
+
+  <div class="box box-orange" style="margin-top:24px;">
+    <strong>Leitura rápida deste relatório</strong>
+    A Seção 02 lista as <strong>urgências reais de agora</strong> — o que precisa de ação nos próximos dias, não um roadmap de trimestre. A Seção 04 traz o plano de ação priorizado.
+  </div>
 
   <div class="pg-footer">
-    <span>Tracktiv — Relatório Técnico Executivo 2026</span>
+    <span>Tracktiv — Relatório Técnico Executivo — Agosto 2026</span>
     <span>Sumário Executivo</span>
   </div>
 </div>
 
-<!-- ═══════════ PONTOS FORTES ═══════════ -->
+<!-- ═══════════ O QUE JÁ FOI RESOLVIDO ═══════════ -->
 <div class="page">
   <div class="sec-head">
     <div class="ch-num">Seção 01</div>
-    <h2>Pontos Fortes</h2>
-    <p class="lead">O sistema demonstra maturidade funcional impressionante para uma aplicação frontend pura. Os pontos a seguir representam diferenciais competitivos reais que agregam valor ao negócio.</p>
+    <h2>O que já foi resolvido desde Junho/2026</h2>
+    <p class="lead">Estes itens eram os riscos críticos do relatório anterior. Todos foram endereçados por commits reais no repositório — listados aqui para que a equipe saiba o que já não precisa mais de atenção.</p>
   </div>
 
-  <h3>🏆 Excelentes</h3>
-
   <div class="sw-item">
-    <div class="sw-icon green">🤖</div>
+    <div class="sw-icon green">🗄️</div>
     <div class="sw-body">
-      <h4>Motor de Churn Preditivo com 5 Sinais</h4>
-      <p>Algoritmo próprio que combina gap de follow-up, chamados abertos, tempo no plano, histórico de contato e score de propensão. Resultado: score 0–100 em tempo real com badge visual e alertas automáticos ao cruzar 70 pts. Poucos CRMs de mercado oferecem isso out-of-the-box.</p>
+      <h4>Backend real: Supabase (Postgres + Auth + Storage)</h4>
+      <p>22 tabelas no banco (clients, profiles, installations, chamados, comunicados, notifications, tecnico_clients, client_documents, doc_checklists etc.) e 39 políticas de RLS. Deixou de existir o risco de perda total de dados ao limpar o navegador.</p>
     </div>
   </div>
 
   <div class="sw-item">
-    <div class="sw-icon green">✍️</div>
+    <div class="sw-icon green">🔑</div>
     <div class="sw-body">
-      <h4>Sistema de Assinatura Digital com Validade Legal</h4>
-      <p>4 tipos de assinatura (canvas, imagem, cursiva, A1), biblioteca pessoal, SHA-256 hash, IP, timestamp, código de verificação e certificado imprimível com base legal (MP 2.200-2/2001 + Lei 14.063/2020). Feature enterprise entregue sem dependências.</p>
+      <h4>Autenticação real com sessão e RLS</h4>
+      <p>Presidente, gestor, técnico, consultor, instalador e cliente autenticam de fato contra o Supabase Auth, com <code>session restore</code> e políticas de acesso por role. As credenciais deixaram de ficar só em texto puro no <code>localStorage</code>.</p>
     </div>
   </div>
-
-  <div class="sw-item">
-    <div class="sw-icon green">📊</div>
-    <div class="sw-body">
-      <h4>Dashboards Inteligentes para 8 Perfis</h4>
-      <p>Cada perfil tem um dashboard único com KPIs em gradiente, gráfico de barras dos últimos 6 meses, progress bars animados, contadores numéricos e alertas semânticos. Experiência visual muito superior à média de sistemas SaaS comerciais.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon green">🎯</div>
-    <div class="sw-body">
-      <h4>CRM Completo com Automações</h4>
-      <p>Funil visual Kanban com 6 etapas, score de propensão, follow-up calendário, histórico de interações, badges de churn e integração nativa com propostas, upsell e re-engajamento. Tudo conectado e automático.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon green">🔗</div>
-    <div class="sw-body">
-      <h4>Ecossistema de Parceiros Diferenciado</h4>
-      <p>3 tipos de parceiros (Instalador, Indicador, Executivo) com portais, comissões e dashboards distintos. O modelo do Parceiro Executivo com % sobre lucro é particularmente sofisticado e raro em sistemas deste porte.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon green">🎮</div>
-    <div class="sw-body">
-      <h4>Gamificação com Mural de Performance</h4>
-      <p>Sistema de desafios, ranking em tempo real, feed de vendas ao vivo e TRAK tips motivacionais. Configuração granular pelo gestor com toggles individuais por seção. Aumenta engajamento da equipe comercial.</p>
-    </div>
-  </div>
-
-  <h3>✅ Muito Bons</h3>
 
   <div class="sw-item">
     <div class="sw-icon green">📄</div>
     <div class="sw-body">
-      <h4>Gerador de Propostas PDF com WhatsApp</h4>
-      <p>Proposta profissional gerada em segundos com histórico salvo, suporte a @media print e deeplink para WhatsApp com mensagem pré-preenchida. Reduz drasticamente o tempo de envio de propostas.</p>
+      <h4>Documentos de cliente em Supabase Storage</h4>
+      <p>Antes eram base64 salvos no navegador (rápido de estourar o limite de 10MB). Hoje ficam no bucket <code>client-documents</code>, com URL assinada e toast visível (✅) confirmando o upload no servidor.</p>
     </div>
   </div>
 
   <div class="sw-item">
     <div class="sw-icon green">🔄</div>
     <div class="sw-body">
-      <h4>Re-engajamento Automático de Leads Perdidos</h4>
-      <p>Timer de 30/60/90 dias, mensagens personalizadas por motivo de perda e fila automática de follow-up. Recupera oportunidades que seriam esquecidas.</p>
+      <h4>Telas de edição agora sincronizam de verdade</h4>
+      <p>Edição de técnico, consultor, parceiro e cliente-portal escreviam só no <code>localStorage</code> e voltavam ao valor antigo no próximo login. As 4 telas agora chamam <code>_sbRun(...profiles.upsert(...))</code>, seguindo o mesmo padrão já usado na criação de usuários.</p>
     </div>
   </div>
 
   <div class="sw-item">
-    <div class="sw-icon green">🔗</div>
+    <div class="sw-icon green">✉️</div>
     <div class="sw-body">
-      <h4>Link Público de Captação de Leads</h4>
-      <p>Formulário multi-step público sem login, com QR code, compartilhamento WhatsApp e rastreamento de origem. Excelente ferramenta de geração de demanda para consultores.</p>
+      <h4>Convite de usuário sem expor chave de servidor no navegador</h4>
+      <p>Criação de consultor/instalador/técnico/gestor passou a chamar uma Edge Function (<code>invite-user</code>) que roda no servidor com a <code>service_role key</code>, em vez de qualquer chamada administrativa direta do cliente. Ver ressalva na Seção 02, item 1 — a function ainda não está versionada no git.</p>
     </div>
   </div>
 
   <div class="sw-item">
-    <div class="sw-icon green">📦</div>
+    <div class="sw-icon green">🐛</div>
     <div class="sw-body">
-      <h4>Zero Dependências Externas</h4>
-      <p>HTML + CSS + JS puros. Sem npm, webpack, frameworks ou CDNs de lógica. Deployável em qualquer servidor estático, abre offline, sem build step, sem vulnerabilidades de supply chain.</p>
+      <h4>Bug de seed de usuários órfãos — resolvido (2ª vez, causa raiz real)</h4>
+      <p><code>confirmation_token</code> nulo em <code>auth.users</code> gerava 500 no GoTrue e deixava usuários órfãos. Corrigido no seed.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon green">📥</div>
+    <div class="sw-body">
+      <h4>Exportação CSV já disponível</h4>
+      <p><code>exportCSVClientes()</code> e <code>exportCSVLeads()</code> já existem — o relatório de junho listava isso como lacuna; hoje é uma função ativa acessível pelo gestor.</p>
     </div>
   </div>
 
   <div class="pg-footer">
-    <span>Tracktiv — Relatório Técnico Executivo 2026</span>
-    <span>Seção 01 — Pontos Fortes</span>
+    <span>Tracktiv — Relatório Técnico Executivo — Agosto 2026</span>
+    <span>Seção 01 — Resolvido desde Junho</span>
   </div>
 </div>
 
-<!-- ═══════════ PONTOS FRACOS ═══════════ -->
+<!-- ═══════════ URGÊNCIAS ═══════════ -->
 <div class="page">
   <div class="sec-head">
     <div class="ch-num">Seção 02</div>
-    <h2>Pontos Fracos & Vulnerabilidades</h2>
-    <p class="lead">Os problemas a seguir foram identificados e classificados por criticidade. Alguns são limitações arquiteturais estruturais — exigem reescrita parcial. Outros são melhorias incrementais viáveis dentro da estrutura atual.</p>
+    <h2>Urgências para Avançar</h2>
+    <p class="lead">Itens que precisam de decisão ou verificação imediata — não são melhorias de médio prazo, são riscos ativos ou funcionalidades possivelmente quebradas em produção agora.</p>
   </div>
 
-  <h3>🔴 Críticos — Risco ao Negócio</h3>
+  <h3>🔴 Críticos</h3>
 
   <div class="sw-item">
-    <div class="sw-icon red">💾</div>
+    <div class="sw-icon red">🔔</div>
     <div class="sw-body">
-      <h4>Persistência Exclusiva em localStorage</h4>
-      <p>Todos os dados ficam no navegador do usuário. <strong>Riscos:</strong> perda total ao limpar o browser, impossibilidade de múltiplos usuários simultâneos no mesmo time, sem backup automático, limite de ~10MB por domínio, dados inacessíveis em outro dispositivo. <strong>Impacto: crítico para uso real de produção.</strong></p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon red">🔒</div>
-    <div class="sw-body">
-      <h4>Autenticação sem Criptografia Real</h4>
-      <p>As credenciais (email + senha) ficam armazenadas em texto puro no localStorage. Qualquer acesso ao DevTools do browser expõe todas as contas. Não há JWT, sessão server-side, hash de senha (bcrypt/argon2) ou proteção contra força bruta.</p>
+      <h4>3 notificações nunca chegam ao usuário certo</h4>
+      <p>Três dos pushes de notificação usam <code>consultantId</code> em vez de <code>targetUserId</code> como chave — a notificação é criada no banco mas nunca aparece na UI de ninguém. Bug conhecido e ainda não corrigido.</p>
     </div>
   </div>
 
   <div class="sw-item">
     <div class="sw-icon red">📡</div>
     <div class="sw-body">
-      <h4>Sem Sincronização em Tempo Real entre Usuários</h4>
-      <p>Dois usuários abertos simultaneamente (ex: gestor e consultor) não veem as alterações um do outro. Não há WebSocket, polling ou mecanismo de sync. Em uso real de equipe, isso gera dados inconsistentes e conflitos.</p>
+      <h4>Sem sincronização em tempo real entre usuários</h4>
+      <p>O banco já é Postgres real via Supabase (que tem Realtime nativo via websocket), mas o app não assina nenhum <code>channel()</code> — dois usuários logados ao mesmo tempo (ex: gestor e consultor) não veem a alteração um do outro sem recarregar a página. É a lacuna mais cara do relatório de junho que ainda não foi endereçada, apesar do banco já suportar a solução sem custo adicional.</p>
     </div>
   </div>
 
-  <h3>🟠 Altos — Impactam Experiência e Crescimento</h3>
+  <h3>🟠 Altos</h3>
+
+  <div class="sw-item">
+    <div class="sw-icon orange">🗑️</div>
+    <div class="sw-body">
+      <h4>Exclusão segura de usuário — adiada</h4>
+      <p>Plano já está pronto (levantado em sessão anterior), mas a implementação foi adiada a pedido explícito. Continua não bloqueando o lançamento, mas sem isso não há caminho oficial de remover um usuário sem deixar registros órfãos no banco.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon orange">🔗</div>
+    <div class="sw-body">
+      <h4>"Meu Link" do consultor está desativado</h4>
+      <p>O formulário público de captação de leads foi desligado em 2026-07-20 porque enganava o visitante. O código foi mantido para retomar depois, mas não há decisão sobre quando ou como corrigir e reativar essa fonte de leads.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon orange">🔇</div>
+    <div class="sw-body">
+      <h4>Fallback de autenticação é silencioso</h4>
+      <p>Quando o Supabase rejeita ou fica indisponível, o login cai para autenticação local só com um <code>console.warn('[AUTH FALLBACK]...')</code>. Ninguém na equipe é alertado quando isso acontece — um problema de conectividade com o Supabase pode passar despercebido enquanto usuários operam sobre dados desincronizados.</p>
+    </div>
+  </div>
+
+  <div class="sw-item">
+    <div class="sw-icon orange">🧹</div>
+    <div class="sw-body">
+      <h4>Tabelas mortas no schema (Mural/Desafios)</h4>
+      <p><code>mural_config</code>, <code>challenges</code> e <code>sales_feed</code> continuam no banco mesmo após a feature de gamificação ter sido removida do <code>app.js</code> (~474 linhas removidas por ser feature isolada, sem impacto em comissão). Não quebra nada, mas é schema morto acumulando.</p>
+    </div>
+  </div>
 
   <div class="sw-item">
     <div class="sw-icon orange">📏</div>
     <div class="sw-body">
-      <h4>Arquivo app.js com ~20.000 Linhas</h4>
-      <p>Um único arquivo JavaScript com toda a lógica do sistema. Dificulta manutenção, debugging, onboarding de novos devs e testes. Qualquer erro de sintaxe quebra o sistema inteiro. Impossível fazer code splitting ou lazy loading.</p>
+      <h4><code>app.js</code> cresceu para 21.036 linhas</h4>
+      <p>Aumentou desde o relatório anterior. Continua um único arquivo sem testes automatizados — qualquer erro de sintaxe quebra o sistema inteiro, e o risco de regressão silenciosa cresce a cada feature nova.</p>
+    </div>
+  </div>
+
+  <h3>🟡 Housekeeping</h3>
+
+  <div class="sw-item">
+    <div class="sw-icon orange">✅</div>
+    <div class="sw-body">
+      <h4>Edge Function <code>invite-user</code> confirmada ATIVA — mas não versionada no git</h4>
+      <p>Verificado via <code>supabase functions list --project-ref johywuxgohcwzkrzrjdq</code> em 07/08/2026: a function está <strong>deployada e ACTIVE</strong> (versão 2, <code>verify_jwt: true</code>). Cadastro de usuário não está quebrado. O único gap real é que <code>supabase/functions/invite-user/index.ts</code> continua fora do controle de versão — se o código local divergir do deployado, ninguém vai notar até dar erro em produção.</p>
     </div>
   </div>
 
   <div class="sw-item">
-    <div class="sw-icon orange">🧪</div>
+    <div class="sw-icon orange">📁</div>
     <div class="sw-body">
-      <h4>Ausência de Testes Automatizados</h4>
-      <p>Nenhum teste unitário, de integração ou E2E. Cada feature nova pode quebrar features existentes sem aviso. Riscos de regressão aumentam exponencialmente com o tamanho do código.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon orange">📱</div>
-    <div class="sw-body">
-      <h4>Experiência Mobile Limitada</h4>
-      <p>A sidebar ocupa espaço em mobile, os modais não são 100% otimizados para telas pequenas e algumas tabelas não têm scroll horizontal adequado. O uso no smartphone, que representa >50% do acesso de vendedores em campo, é prejudicado.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon orange">🔔</div>
-    <div class="sw-body">
-      <h4>Notificações sem Push Real</h4>
-      <p>O sistema de notificações é interno (dropdown no topbar). Não há push notifications do browser, email, SMS ou WhatsApp saindo do sistema. Alertas críticos (churn alto, vencimento de doc) só são vistos se o usuário abrir o sistema.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon orange">📊</div>
-    <div class="sw-body">
-      <h4>Relatórios sem Exportação Estruturada</h4>
-      <p>Não existe exportação de dados para CSV, Excel ou integração com BI (Google Data Studio, Power BI). O gestor não consegue analisar dados historicamente fora do sistema, nem fazer cruzamentos avançados.</p>
-    </div>
-  </div>
-
-  <h3>🟡 Médios — Oportunidades de Melhoria</h3>
-
-  <div class="sw-item">
-    <div class="sw-icon orange">🗂️</div>
-    <div class="sw-body">
-      <h4>Sem Controle de Versão de Documentos</h4>
-      <p>Documentos substituídos não mantêm histórico de versões. Não há diff entre versões, auditoria de alterações ou capacidade de reverter para versão anterior.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon orange">🌐</div>
-    <div class="sw-body">
-      <h4>Sem API Pública / Webhooks</h4>
-      <p>Impossível integrar com sistemas externos (ERP, CRM corporativo, plataformas de cobrança, marketplaces). Todo dado fica isolado no localStorage.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon orange">📷</div>
-    <div class="sw-body">
-      <h4>Upload de Arquivos Simulado</h4>
-      <p>Fotos de instalações e documentos são armazenados como base64 no localStorage, consumindo rapidamente o limite de 10MB. Não há armazenamento real de arquivos (S3, Firebase Storage, etc.).</p>
+      <h4><code>supabase/.temp/</code> fora do <code>.gitignore</code></h4>
+      <p>Metadados locais do Supabase CLI (project-ref, versões de serviço) aparecem como arquivo não rastreado e podem acabar indo pro repositório por engano num commit futuro.</p>
     </div>
   </div>
 
   <div class="pg-footer">
-    <span>Tracktiv — Relatório Técnico Executivo 2026</span>
-    <span>Seção 02 — Pontos Fracos</span>
+    <span>Tracktiv — Relatório Técnico Executivo — Agosto 2026</span>
+    <span>Seção 02 — Urgências</span>
   </div>
 </div>
 
-<!-- ═══════════ SUGESTÕES ═══════════ -->
+<!-- ═══════════ PLANO DE AÇÃO ═══════════ -->
 <div class="page">
   <div class="sec-head">
     <div class="ch-num">Seção 03</div>
-    <h2>Sugestões de Implementação</h2>
-    <p class="lead">Roadmap priorizado com 15 implementações, organizadas por impacto no negócio e viabilidade técnica. As 5 primeiras são críticas para viabilizar o uso em produção real.</p>
+    <h2>Plano de Ação Priorizado</h2>
+    <p class="lead">Ordem recomendada de execução — o P0 desbloqueia risco de operação quebrada agora, o P1 fecha lacunas de segurança/produto de curto prazo, o P2 é evolução estrutural sem pressa.</p>
   </div>
 
-  <h3>Prioridade Máxima — Viabilização de Produção</h3>
+  <h3>P0 — Esta semana</h3>
 
   <div class="pri-item">
     <div class="pri-num">1</div>
     <div class="pri-body">
-      <h4>Backend com Banco de Dados Real</h4>
-      <p>Migrar persistência do localStorage para Supabase (PostgreSQL + Auth + Realtime) ou Firebase. Supabase é ideal: SQL familiar, auth pronto, realtime via websocket, gratuito até 500MB. Mantém o frontend atual, adiciona camada API.</p>
+      <h4>Corrigir as 3 notificações com <code>consultantId</code> em vez de <code>targetUserId</code></h4>
+      <p>Correção pontual e de baixo esforço — localizar os 3 pontos de disparo e trocar a chave usada.</p>
     </div>
     <div class="pri-badge pb-high">Crítico</div>
   </div>
@@ -478,326 +435,141 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
   <div class="pri-item">
     <div class="pri-num">2</div>
     <div class="pri-body">
-      <h4>Autenticação Segura</h4>
-      <p>Implementar JWT + refresh tokens via Supabase Auth ou Auth0. Hash de senhas com bcrypt. Bloqueio por tentativas (rate limiting). 2FA opcional para gestor e presidente.</p>
+      <h4>Versionar <code>supabase/functions/</code> no git</h4>
+      <p><span style="color:#059669;font-weight:700;">✔ Deploy já confirmado ativo</span> — mas o código local não está no repositório. Commitar e ignorar <code>supabase/.temp/</code> no <code>.gitignore</code>, pra garantir que o que está deployado tenha histórico e possa ser redeployado se necessário.</p>
     </div>
-    <div class="pri-badge pb-high">Crítico</div>
+    <div class="pri-badge pb-med">Alta</div>
   </div>
+
+  <h3>P1 — Curto prazo</h3>
 
   <div class="pri-item">
     <div class="pri-num">3</div>
     <div class="pri-body">
-      <h4>Push Notifications Reais</h4>
-      <p>Integrar com WhatsApp Business API (via Twilio ou Z-API) para alertas críticos: lead parado >3 dias, doc vencendo, churn alto. Ou Web Push API do browser como solução mais simples e gratuita.</p>
+      <h4>Ativar Supabase Realtime nas tabelas críticas</h4>
+      <p>Assinar <code>channel()</code> em <code>clients</code>, <code>chamados</code> e <code>notifications</code> para sincronização entre usuários simultâneos sem reload. Infraestrutura já existe no Supabase — é configuração, não nova arquitetura.</p>
     </div>
-    <div class="pri-badge pb-high">Crítico</div>
+    <div class="pri-badge pb-med">Alta</div>
   </div>
 
   <div class="pri-item">
     <div class="pri-num">4</div>
     <div class="pri-body">
-      <h4>Armazenamento Real de Arquivos</h4>
-      <p>Substituir base64 no localStorage por Supabase Storage ou Cloudflare R2. Suporte a arquivos até 5GB, URLs assinadas com expiração, redimensionamento automático de imagens.</p>
+      <h4>Implementar exclusão segura de usuário</h4>
+      <p>Plano já está pronto de sessão anterior — só falta execução. Decidir com o usuário se entra agora ou continua adiado.</p>
     </div>
-    <div class="pri-badge pb-high">Crítico</div>
+    <div class="pri-badge pb-med">Alta</div>
   </div>
 
   <div class="pri-item">
     <div class="pri-num">5</div>
     <div class="pri-body">
-      <h4>App Mobile Nativo (PWA)</h4>
-      <p>Transformar o sistema em PWA (Progressive Web App): manifest.json, service worker, cache offline, ícone na homescreen. Custo mínimo, melhora drasticamente a experiência de vendedores em campo.</p>
+      <h4>Decidir o destino do "Meu Link" do consultor</h4>
+      <p>Corrigir a mensagem enganosa ao visitante e reativar, ou remover definitivamente o código mantido. Fonte de leads público parada até a decisão.</p>
     </div>
-    <div class="pri-badge pb-high">Crítico</div>
+    <div class="pri-badge pb-med">Alta</div>
   </div>
-
-  <h3>Alta Prioridade — Crescimento de Produto</h3>
 
   <div class="pri-item">
     <div class="pri-num">6</div>
     <div class="pri-body">
-      <h4>Módulo de Relatórios & Exportação</h4>
-      <p>Exportar dados para CSV/Excel, gráficos para PNG, relatórios mensais automáticos por email. Integração com Google Data Studio via API para dashboards executivos avançados.</p>
+      <h4>Alerta visível para fallback de autenticação</h4>
+      <p>Substituir o <code>console.warn</code> silencioso por um aviso visível (banner ou notificação ao gestor) quando o login cair para modo local — hoje passa despercebido.</p>
     </div>
     <div class="pri-badge pb-med">Alta</div>
   </div>
 
+  <h3>P2 — Estrutural, sem pressa</h3>
+
   <div class="pri-item">
     <div class="pri-num">7</div>
     <div class="pri-body">
-      <h4>Integração com WhatsApp Business</h4>
-      <p>Envio de mensagens automáticas direto do sistema: confirmação de proposta, lembrete de follow-up, alerta de vencimento. Usar Z-API ou Evolution API (self-hosted, gratuito).</p>
+      <h4>Remover tabelas mortas do Mural/Desafios do schema</h4>
+      <p><code>mural_config</code>, <code>challenges</code>, <code>sales_feed</code> não são mais usadas pelo <code>app.js</code>.</p>
     </div>
-    <div class="pri-badge pb-med">Alta</div>
+    <div class="pri-badge pb-low">Média</div>
   </div>
 
   <div class="pri-item">
     <div class="pri-num">8</div>
     <div class="pri-body">
-      <h4>Pipeline de Comissão Automático</h4>
-      <p>Cálculo e fechamento automático de comissões mensais, geração de recibo PDF por consultor, integração com Pix via API bancária (Efí Bank, Asaas) para pagamento direto pelo sistema.</p>
+      <h4>PWA — Progressive Web App</h4>
+      <p>Ainda não implementado. Service worker + manifest continuam sendo o investimento de menor custo com maior impacto pra vendedores em campo no celular.</p>
     </div>
-    <div class="pri-badge pb-med">Alta</div>
+    <div class="pri-badge pb-low">Média</div>
   </div>
 
   <div class="pri-item">
     <div class="pri-num">9</div>
     <div class="pri-body">
-      <h4>Refatoração Modular do app.js</h4>
-      <p>Dividir os ~20.000 linhas em módulos ES6 (crm.js, dashboard.js, parceiros.js, assinatura.js, etc.) com bundler leve (Vite ou esbuild). Mantém zero-dependency do ponto de vista do usuário, mas facilita manutenção.</p>
-    </div>
-    <div class="pri-badge pb-med">Alta</div>
-  </div>
-
-  <div class="pri-item">
-    <div class="pri-num">10</div>
-    <div class="pri-body">
-      <h4>IA Generativa no CRM</h4>
-      <p>Integrar Claude API (via edge function Supabase) para: resumo automático do histórico do cliente, sugestão de próximo passo no funil, rascunho de email/WhatsApp personalizado, análise de sentimento das notas.</p>
-    </div>
-    <div class="pri-badge pb-med">Alta</div>
-  </div>
-
-  <h3>Prioridade Média — Diferenciação Competitiva</h3>
-
-  <div class="pri-item">
-    <div class="pri-num">11</div>
-    <div class="pri-body">
-      <h4>Assinatura Digital com Certificadora Real</h4>
-      <p>Integrar com Certisign, Soluti ou D4Sign para assinatura com certificado ICP-Brasil válido juridicamente. O sistema atual já tem a arquitetura pronta — basta adicionar a integração via API.</p>
-    </div>
-    <div class="pri-badge pb-med">Média</div>
-  </div>
-
-  <div class="pri-item">
-    <div class="pri-num">12</div>
-    <div class="pri-body">
-      <h4>App Mobile Dedicado (React Native / Flutter)</h4>
-      <p>Além do PWA, desenvolver app nativo para acesso a recursos offline mais robustos, câmera para foto de instalação, biometria para autenticação e notificações push nativas.</p>
-    </div>
-    <div class="pri-badge pb-med">Média</div>
-  </div>
-
-  <div class="pri-item">
-    <div class="pri-num">13</div>
-    <div class="pri-body">
-      <h4>Integração com GPS Real</h4>
-      <p>Substituir o GPS simulado no Kit de Recuperação por integração real com a plataforma de rastreamento Tracktiv, exibindo localização em tempo real do veículo via API WebSocket.</p>
-    </div>
-    <div class="pri-badge pb-low">Média</div>
-  </div>
-
-  <div class="pri-item">
-    <div class="pri-num">14</div>
-    <div class="pri-body">
-      <h4>Multi-empresa Real com Isolamento de Dados</h4>
-      <p>Implementar tenant isolation real no banco de dados (Row Level Security no Supabase). Cada empresa opera em namespace isolado com customização de marca (white-label) por tenant.</p>
-    </div>
-    <div class="pri-badge pb-low">Média</div>
-  </div>
-
-  <div class="pri-item">
-    <div class="pri-num">15</div>
-    <div class="pri-body">
-      <h4>Testes Automatizados (E2E + Unit)</h4>
-      <p>Implementar Playwright para testes E2E dos fluxos críticos (login, fechar venda, assinar documento) e Vitest para funções puras (calculateChurnScore, getConsultantMetrics). CI/CD com GitHub Actions.</p>
+      <h4>Testes automatizados e modularização do <code>app.js</code></h4>
+      <p>21 mil linhas em um arquivo só, zero testes. Sem urgência imediata, mas o custo de manutenção só cresce.</p>
     </div>
     <div class="pri-badge pb-low">Baixa</div>
   </div>
 
   <div class="pg-footer">
-    <span>Tracktiv — Relatório Técnico Executivo 2026</span>
-    <span>Seção 03 — Implementações</span>
-  </div>
-</div>
-
-<!-- ═══════════ ROADMAP ═══════════ -->
-<div class="page">
-  <div class="sec-head">
-    <div class="ch-num">Seção 04</div>
-    <h2>Roadmap de Evolução</h2>
-    <p class="lead">Visão temporal das implementações sugeridas, agrupadas em três horizontes: correções críticas (Q3 2026), crescimento (Q4 2026) e diferenciação (2027).</p>
-  </div>
-
-  <h3>Q3 2026 — Fundação de Produção</h3>
-  <div class="roadmap">
-    <div class="rm-item">
-      <div class="rm-dot rm-now">🔥</div>
-      <div class="rm-body">
-        <span class="rm-tag rt-now">Agora</span>
-        <h4>Migração para Supabase (Backend + Auth + Storage)</h4>
-        <p>Substituir localStorage por banco real. Autenticação segura. Upload real de arquivos. Estimativa: 3–4 semanas de desenvolvimento.</p>
-      </div>
-    </div>
-    <div class="rm-item">
-      <div class="rm-dot rm-now">🔥</div>
-      <div class="rm-body">
-        <span class="rm-tag rt-now">Agora</span>
-        <h4>Realtime Sync + Push Notifications</h4>
-        <p>Websocket via Supabase Realtime para sync entre usuários. Web Push API para alertas fora do sistema.</p>
-      </div>
-    </div>
-    <div class="rm-item">
-      <div class="rm-dot rm-now">🔥</div>
-      <div class="rm-body">
-        <span class="rm-tag rt-now">Agora</span>
-        <h4>PWA — Progressive Web App</h4>
-        <p>Service worker, manifest, cache offline. App instalável no celular sem loja de apps. Custo mínimo, impacto máximo para vendedores em campo.</p>
-      </div>
-    </div>
-  </div>
-
-  <h3>Q4 2026 — Crescimento e Automação</h3>
-  <div class="roadmap">
-    <div class="rm-item">
-      <div class="rm-dot rm-future">📋</div>
-      <div class="rm-body">
-        <span class="rm-tag rt-future">Próximo</span>
-        <h4>Integração WhatsApp Business + Comissão Automática</h4>
-        <p>Mensagens automáticas, recibos de comissão em PDF, pipeline de pagamento via Pix.</p>
-      </div>
-    </div>
-    <div class="rm-item">
-      <div class="rm-dot rm-future">📋</div>
-      <div class="rm-body">
-        <span class="rm-tag rt-future">Próximo</span>
-        <h4>Módulo de Relatórios & Exportação</h4>
-        <p>CSV, Excel, PNG de gráficos, relatórios mensais automáticos por email, integração Data Studio.</p>
-      </div>
-    </div>
-    <div class="rm-item">
-      <div class="rm-dot rm-future">📋</div>
-      <div class="rm-body">
-        <span class="rm-tag rt-future">Próximo</span>
-        <h4>IA no CRM (Claude API)</h4>
-        <p>Resumo automático de clientes, sugestão de próximo passo, rascunho de mensagens personalizadas.</p>
-      </div>
-    </div>
-    <div class="rm-item">
-      <div class="rm-dot rm-future">📋</div>
-      <div class="rm-body">
-        <span class="rm-tag rt-future">Próximo</span>
-        <h4>Refatoração Modular do Frontend</h4>
-        <p>Dividir app.js em módulos. Adicionar Vite como bundler. Manter zero-dependency para o usuário final.</p>
-      </div>
-    </div>
-  </div>
-
-  <h3>2027 — Diferenciação e Escala</h3>
-  <div class="roadmap">
-    <div class="rm-item">
-      <div class="rm-dot rm-future">🚀</div>
-      <div class="rm-body">
-        <span class="rm-tag rt-future">Futuro</span>
-        <h4>App Mobile Nativo + GPS Real</h4>
-        <p>React Native ou Flutter. Câmera nativa para instalações. Integração real com plataforma de rastreamento.</p>
-      </div>
-    </div>
-    <div class="rm-item">
-      <div class="rm-dot rm-future">🚀</div>
-      <div class="rm-body">
-        <span class="rm-tag rt-future">Futuro</span>
-        <h4>Assinatura Digital ICP-Brasil + Multi-empresa White-label</h4>
-        <p>Certificadora real (D4Sign/Certisign). Tenant isolation. White-label por empresa com logo e cores customizadas.</p>
-      </div>
-    </div>
-    <div class="rm-item">
-      <div class="rm-dot rm-future">🚀</div>
-      <div class="rm-body">
-        <span class="rm-tag rt-future">Futuro</span>
-        <h4>Marketplace de Parceiros</h4>
-        <p>Portal público para novos parceiros se cadastrarem, área de treinamentos com certificação, programa de pontos gamificado com prêmios reais.</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="pg-footer">
-    <span>Tracktiv — Relatório Técnico Executivo 2026</span>
-    <span>Seção 04 — Roadmap</span>
+    <span>Tracktiv — Relatório Técnico Executivo — Agosto 2026</span>
+    <span>Seção 03 — Plano de Ação</span>
   </div>
 </div>
 
 <!-- ═══════════ CONCLUSÃO ═══════════ -->
 <div class="page">
   <div class="sec-head">
-    <div class="ch-num">Seção 05</div>
+    <div class="ch-num">Seção 04</div>
     <h2>Conclusão & Recomendações Finais</h2>
-    <p class="lead">Síntese da avaliação e os 5 pontos de ação mais importantes para garantir a viabilidade e o crescimento do sistema.</p>
+    <p class="lead">Síntese da avaliação e os 3 pontos de ação mais urgentes para a próxima semana.</p>
   </div>
 
   <div class="box box-dark" style="margin-bottom:28px;">
     <strong>Veredicto Geral</strong>
-    O Portal do Vendedor da Tracktiv é um dos sistemas frontend mais funcionalmente ricos já construídos sem framework. A riqueza de features — churn preditivo, assinatura digital, gamificação, dashboards por perfil — coloca o produto em um nível de maturidade invejável. A decisão arquitetural de usar localStorage, tomada para simplificar o desenvolvimento inicial, é agora o principal limitador de crescimento. A migração para backend real é o investimento de maior ROI possível.
+    O maior risco estrutural do sistema — persistência exclusiva em localStorage — já foi resolvido. O Portal do Vendedor agora roda sobre um backend real, com autenticação, dados e documentos sincronizados no Supabase. A Edge Function de convite de usuário foi verificada em produção e está <strong>ativa</strong>. O que resta não é mais "construir o backend", é <strong>fechar as pontas soltas dessa migração</strong>: corrigir as notificações que se perdem no caminho, ligar o Realtime que o banco já suporta, e versionar no git o que já está deployado.
   </div>
 
-  <h3>Os 5 Pontos de Ação Imediatos</h3>
+  <h3>Os 3 Pontos de Ação Mais Urgentes</h3>
 
   <table class="tbl">
     <thead>
-      <tr><th>#</th><th>Ação</th><th>Impacto</th><th>Esforço</th><th>ROI</th></tr>
+      <tr><th>#</th><th>Ação</th><th>Risco se não feito</th><th>Esforço</th></tr>
     </thead>
     <tbody>
       <tr>
         <td><strong>1</strong></td>
-        <td>Migrar para Supabase</td>
-        <td>Elimina risco de perda de dados e permite trabalho em equipe real</td>
-        <td>Alto</td>
-        <td>🔥 Crítico</td>
+        <td>Corrigir 3 notificações com chave errada</td>
+        <td>Alertas importantes nunca chegam ao usuário certo</td>
+        <td>Baixo</td>
       </tr>
       <tr>
         <td><strong>2</strong></td>
-        <td>Implementar PWA</td>
-        <td>App no celular dos vendedores sem custo de desenvolvimento mobile</td>
+        <td>Versionar <code>supabase/functions/</code> no git</td>
+        <td>Function já ativa em produção, mas sem histórico — divergência futura passaria despercebida</td>
         <td>Baixo</td>
-        <td>⭐ Excelente</td>
       </tr>
       <tr>
         <td><strong>3</strong></td>
-        <td>Push Notifications WhatsApp</td>
-        <td>Alertas de churn e follow-up chegam onde o vendedor está</td>
+        <td>Ativar Supabase Realtime nas tabelas críticas</td>
+        <td>Dados desincronizados entre usuários simultâneos</td>
         <td>Médio</td>
-        <td>⭐ Excelente</td>
-      </tr>
-      <tr>
-        <td><strong>4</strong></td>
-        <td>Exportação de Relatórios</td>
-        <td>Gestores e presidente ganham autonomia analítica externa</td>
-        <td>Baixo</td>
-        <td>✅ Muito bom</td>
-      </tr>
-      <tr>
-        <td><strong>5</strong></td>
-        <td>IA no CRM (Claude API)</td>
-        <td>Reduz trabalho manual do consultor, aumenta taxa de conversão</td>
-        <td>Médio</td>
-        <td>✅ Muito bom</td>
       </tr>
     </tbody>
   </table>
 
-  <h3>Potencial de Mercado</h3>
-  <p>Com a migração para backend real e as integrações sugeridas, o Portal do Vendedor tem potencial para ser comercializado como produto SaaS independente para o mercado de rastreamento veicular. Há mais de 3.000 empresas de rastreamento no Brasil — a maioria sem um portal de parceiros e CRM integrado desta qualidade.</p>
-
   <div class="box box-green">
-    <strong>Oportunidade de Produto</strong>
-    Transformar o Portal em um produto SaaS white-label para revendas Tracktiv (ou concorrentes) geraria uma nova linha de receita recorrente com custo marginal próximo de zero, dado que a arquitetura multi-empresa já existe no código atual.
-  </div>
-
-  <div class="box box-orange">
-    <strong>Próximo Passo Recomendado</strong>
-    Criar uma conta gratuita no Supabase (supabase.com), definir o schema do banco de dados baseado no <code>app.state</code> atual e implementar a camada de persistência em 2–3 sprints de 1 semana. O restante do frontend permanece 100% intacto.
+    <strong>Verificação feita nesta atualização</strong>
+    <code>supabase functions list --project-ref johywuxgohcwzkrzrjdq</code> confirmou a <code>invite-user</code> como <strong>ACTIVE</strong> (versão 2) — não há risco de cadastro de usuário quebrado. Item removido da lista de críticos.
   </div>
 
   <div style="text-align:center;margin-top:48px;padding:36px;background:linear-gradient(135deg,#1a2e4a,#2d4a6e);border-radius:16px;color:#fff;">
     <div style="font-size:2.5rem;margin-bottom:16px;">🚀</div>
-    <h3 style="color:#f5820d;margin-bottom:10px;font-size:1.3rem;">Score Final: 7.4 / 10</h3>
-    <p style="color:rgba(255,255,255,.75);max-width:480px;margin:0 auto;font-size:.95rem;">Sistema com excelente base funcional e UX. A migração para backend real elevaria este score para 9.2+, posicionando o produto entre os melhores CRMs verticais do mercado de rastreamento.</p>
-    <div style="margin-top:20px;font-size:.78rem;color:rgba(255,255,255,.4);">Tracktiv Portal do Vendedor v3.0 &nbsp;·&nbsp; Relatório Técnico &nbsp;·&nbsp; Junho 2026</div>
+    <h3 style="color:#f5820d;margin-bottom:10px;font-size:1.3rem;">Score Atual: 8.3 / 10</h3>
+    <p style="color:rgba(255,255,255,.75);max-width:480px;margin:0 auto;font-size:.95rem;">Subiu de 7.4 (junho) para 8.3 — o backend real já entrega a maior parte do ganho possível, e a verificação de deploy confirmou que não há riscos escondidos na criação de usuários. Fechando as urgências restantes, o sistema fica pronto pra operação em equipe sem os riscos silenciosos atuais.</p>
+    <div style="margin-top:20px;font-size:.78rem;color:rgba(255,255,255,.4);">Tracktiv Portal do Vendedor &nbsp;·&nbsp; Relatório Técnico &nbsp;·&nbsp; Agosto 2026</div>
   </div>
 
   <div class="pg-footer" style="margin-top:32px;">
-    <span>Tracktiv — Relatório Técnico Executivo 2026</span>
-    <span>Seção 05 — Conclusão</span>
+    <span>Tracktiv — Relatório Técnico Executivo — Agosto 2026</span>
+    <span>Seção 04 — Conclusão</span>
   </div>
 </div>
 

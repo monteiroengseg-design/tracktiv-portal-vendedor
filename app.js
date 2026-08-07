@@ -272,6 +272,14 @@ const PRODUCT_SEGMENT_MAP = {
     'Sites e Marketing Digital':'marketing',
     'Marketing Digital':        'marketing'
 };
+const SEGMENT_DOC_SUGGESTIONS = {
+    sst:           ['PGR', 'PCMSO', 'LTCAT', 'Treinamento NR'],
+    rastreamento:  ['Autorização de instalação', 'CNPJ', 'Declaração de frota'],
+    contabilidade: ['CNPJ', 'Contrato social', 'Balanço patrimonial'],
+    chatbot:       ['Termos de uso', 'Política de privacidade'],
+    marketing:     ['Manual de marca', 'Logo em alta resolução']
+};
+const DEFAULT_DOC_SUGGESTIONS = ['PGR atualizado','PCMSO 2026','Contrato assinado','RG e CPF','Comprovante de endereço','Autorização de instalação','CNPJ','Laudo NR-12','Declaração de frota'];
 const TECNICO_DEFAULT_FORM_FIELDS = [
     { id: 'tf_name',    label: 'Nome completo', type: 'text',     required: true,  active: true, system: true  },
     { id: 'tf_phone',   label: 'Telefone',      type: 'text',     required: true,  active: true, system: true  },
@@ -5708,7 +5716,7 @@ async function _sbGetDocSignedUrl(storagePath) {
 // Convida usuário via Supabase Edge Function (usa service_role key no servidor).
 // A Edge Function em supabase/functions/invite-user chama admin.inviteUserByEmail()
 // e cria o profile — o usuário recebe e-mail para definir a própria senha.
-async function _sbInviteUser(email, name, role, extraData = {}) {
+async function _sbInviteUser(email, name, role, extraData = {}, password = null) {
     if (!supabaseClient || app.demoMode) return { userId: null, invited: false };
     try {
         const { data: { session } } = await supabaseClient.auth.getSession();
@@ -5721,7 +5729,7 @@ async function _sbInviteUser(email, name, role, extraData = {}) {
                 'Authorization': `Bearer ${session.access_token}`,
                 'apikey':        SUPABASE_ANON_KEY
             },
-            body: JSON.stringify({ email, name, role, extraData })
+            body: JSON.stringify({ email, name, role, extraData, password })
         });
 
         const result = await res.json();
@@ -6778,7 +6786,7 @@ function openGestorClienteModal(id = null) {
         </form>
     `);
     document.getElementById('cancelGcBtn').addEventListener('click', closeModal);
-    document.getElementById('gestorClienteForm').addEventListener('submit', e => {
+    document.getElementById('gestorClienteForm').addEventListener('submit', async e => {
         e.preventDefault();
         const name     = document.getElementById('gcName').value.trim();
         const email    = document.getElementById('gcEmail').value.trim().toLowerCase();
@@ -6792,6 +6800,7 @@ function openGestorClienteModal(id = null) {
         if ((app.state.users || []).some(u => u.email === email && u.id !== id)) {
             err.textContent = 'Este e-mail já está em uso.'; return;
         }
+        const submitBtn = document.querySelector('#gestorClienteForm button[type="submit"]');
         if (id) {
             const u = app.state.users.find(u => u.id === id);
             Object.assign(u, { name, email, password: pass, referralCode: refCode || u.referralCode, clientId: clientId || u.clientId, contractedServices });
@@ -6801,12 +6810,24 @@ function openGestorClienteModal(id = null) {
                     data: { active: u.active !== false, referralCode: u.referralCode, clientId: u.clientId, contractedServices, points: u.points || 0 }
                 }), 'Não foi possível sincronizar o cliente no servidor.', 'Cliente sincronizado no servidor.');
             }
+            saveState(); closeModal(); renderGestorClientesPortal();
         } else {
-            const uid = `cliente_${Date.now()}`;
             const autoCode = name.replace(/\s+/g,'').toUpperCase().slice(0,8) + Math.floor(Math.random()*90+10);
-            app.state.users.push({ id: uid, name, email, password: pass, role: 'cliente', clientId, referralCode: refCode || autoCode, points: 0, contractedServices });
+            const referralCode = refCode || autoCode;
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Salvando…'; }
+            const { userId, invited, error: invErr } = await _sbInviteUser(
+                email, name, 'cliente',
+                { clientId, referralCode, contractedServices, points: 0 },
+                pass
+            );
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Salvar'; }
+            if (!invited || !userId) {
+                err.textContent = invErr || 'Não foi possível criar o acesso no servidor. Tente novamente.';
+                return;
+            }
+            app.state.users.push({ id: userId, name, email, role: 'cliente', clientId, referralCode, points: 0, contractedServices });
+            saveState(); closeModal(); renderGestorClientesPortal();
         }
-        saveState(); closeModal(); renderGestorClientesPortal();
     });
 }
 
@@ -7362,6 +7383,9 @@ function openDocChecklistModal(clienteUserId) {
     if (!app.state.docChecklists) app.state.docChecklists = {};
     if (!app.state.docChecklists[clienteUserId]) app.state.docChecklists[clienteUserId] = [];
     const items = app.state.docChecklists[clienteUserId];
+    const client = (app.state.clients || []).find(c => c.id === cu.clientId);
+    const seg = client ? PRODUCT_SEGMENT_MAP[client.product] : null;
+    const suggestions = (seg && SEGMENT_DOC_SUGGESTIONS[seg]) || DEFAULT_DOC_SUGGESTIONS;
     const approved = items.filter(i => _chkStatus(i) === 'concluido').length;
     const total = items.length;
     const pct = total > 0 ? Math.round(approved / total * 100) : 0;
@@ -7450,8 +7474,8 @@ function openDocChecklistModal(clienteUserId) {
             <div style="margin-top:10px;">
                 <p style="font-size:0.78rem;color:var(--text-soft);margin:0 0 6px;">Sugestões rápidas:</p>
                 <div style="display:flex;flex-wrap:wrap;gap:5px;">
-                    ${['PGR atualizado','PCMSO 2026','Contrato assinado','RG e CPF','Comprovante de endereço','Autorização de instalação','CNPJ','Laudo NR-12','Declaração de frota'].map(s =>
-                        `<button class="secondary-btn" onclick="document.getElementById('chkLabel').value='${s}'" style="font-size:0.75rem;padding:3px 9px;">${s}</button>`
+                    ${suggestions.map(s =>
+                        `<button class="secondary-btn" onclick="document.getElementById('chkLabel').value='${s}'" style="font-size:0.75rem;padding:3px 9px;">${esc(s)}</button>`
                     ).join('')}
                 </div>
             </div>
