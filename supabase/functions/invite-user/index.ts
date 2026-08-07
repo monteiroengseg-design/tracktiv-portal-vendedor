@@ -79,13 +79,20 @@ Deno.serve(async (req) => {
     }
 
     // ── 6. Cria profile com UUID gerado pelo Supabase ──────────────
+    // linked_client_id é a coluna que as políticas de RLS usam pra liberar
+    // o cliente-portal a ver seus próprios dados em `clients`/`client_documents`
+    // — precisa ser um UUID válido (ids antigos de demo tipo "c1" não servem).
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    const linkedClientId = (role === 'cliente' && UUID_RE.test(extraData.clientId || '')) ? extraData.clientId : null
+
     const { error: profileErr } = await adminClient.from('profiles').upsert({
-      id:           userId,
+      id:               userId,
       name,
       email,
       role,
-      partner_type: extraData.partnerType || null,
-      data:         { active: true, invitePending: !password, ...extraData }
+      partner_type:     extraData.partnerType || null,
+      linked_client_id: linkedClientId,
+      data:             { active: true, invitePending: !password, ...extraData }
     })
 
     if (profileErr) {

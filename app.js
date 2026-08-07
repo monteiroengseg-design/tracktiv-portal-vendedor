@@ -6805,8 +6805,10 @@ function openGestorClienteModal(id = null) {
             const u = app.state.users.find(u => u.id === id);
             Object.assign(u, { name, email, password: pass, referralCode: refCode || u.referralCode, clientId: clientId || u.clientId, contractedServices });
             if (supabaseClient) {
+                const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
                 _sbRun(supabaseClient.from('profiles').upsert({
                     id: u.id, name, email, role: 'cliente',
+                    linked_client_id: UUID_RE.test(u.clientId || '') ? u.clientId : null,
                     data: { active: u.active !== false, referralCode: u.referralCode, clientId: u.clientId, contractedServices, points: u.points || 0 }
                 }), 'Não foi possível sincronizar o cliente no servidor.', 'Cliente sincronizado no servidor.');
             }
