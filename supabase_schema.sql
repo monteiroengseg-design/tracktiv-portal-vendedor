@@ -861,6 +861,31 @@ create policy app_state_entries_select_admin on public.app_state_entries
     (select role from public.profiles where id = auth.uid()) in ('presidente','gestor')
   );
 
+-- Libera leitura/escrita da chave 'pending_approvals' pra quem participa do
+-- fluxo de aprovação de venda: consultor/instalador enviam, gestor aprova/recusa.
+-- Escopo restrito à chave (não abre as outras chaves de app_state_entries).
+create policy app_state_entries_pending_approvals on public.app_state_entries
+  for all using (
+    key = 'pending_approvals'
+    and (select role from public.profiles where id = auth.uid()) in ('presidente','gestor','consultor','instalador')
+  )
+  with check (
+    key = 'pending_approvals'
+    and (select role from public.profiles where id = auth.uid()) in ('presidente','gestor','consultor','instalador')
+  );
+
+-- Chat interno equipe ↔ gestor: uma linha por conversa (key = 'chat_<par de ids>').
+-- Só staff interno participa (não é chat com cliente) — sem cliente na lista de roles.
+create policy app_state_entries_chats on public.app_state_entries
+  for all using (
+    key like 'chat_%'
+    and (select role from public.profiles where id = auth.uid()) in ('presidente','gestor','consultor','instalador','tecnico','executivo')
+  )
+  with check (
+    key like 'chat_%'
+    and (select role from public.profiles where id = auth.uid()) in ('presidente','gestor','consultor','instalador','tecnico','executivo')
+  );
+
 -- ----------------------------------------------------------------
 -- Seed profiles and clients with UUID normalization
 -- ----------------------------------------------------------------

@@ -3,13 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Relatório Técnico — Tracktiv Portal do Vendedor</title>
+<title>Relatório Técnico — Prontidão para Piloto com 5 Clientes-Base</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Plus Jakarta Sans', sans-serif; color: #0f172a; background: #fff; font-size: 14px; line-height: 1.75; }
 
-/* ── PRINT BUTTON (screen only) ── */
 .print-btn {
   position: fixed; top: 20px; right: 20px; z-index: 999;
   background: #1a2e4a; color: #fff; border: none; padding: 12px 24px;
@@ -18,7 +17,6 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; color: #0f172a; background:
 }
 .print-btn:hover { background: #f5820d; }
 
-/* ── COVER ── */
 .cover {
   min-height: 100vh;
   background: linear-gradient(150deg, #0f1c2e 0%, #1a2e4a 55%, #243d5c 100%);
@@ -34,9 +32,9 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; color: #0f172a; background:
 .cover-top { position: relative; }
 .cover-logo { font-size: 1.4rem; font-weight: 800; color: #f5820d; letter-spacing: -.02em; margin-bottom: 80px; }
 .cover-tag { display: inline-block; background: rgba(245,130,13,.18); color: #f5820d; border: 1px solid rgba(245,130,13,.35); padding: 5px 16px; border-radius: 40px; font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 22px; }
-.cover h1 { font-size: 3rem; font-weight: 800; line-height: 1.12; margin-bottom: 22px; }
+.cover h1 { font-size: 2.7rem; font-weight: 800; line-height: 1.14; margin-bottom: 22px; }
 .cover h1 em { color: #f5820d; font-style: normal; }
-.cover-sub { font-size: 1.08rem; color: rgba(255,255,255,.65); max-width: 520px; line-height: 1.65; }
+.cover-sub { font-size: 1.05rem; color: rgba(255,255,255,.65); max-width: 540px; line-height: 1.65; }
 .cover-bottom { position: relative; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px; }
 .cover-meta { font-size: .82rem; color: rgba(255,255,255,.45); }
 .cover-meta strong { color: rgba(255,255,255,.8); display: block; font-size: .9rem; margin-bottom: 4px; }
@@ -44,36 +42,30 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; color: #0f172a; background:
 .cover-score .score-val { font-size: 3.5rem; font-weight: 800; color: #f5820d; line-height: 1; }
 .cover-score .score-lbl { font-size: .75rem; color: rgba(255,255,255,.5); letter-spacing: .06em; text-transform: uppercase; }
 
-/* ── PAGE LAYOUT ── */
 .page { padding: 72px 80px; page-break-after: always; }
 .page:last-child { page-break-after: avoid; }
 
-/* ── SECTION HEADER ── */
 .sec-head { margin-bottom: 36px; padding-bottom: 20px; border-bottom: 3px solid #f0f4f8; }
 .sec-head .ch-num { font-size: .72rem; font-weight: 700; color: #f5820d; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 6px; }
-.sec-head h2 { font-size: 1.9rem; font-weight: 800; color: #1a2e4a; line-height: 1.2; }
+.sec-head h2 { font-size: 1.85rem; font-weight: 800; color: #1a2e4a; line-height: 1.2; }
 .sec-head .lead { font-size: 1rem; color: #475569; margin-top: 8px; }
 
-/* ── TYPOGRAPHY ── */
-h3 { font-size: 1.15rem; font-weight: 700; color: #1a2e4a; margin: 32px 0 12px; }
+h3 { font-size: 1.12rem; font-weight: 700; color: #1a2e4a; margin: 30px 0 12px; }
 h4 { font-size: .97rem; font-weight: 700; color: #1a2e4a; margin: 20px 0 8px; }
 p  { margin-bottom: 12px; }
 ul, ol { margin: 8px 0 14px 18px; }
 li { margin-bottom: 5px; }
 code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87em; font-family: monospace; color: #1a2e4a; }
 
-/* ── BOXES ── */
 .box { padding: 16px 20px; border-radius: 10px; margin: 16px 0; font-size: .92rem; }
 .box-blue   { background: #eff6ff; border-left: 4px solid #3b82f6; }
 .box-green  { background: #f0fdf4; border-left: 4px solid #10b981; }
 .box-orange { background: #fff7ed; border-left: 4px solid #f5820d; }
 .box-red    { background: #fef2f2; border-left: 4px solid #ef4444; }
-.box-purple { background: #faf5ff; border-left: 4px solid #8b5cf6; }
 .box-dark   { background: #1a2e4a; color: #fff; border-left: 4px solid #f5820d; }
 .box strong { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; opacity: .7; }
 .box-dark strong { opacity: .65; }
 
-/* ── SCORE GRID ── */
 .score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 20px 0; }
 .score-card { border-radius: 12px; padding: 18px; text-align: center; border: 1.5px solid #e2e8f0; }
 .score-card .sc-icon  { font-size: 1.6rem; margin-bottom: 8px; }
@@ -87,16 +79,15 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
 .score-card.warn  { background: #fef2f2; border-color: #fecaca; }
 .score-card.warn  .sc-val { color: #dc2626; }
 
-/* ── STRENGTH / WEAKNESS ITEM ── */
 .sw-item { display: flex; gap: 14px; margin-bottom: 18px; align-items: flex-start; }
 .sw-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
 .sw-icon.green  { background: #dcfce7; }
 .sw-icon.red    { background: #fee2e2; }
 .sw-icon.orange { background: #ffedd5; }
+.sw-icon.blue   { background: #dbeafe; }
 .sw-body h4 { margin: 0 0 4px; font-size: .95rem; }
 .sw-body p  { margin: 0; font-size: .87rem; color: #475569; }
 
-/* ── PRIORITY ITEM ── */
 .pri-item { display: grid; grid-template-columns: 28px 1fr auto; gap: 12px; align-items: start; padding: 14px; border-radius: 10px; margin-bottom: 10px; border: 1.5px solid #e2e8f0; background: #fafafa; }
 .pri-num  { width: 28px; height: 28px; border-radius: 8px; background: #1a2e4a; color: #fff; display: flex; align-items: center; justify-content: center; font-size: .78rem; font-weight: 700; }
 .pri-body h4 { margin: 0 0 3px; font-size: .93rem; }
@@ -104,54 +95,43 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
 .pri-badge { padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
 .pb-high   { background: #fee2e2; color: #991b1b; }
 .pb-med    { background: #fff7ed; color: #9a3412; }
+.pb-mid    { background: #eff6ff; color: #1d4ed8; }
 .pb-low    { background: #f0fdf4; color: #166534; }
+.pb-done   { background: #dcfce7; color: #166534; }
+.pri-body p strong.consq { color: #991b1b; }
 
-/* ── TABLE ── */
 .tbl { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .88rem; }
 .tbl th { background: #1a2e4a; color: #fff; padding: 9px 12px; text-align: left; font-size: .78rem; font-weight: 600; }
 .tbl td { padding: 9px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
 .tbl tr:nth-child(even) td { background: #f8fafc; }
 
-/* ── RADAR / BAR ── */
 .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
 .bar-lbl { width: 160px; font-size: .83rem; font-weight: 600; flex-shrink: 0; }
 .bar-track { flex: 1; height: 10px; background: #e2e8f0; border-radius: 6px; overflow: hidden; }
 .bar-fill  { height: 100%; border-radius: 6px; }
 .bar-val   { width: 36px; text-align: right; font-size: .82rem; font-weight: 700; }
 
-/* ── ROADMAP ── */
-.roadmap { position: relative; margin: 20px 0; }
-.rm-item { display: flex; gap: 16px; margin-bottom: 0; position: relative; }
-.rm-item::before { content: ''; position: absolute; left: 19px; top: 38px; bottom: -10px; width: 2px; background: #e2e8f0; }
-.rm-item:last-child::before { display: none; }
-.rm-dot  { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .95rem; flex-shrink: 0; z-index: 1; }
-.rm-done   { background: #dcfce7; border: 2px solid #10b981; }
-.rm-now    { background: #fff7ed; border: 2px solid #f5820d; }
-.rm-future { background: #f0f4f8; border: 2px solid #cbd5e1; }
-.rm-body  { padding: 8px 0 24px; }
-.rm-body h4 { margin: 0 0 4px; font-size: .93rem; }
-.rm-body p  { margin: 0; font-size: .83rem; color: #475569; }
-.rm-tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .7rem; font-weight: 700; margin-bottom: 6px; }
-.rt-done   { background: #dcfce7; color: #166534; }
-.rt-now    { background: #fff7ed; color: #9a3412; }
-.rt-future { background: #f0f4f8; color: #475569; }
-
-/* ── SUMMARY CARD ── */
 .summary-hero { background: linear-gradient(135deg, #1a2e4a 0%, #2d4a6e 100%); color: #fff; border-radius: 16px; padding: 32px; margin-bottom: 28px; }
 .summary-hero h3 { color: #f5820d; margin: 0 0 12px; font-size: 1.1rem; }
 .summary-hero p  { color: rgba(255,255,255,.8); font-size: .95rem; margin: 0; line-height: 1.7; }
 
-/* ── FOOTER ── */
+.checklist { margin: 16px 0; }
+.chk-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-radius: 10px; margin-bottom: 8px; border: 1.5px solid #e2e8f0; }
+.chk-done { background: #f0fdf4; border-color: #bbf7d0; }
+.chk-todo { background: #fff7ed; border-color: #fed7aa; }
+.chk-mark { font-size: 1.1rem; flex-shrink: 0; }
+.chk-body h4 { margin: 0 0 2px; font-size: .9rem; }
+.chk-body p { margin: 0; font-size: .82rem; color: #475569; }
+
 .pg-footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: .75rem; color: #94a3b8; }
 
-/* ── PRINT ── */
 @media print {
   .print-btn { display: none; }
   .page { padding: 52px 60px; }
   .cover { padding: 52px 60px; }
   body { font-size: 12.5px; }
-  .cover h1 { font-size: 2.4rem; }
-  .sec-head h2 { font-size: 1.6rem; }
+  .cover h1 { font-size: 2.2rem; }
+  .sec-head h2 { font-size: 1.55rem; }
 }
 </style>
 </head>
@@ -163,17 +143,17 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
 <div class="cover">
   <div class="cover-top">
     <div class="cover-logo">TRACKTIV</div>
-    <div class="cover-tag">Relatório Técnico Executivo — Atualização</div>
-    <h1>Estado Atual do<br><em>Portal do Vendedor</em></h1>
-    <p class="cover-sub">Raio-x da migração para Supabase já em andamento, o que foi resolvido desde o último relatório e as urgências que precisam de decisão para o sistema avançar com segurança.</p>
+    <div class="cover-tag">Relatório Técnico — Avaliação Completa</div>
+    <h1>Prontidão para o<br><em>Piloto com 5 Clientes-Base</em></h1>
+    <p class="cover-sub">Revisão de ponta a ponta do sistema, com 2 bugs críticos encontrados e corrigidos durante esta própria avaliação, e o checklist do que falta antes de colocar clientes reais pra usar.</p>
   </div>
   <div class="cover-bottom">
     <div class="cover-meta">
-      <strong>Tracktiv Portal — Portal do Vendedor</strong>
+      <strong>Tracktiv Portal do Vendedor</strong>
       Agosto de 2026 &nbsp;·&nbsp; Uso Interno &nbsp;·&nbsp; Confidencial
     </div>
     <div class="cover-score">
-      <div class="score-val">8.3</div>
+      <div class="score-val">8.6</div>
       <div class="score-lbl">Score Geral /10</div>
     </div>
   </div>
@@ -183,13 +163,13 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
 <div class="page">
   <div class="sec-head">
     <div class="ch-num">Sumário Executivo</div>
-    <h2>Visão Geral da Avaliação</h2>
-    <p class="lead">Desde o relatório de junho/2026, o maior risco identificado — persistência exclusiva em <code>localStorage</code> — deixou de existir. O sistema já roda sobre um backend real (Supabase: Postgres + Auth + Storage), com 22 tabelas, 39 políticas de RLS e write-through na maioria dos módulos críticos. Esta atualização foca no que mudou e, principalmente, no que ainda precisa de decisão urgente.</p>
+    <h2>Visão Geral desta Avaliação</h2>
+    <p class="lead">Esta revisão foi feita com o objetivo específico de responder: "dá pra colocar 5 clientes reais no sistema agora?" A resposta é <strong>sim, com um bug crítico a menos</strong> — encontrado e corrigido durante esta própria análise, porque nenhuma revisão anterior havia testado se o cliente, depois de logar, conseguia efetivamente <em>ver os próprios dados</em>.</p>
   </div>
 
   <div class="summary-hero">
     <h3>Diagnóstico Geral</h3>
-    <p>A migração para Supabase avançou de forma consistente ao longo de ~25 commits: autenticação real com sessão e RLS, clientes, instalações, chamados, comunicados, notificações e documentos de cliente (agora em Storage, não mais base64) já sincronizam com o servidor. O ponto de maior atenção agora não é mais "o sistema tem backend?" — é <strong>garantir que as peças novas (convite de usuário via Edge Function, sincronização em tempo real, exclusão segura de usuário) estejam realmente ativas em produção</strong> e não apenas no código local.</p>
+    <p>O backend em Supabase (Auth, Postgres, Storage) está maduro e a maior parte dos fluxos já sincroniza corretamente. Duas falhas sérias foram achadas e corrigidas nesta sessão: (1) a criação de acesso de cliente-portal não chegava a criar um usuário real no Supabase — só existia no navegador de quem cadastrou; e (2), mais grave, mesmo depois de corrigir isso, o cliente logava mas o <strong>RLS bloqueava a leitura dos próprios dados</strong> porque a coluna <code>linked_client_id</code> nunca era preenchida. As duas foram corrigidas, deployadas e validadas ponta a ponta com teste real (criar → logar → consultar dados → confirmar que só vê o que é seu).</p>
   </div>
 
   <div class="score-grid">
@@ -209,19 +189,19 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
       <div class="sc-icon">📱</div>
       <div class="sc-area">Responsividade</div>
       <div class="sc-val">7.5</div>
-      <div class="sc-note">Boa, mobile ainda sem PWA</div>
+      <div class="sc-note">Boa, sem PWA ainda</div>
     </div>
-    <div class="score-card ok">
+    <div class="score-card good">
       <div class="sc-icon">🔒</div>
       <div class="sc-area">Segurança</div>
-      <div class="sc-val">7.6</div>
-      <div class="sc-note">↑ de 4.5 — Auth real + RLS + Edge Function ativa</div>
+      <div class="sc-val">8.2</div>
+      <div class="sc-note">↑ RLS validado, SMTP real, sem chaves expostas</div>
     </div>
     <div class="score-card ok">
       <div class="sc-icon">📡</div>
       <div class="sc-area">Escalabilidade</div>
-      <div class="sc-val">7.5</div>
-      <div class="sc-note">↑ de 3.0 — Postgres real, falta realtime</div>
+      <div class="sc-val">7.8</div>
+      <div class="sc-note">Postgres real, falta realtime</div>
     </div>
     <div class="score-card ok">
       <div class="sc-icon">🤖</div>
@@ -234,220 +214,152 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
   <h3>Distribuição por Área Avaliada</h3>
   <div class="bar-row"><div class="bar-lbl">Funcionalidades</div><div class="bar-track"><div class="bar-fill" style="width:90%;background:#10b981;"></div></div><div class="bar-val" style="color:#059669;">9.0</div></div>
   <div class="bar-row"><div class="bar-lbl">UX & Design</div><div class="bar-track"><div class="bar-fill" style="width:82%;background:#10b981;"></div></div><div class="bar-val" style="color:#059669;">8.2</div></div>
+  <div class="bar-row"><div class="bar-lbl">Segurança</div><div class="bar-track"><div class="bar-fill" style="width:82%;background:#10b981;"></div></div><div class="bar-val" style="color:#059669;">8.2</div></div>
   <div class="bar-row"><div class="bar-lbl">Inteligência</div><div class="bar-track"><div class="bar-fill" style="width:80%;background:#3b82f6;"></div></div><div class="bar-val" style="color:#2563eb;">8.0</div></div>
-  <div class="bar-row"><div class="bar-lbl">Escalabilidade</div><div class="bar-track"><div class="bar-fill" style="width:75%;background:#3b82f6;"></div></div><div class="bar-val" style="color:#2563eb;">7.5</div></div>
+  <div class="bar-row"><div class="bar-lbl">Escalabilidade</div><div class="bar-track"><div class="bar-fill" style="width:78%;background:#3b82f6;"></div></div><div class="bar-val" style="color:#2563eb;">7.8</div></div>
   <div class="bar-row"><div class="bar-lbl">Responsividade</div><div class="bar-track"><div class="bar-fill" style="width:75%;background:#f59e0b;"></div></div><div class="bar-val" style="color:#d97706;">7.5</div></div>
-  <div class="bar-row"><div class="bar-lbl">Segurança</div><div class="bar-track"><div class="bar-fill" style="width:76%;background:#f59e0b;"></div></div><div class="bar-val" style="color:#d97706;">7.6</div></div>
   <div class="bar-row"><div class="bar-lbl">Manutenibilidade</div><div class="bar-track"><div class="bar-fill" style="width:48%;background:#ef4444;"></div></div><div class="bar-val" style="color:#dc2626;">4.8</div></div>
 
-  <div class="box box-orange" style="margin-top:24px;">
-    <strong>Leitura rápida deste relatório</strong>
-    A Seção 02 lista as <strong>urgências reais de agora</strong> — o que precisa de ação nos próximos dias, não um roadmap de trimestre. A Seção 04 traz o plano de ação priorizado.
+  <div class="box box-red" style="margin-top:24px;">
+    <strong>Achado principal desta revisão</strong>
+    O portal do cliente ficaria <strong>vazio</strong> pra qualquer cliente cadastrado depois da migração pro Supabase — login funcionava, mas a RLS bloqueava a leitura dos próprios dados. Corrigido, deployado e testado antes deste relatório ser gerado (detalhes na Seção 01).
   </div>
 
   <div class="pg-footer">
-    <span>Tracktiv — Relatório Técnico Executivo — Agosto 2026</span>
+    <span>Tracktiv — Relatório Técnico — Agosto 2026</span>
     <span>Sumário Executivo</span>
   </div>
 </div>
 
-<!-- ═══════════ O QUE JÁ FOI RESOLVIDO ═══════════ -->
+<!-- ═══════════ ACHADOS E CORREÇÕES DESTA SESSÃO ═══════════ -->
 <div class="page">
   <div class="sec-head">
     <div class="ch-num">Seção 01</div>
-    <h2>O que já foi resolvido desde Junho/2026</h2>
-    <p class="lead">Estes itens eram os riscos críticos do relatório anterior. Todos foram endereçados por commits reais no repositório — listados aqui para que a equipe saiba o que já não precisa mais de atenção.</p>
+    <h2>Bugs Críticos Achados e Corrigidos Hoje</h2>
+    <p class="lead">Dois problemas sérios foram descobertos ao investigar especificamente "o cliente consegue usar o sistema de ponta a ponta" — não apareceriam numa checagem superficial de "o login funciona".</p>
   </div>
 
   <div class="sw-item">
-    <div class="sw-icon green">🗄️</div>
+    <div class="sw-icon red">🕳️</div>
     <div class="sw-body">
-      <h4>Backend real: Supabase (Postgres + Auth + Storage)</h4>
-      <p>22 tabelas no banco (clients, profiles, installations, chamados, comunicados, notifications, tecnico_clients, client_documents, doc_checklists etc.) e 39 políticas de RLS. Deixou de existir o risco de perda total de dados ao limpar o navegador.</p>
+      <h4>#1 — Criação de cliente-portal não chegava ao Supabase</h4>
+      <p>O formulário "Novo acesso de cliente" só gravava no <code>localStorage</code> do navegador do gestor. O cliente não existia no Supabase Auth — só conseguia logar no mesmo navegador de quem cadastrou. Inviável pra testar com clientes usando o próprio celular/computador.</p>
+      <p><strong>Fix:</strong> a Edge Function <code>invite-user</code> passou a aceitar senha direta (<code>admin.createUser</code>), preservando o fluxo atual (gestor define a senha na hora, sem e-mail). Commit <code>676e69b</code>.</p>
     </div>
   </div>
 
   <div class="sw-item">
-    <div class="sw-icon green">🔑</div>
+    <div class="sw-icon red">🔐</div>
     <div class="sw-body">
-      <h4>Autenticação real com sessão e RLS</h4>
-      <p>Presidente, gestor, técnico, consultor, instalador e cliente autenticam de fato contra o Supabase Auth, com <code>session restore</code> e políticas de acesso por role. As credenciais deixaram de ficar só em texto puro no <code>localStorage</code>.</p>
+      <h4>#2 — <code>linked_client_id</code> nunca era preenchida → portal vazio</h4>
+      <p>Mesmo depois do fix #1, o cliente logava com sucesso mas o portal carregava <strong>vazio</strong>. Causa: as políticas de RLS de <code>clients</code> e <code>client_documents</code>/Storage liberam a leitura comparando <code>auth.uid()</code> com a coluna <code>profiles.linked_client_id</code> — e essa coluna nunca era gravada, só o <code>clientId</code> dentro do JSON <code>data</code> (que a RLS não enxerga). Confirmado com dado real: um profile pré-existente (<code>teste2@gmail.com</code>) já estava com <code>linked_client_id: null</code>.</p>
+      <p><strong>Fix:</strong> Edge Function e o upsert de edição em <code>app.js</code> agora gravam <code>linked_client_id</code> a partir do <code>clientId</code>, com validação de formato UUID (ids antigos de demo tipo <code>"c1"</code> não quebram o insert). Commit <code>0caf18e</code>.</p>
     </div>
   </div>
 
   <div class="sw-item">
-    <div class="sw-icon green">📄</div>
+    <div class="sw-icon green">✅</div>
     <div class="sw-body">
-      <h4>Documentos de cliente em Supabase Storage</h4>
-      <p>Antes eram base64 salvos no navegador (rápido de estourar o limite de 10MB). Hoje ficam no bucket <code>client-documents</code>, com URL assinada e toast visível (✅) confirmando o upload no servidor.</p>
+      <h4>Validação ponta a ponta feita antes deste relatório</h4>
+      <p>Criei um cliente CRM de teste + acesso de portal vinculado via Edge Function, logei como esse cliente usando o JWT real, e consultei <code>clients</code> com RLS ativa — retornou <strong>exatamente 1 linha, a própria</strong>. Registros de teste foram apagados depois (incluindo as 2 contas de teste no Supabase Auth criadas ao longo da validação).</p>
     </div>
   </div>
 
   <div class="sw-item">
-    <div class="sw-icon green">🔄</div>
+    <div class="sw-icon blue">✉️</div>
     <div class="sw-body">
-      <h4>Telas de edição agora sincronizam de verdade</h4>
-      <p>Edição de técnico, consultor, parceiro e cliente-portal escreviam só no <code>localStorage</code> e voltavam ao valor antigo no próximo login. As 4 telas agora chamam <code>_sbRun(...profiles.upsert(...))</code>, seguindo o mesmo padrão já usado na criação de usuários.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon green">✉️</div>
-    <div class="sw-body">
-      <h4>Convite de usuário sem expor chave de servidor no navegador</h4>
-      <p>Criação de consultor/instalador/técnico/gestor passou a chamar uma Edge Function (<code>invite-user</code>) que roda no servidor com a <code>service_role key</code>, em vez de qualquer chamada administrativa direta do cliente. Ver ressalva na Seção 02, item 1 — a function ainda não está versionada no git.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon green">🐛</div>
-    <div class="sw-body">
-      <h4>Bug de seed de usuários órfãos — resolvido (2ª vez, causa raiz real)</h4>
-      <p><code>confirmation_token</code> nulo em <code>auth.users</code> gerava 500 no GoTrue e deixava usuários órfãos. Corrigido no seed.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon green">📥</div>
-    <div class="sw-body">
-      <h4>Exportação CSV já disponível</h4>
-      <p><code>exportCSVClientes()</code> e <code>exportCSVLeads()</code> já existem — o relatório de junho listava isso como lacuna; hoje é uma função ativa acessível pelo gestor.</p>
+      <h4>Bônus: SMTP real configurado</h4>
+      <p>O e-mail de convite estava no serviço de teste do Supabase (2 envios/hora, alta chance de spam). Configurado SMTP real via Zoho Mail (<code>comercial@tracktiv.com.br</code>), domínio já verificado, sem precisar mexer em DNS. Limite subiu pra 30 e-mails/hora. Um e-mail de teste foi disparado — <strong>confirmação de recebimento ainda pendente</strong> (ver Seção 02, item de ação manual).</p>
     </div>
   </div>
 
   <div class="pg-footer">
-    <span>Tracktiv — Relatório Técnico Executivo — Agosto 2026</span>
-    <span>Seção 01 — Resolvido desde Junho</span>
+    <span>Tracktiv — Relatório Técnico — Agosto 2026</span>
+    <span>Seção 01 — Bugs Corrigidos Hoje</span>
   </div>
 </div>
 
-<!-- ═══════════ URGÊNCIAS ═══════════ -->
+<!-- ═══════════ CHECKLIST PRÉ-PILOTO ═══════════ -->
 <div class="page">
   <div class="sec-head">
     <div class="ch-num">Seção 02</div>
-    <h2>Urgências para Avançar</h2>
-    <p class="lead">Itens que precisam de decisão ou verificação imediata — não são melhorias de médio prazo, são riscos ativos ou funcionalidades possivelmente quebradas em produção agora.</p>
+    <h2>Checklist Antes de Ligar os 5 Clientes Reais</h2>
+    <p class="lead">Organizado por o que já está pronto, o que ainda precisa de uma ação manual sua, e o que é risco aceitável pra um piloto pequeno.</p>
   </div>
 
-  <h3>🔴 Críticos</h3>
-
-  <div class="sw-item">
-    <div class="sw-icon red">🔔</div>
-    <div class="sw-body">
-      <h4>3 notificações nunca chegam ao usuário certo</h4>
-      <p>Três dos pushes de notificação usam <code>consultantId</code> em vez de <code>targetUserId</code> como chave — a notificação é criada no banco mas nunca aparece na UI de ninguém. Bug conhecido e ainda não corrigido.</p>
-    </div>
+  <h3>✅ Resolvido nesta revisão — nenhuma ação necessária</h3>
+  <div class="checklist">
+    <div class="chk-item chk-done"><span class="chk-mark">✅</span><div class="chk-body"><h4>Cliente-portal cria de verdade no Supabase Auth</h4><p>Testado ponta a ponta.</p></div></div>
+    <div class="chk-item chk-done"><span class="chk-mark">✅</span><div class="chk-body"><h4>Cliente vê os próprios dados (RLS + linked_client_id)</h4><p>Testado ponta a ponta — retorna só o registro do próprio cliente.</p></div></div>
+    <div class="chk-item chk-done"><span class="chk-mark">✅</span><div class="chk-body"><h4>Edge Function invite-user versionada e deployada (v4)</h4><p>Código agora está no git, não só em produção "invisível".</p></div></div>
+    <div class="chk-item chk-done"><span class="chk-mark">✅</span><div class="chk-body"><h4>SMTP real configurado (Zoho)</h4><p>30 e-mails/hora, domínio próprio já verificado.</p></div></div>
+    <div class="chk-item chk-done"><span class="chk-mark">✅</span><div class="chk-body"><h4>supabase/.temp/ ignorado no git</h4><p>Metadados locais do CLI não vazam mais pro repositório.</p></div></div>
   </div>
 
-  <div class="sw-item">
-    <div class="sw-icon red">📡</div>
-    <div class="sw-body">
-      <h4>Sem sincronização em tempo real entre usuários</h4>
-      <p>O banco já é Postgres real via Supabase (que tem Realtime nativo via websocket), mas o app não assina nenhum <code>channel()</code> — dois usuários logados ao mesmo tempo (ex: gestor e consultor) não veem a alteração um do outro sem recarregar a página. É a lacuna mais cara do relatório de junho que ainda não foi endereçada, apesar do banco já suportar a solução sem custo adicional.</p>
-    </div>
+  <h3>🟠 Ação manual pendente — rápida, mas é sua</h3>
+  <div class="checklist">
+    <div class="chk-item chk-todo"><span class="chk-mark">☐</span><div class="chk-body"><h4>Confirmar se o e-mail de teste do SMTP chegou</h4><p>Enviado pra <code>monteiro.engseg@gmail.com</code> via recuperação de senha — verificar caixa de entrada e spam. Se não chegou, pode precisar ajustar SPF/DKIM ou trocar porta 465→587.</p></div></div>
+    <div class="chk-item chk-todo"><span class="chk-mark">☐</span><div class="chk-body"><h4>Decidir o que fazer com o profile órfão <code>teste2@gmail.com</code></h4><p>Achado durante a revisão: um cliente-portal já existente com <code>linked_client_id</code> nulo (criado antes da correção). Não sei se é um teste seu ou um cadastro real esquecido — não mexi nele. Se for real, precisa de um <code>UPDATE</code> pontual pra linkar ao <code>clients.id</code> certo.</p></div></div>
+    <div class="chk-item chk-todo"><span class="chk-mark">☐</span><div class="chk-body"><h4>Um teste manual no navegador antes do piloto valer</h4><p>Tudo foi validado via API/curl. Vale cadastrar 1 cliente de verdade pela UI (gestor) e logar em aba anônima ou outro navegador, só pra ver a experiência real de tela — testes de API não pegam problema visual/UX.</p></div></div>
   </div>
 
-  <h3>🟠 Altos</h3>
-
-  <div class="sw-item">
-    <div class="sw-icon orange">🗑️</div>
-    <div class="sw-body">
-      <h4>Exclusão segura de usuário — adiada</h4>
-      <p>Plano já está pronto (levantado em sessão anterior), mas a implementação foi adiada a pedido explícito. Continua não bloqueando o lançamento, mas sem isso não há caminho oficial de remover um usuário sem deixar registros órfãos no banco.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon orange">🔗</div>
-    <div class="sw-body">
-      <h4>"Meu Link" do consultor está desativado</h4>
-      <p>O formulário público de captação de leads foi desligado em 2026-07-20 porque enganava o visitante. O código foi mantido para retomar depois, mas não há decisão sobre quando ou como corrigir e reativar essa fonte de leads.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon orange">🔇</div>
-    <div class="sw-body">
-      <h4>Fallback de autenticação é silencioso</h4>
-      <p>Quando o Supabase rejeita ou fica indisponível, o login cai para autenticação local só com um <code>console.warn('[AUTH FALLBACK]...')</code>. Ninguém na equipe é alertado quando isso acontece — um problema de conectividade com o Supabase pode passar despercebido enquanto usuários operam sobre dados desincronizados.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon orange">🧹</div>
-    <div class="sw-body">
-      <h4>Tabelas mortas no schema (Mural/Desafios)</h4>
-      <p><code>mural_config</code>, <code>challenges</code> e <code>sales_feed</code> continuam no banco mesmo após a feature de gamificação ter sido removida do <code>app.js</code> (~474 linhas removidas por ser feature isolada, sem impacto em comissão). Não quebra nada, mas é schema morto acumulando.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon orange">📏</div>
-    <div class="sw-body">
-      <h4><code>app.js</code> cresceu para 21.036 linhas</h4>
-      <p>Aumentou desde o relatório anterior. Continua um único arquivo sem testes automatizados — qualquer erro de sintaxe quebra o sistema inteiro, e o risco de regressão silenciosa cresce a cada feature nova.</p>
-    </div>
-  </div>
-
-  <h3>🟡 Housekeeping</h3>
-
-  <div class="sw-item">
-    <div class="sw-icon orange">✅</div>
-    <div class="sw-body">
-      <h4>Edge Function <code>invite-user</code> confirmada ATIVA — mas não versionada no git</h4>
-      <p>Verificado via <code>supabase functions list --project-ref johywuxgohcwzkrzrjdq</code> em 07/08/2026: a function está <strong>deployada e ACTIVE</strong> (versão 2, <code>verify_jwt: true</code>). Cadastro de usuário não está quebrado. O único gap real é que <code>supabase/functions/invite-user/index.ts</code> continua fora do controle de versão — se o código local divergir do deployado, ninguém vai notar até dar erro em produção.</p>
-    </div>
-  </div>
-
-  <div class="sw-item">
-    <div class="sw-icon orange">📁</div>
-    <div class="sw-body">
-      <h4><code>supabase/.temp/</code> fora do <code>.gitignore</code></h4>
-      <p>Metadados locais do Supabase CLI (project-ref, versões de serviço) aparecem como arquivo não rastreado e podem acabar indo pro repositório por engano num commit futuro.</p>
-    </div>
+  <h3>🟡 Risco aceitável para um piloto de 5 clientes</h3>
+  <div class="checklist">
+    <div class="chk-item chk-todo"><span class="chk-mark">–</span><div class="chk-body"><h4>Aprovação de lead, chat, metas/comissão e follow-ups ainda são só locais</h4><p>Baixo risco enquanto for só 1 gestor testando com os 5 clientes-base. Vira bloqueio real assim que houver <strong>2+ consultores ou 2+ gestores</strong> operando em aparelhos diferentes ao mesmo tempo — detalhe completo com urgência e consequência na Seção 03.</p></div></div>
+    <div class="chk-item chk-todo"><span class="chk-mark">–</span><div class="chk-body"><h4>3 notificações internas não aparecem (bug conhecido)</h4><p>Você já decidiu adiar essa correção antes — é mudança de comportamento, não bug óbvio.</p></div></div>
+    <div class="chk-item chk-todo"><span class="chk-mark">–</span><div class="chk-body"><h4>Exclusão segura de usuário ainda não implementada</h4><p>Já adiada a seu pedido. Só vira relevante quando precisar offboarding de cliente.</p></div></div>
+    <div class="chk-item chk-todo"><span class="chk-mark">–</span><div class="chk-body"><h4>Fallback de autenticação silencioso</h4><p>Se o Supabase cair, o login volta pro modo local sem alertar ninguém — baixo risco num piloto pequeno e monitorado de perto.</p></div></div>
   </div>
 
   <div class="pg-footer">
-    <span>Tracktiv — Relatório Técnico Executivo — Agosto 2026</span>
-    <span>Seção 02 — Urgências</span>
+    <span>Tracktiv — Relatório Técnico — Agosto 2026</span>
+    <span>Seção 02 — Checklist Pré-Piloto</span>
   </div>
 </div>
 
-<!-- ═══════════ PLANO DE AÇÃO ═══════════ -->
+<!-- ═══════════ O QUE AINDA FALTA — URGÊNCIA E CONSEQUÊNCIA ═══════════ -->
 <div class="page">
   <div class="sec-head">
     <div class="ch-num">Seção 03</div>
-    <h2>Plano de Ação Priorizado</h2>
-    <p class="lead">Ordem recomendada de execução — o P0 desbloqueia risco de operação quebrada agora, o P1 fecha lacunas de segurança/produto de curto prazo, o P2 é evolução estrutural sem pressa.</p>
+    <h2>O Que Ainda Falta — Urgência e Consequência</h2>
+    <p class="lead">Lista completa do que não estava pronto, ordenada por urgência real. Pra cada item: o que faltava, e o que aconteceria se ninguém mexesse nisso. Os 2 itens Críticos já foram corrigidos e testados ponta a ponta com contas reais no dia seguinte a esta análise.</p>
   </div>
 
-  <h3>P0 — Esta semana</h3>
+  <div class="box box-green">
+    <strong>Achado central desta análise — já em correção</strong>
+    O schema do Supabase já tinha uma tabela genérica (<code>app_state_entries</code>) criada e <strong>semeada</strong> exatamente pra guardar o restante do estado do sistema — aprovação de lead, chat, metas, comissão, indicações de parceiro. Mas nenhuma linha do <code>app.js</code> lia ou escrevia nela. A migração tinha parado na metade: criaram a tabela, nunca ligaram o código nela. É um único padrão de código (não 8 migrações diferentes) — já aplicado nos itens 1 e 2 abaixo, com policy de RLS restrita por chave e validado com login real de consultor + gestor + cliente (cliente confirmado sem acesso).
+  </div>
+
+  <h3>🔴 Crítica — bloqueava testar com mais de 1 pessoa usando ao mesmo tempo</h3>
 
   <div class="pri-item">
     <div class="pri-num">1</div>
     <div class="pri-body">
-      <h4>Corrigir as 3 notificações com <code>consultantId</code> em vez de <code>targetUserId</code></h4>
-      <p>Correção pontual e de baixo esforço — localizar os 3 pontos de disparo e trocar a chave usada.</p>
+      <h4>Aprovação de lead (<code>pendingApprovals</code>) só existia no navegador</h4>
+      <p>Consultor manda um lead pra aprovação do gestor. Isso ficava só no <code>localStorage</code> de quem criou — nunca ia pro Supabase.</p>
+      <p><strong class="consq">Se não tivesse sido feito:</strong> o gestor logado em outro computador/celular nunca veria o pedido. A venda travaria silenciosamente — ninguém recebe erro, simplesmente "não aparece nada", e o consultor acha que o sistema comeu o lead.</p>
     </div>
-    <div class="pri-badge pb-high">Crítico</div>
+    <div class="pri-badge pb-done">✅ Corrigido</div>
   </div>
 
   <div class="pri-item">
     <div class="pri-num">2</div>
     <div class="pri-body">
-      <h4>Versionar <code>supabase/functions/</code> no git</h4>
-      <p><span style="color:#059669;font-weight:700;">✔ Deploy já confirmado ativo</span> — mas o código local não está no repositório. Commitar e ignorar <code>supabase/.temp/</code> no <code>.gitignore</code>, pra garantir que o que está deployado tenha histórico e possa ser redeployado se necessário.</p>
+      <h4>Chat interno equipe ↔ gestor (<code>chats</code>) só existia no navegador — e tinha bug de roteamento</h4>
+      <p>Correção: <strong>não é</strong> chat com cliente — é o canal interno onde consultor/instalador/técnico/parceiro falam com o gestor. Além de não sincronizar, o código usava o texto literal <code>"gestor"</code> como destinatário em vez do id real do gestor logado — funcionava só no modo demo (onde o gestor tem esse id fixo). Numa conta de produção real, a mensagem nunca chegava a lugar nenhum: nem a notificação de "nova mensagem" disparava certo.</p>
+      <p><strong class="consq">Se não tivesse sido feito:</strong> qualquer consultor/instalador/técnico tentando falar com o gestor numa conta de produção real simplesmente não seria ouvido — sem erro, sem aviso, a mensagem ia pro vazio.</p>
     </div>
-    <div class="pri-badge pb-med">Alta</div>
+    <div class="pri-badge pb-done">✅ Corrigido</div>
   </div>
 
-  <h3>P1 — Curto prazo</h3>
+  <h3>🟠 Alta — funciona sozinho, mas gera dado errado ou perdido entre pessoas</h3>
 
   <div class="pri-item">
     <div class="pri-num">3</div>
     <div class="pri-body">
-      <h4>Ativar Supabase Realtime nas tabelas críticas</h4>
-      <p>Assinar <code>channel()</code> em <code>clients</code>, <code>chamados</code> e <code>notifications</code> para sincronização entre usuários simultâneos sem reload. Infraestrutura já existe no Supabase — é configuração, não nova arquitetura.</p>
+      <h4>Metas e regras de comissão (<code>goals</code>, <code>productCommissions</code>, <code>commission_rules</code>) só locais</h4>
+      <p>O cálculo de quanto cada consultor/instalador ganha depende de regras que só existem no navegador de quem as configurou.</p>
+      <p><strong class="consq">Se não fizer:</strong> comissão pode ser calculada diferente em cada aparelho/sessão — risco de <strong>pagar errado</strong> pra alguém da equipe. É o tipo de erro que vira problema financeiro e de confiança, não só técnico.</p>
     </div>
     <div class="pri-badge pb-med">Alta</div>
   </div>
@@ -455,8 +367,9 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
   <div class="pri-item">
     <div class="pri-num">4</div>
     <div class="pri-body">
-      <h4>Implementar exclusão segura de usuário</h4>
-      <p>Plano já está pronto de sessão anterior — só falta execução. Decidir com o usuário se entra agora ou continua adiado.</p>
+      <h4>Follow-ups / agenda do consultor (<code>followUps</code>) só locais</h4>
+      <p>Os lembretes de "ligar pro cliente X em tal dia" não saem do navegador de quem criou.</p>
+      <p><strong class="consq">Se não fizer:</strong> se o consultor trocar de aparelho ou limpar o navegador, a agenda de contato some. Lead esfria sem que ninguém perceba que devia ter ligado.</p>
     </div>
     <div class="pri-badge pb-med">Alta</div>
   </div>
@@ -464,53 +377,110 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
   <div class="pri-item">
     <div class="pri-num">5</div>
     <div class="pri-body">
-      <h4>Decidir o destino do "Meu Link" do consultor</h4>
-      <p>Corrigir a mensagem enganosa ao visitante e reativar, ou remover definitivamente o código mantido. Fonte de leads público parada até a decisão.</p>
+      <h4>Ativar Supabase Realtime nas tabelas críticas</h4>
+      <p>Assinar <code>channel()</code> em <code>clients</code>, <code>chamados</code> e <code>notifications</code>. Infraestrutura já existe — é configuração, não nova arquitetura.</p>
+      <p><strong class="consq">Se não fizer:</strong> cada usuário só vê dado novo depois de recarregar a página manualmente. Some assim que houver 2+ pessoas operando ao mesmo tempo — parece "sistema atrasado".</p>
     </div>
     <div class="pri-badge pb-med">Alta</div>
   </div>
+
+  <h3>🟡 Média — perda de dado real, mas isolada a um fluxo específico</h3>
 
   <div class="pri-item">
     <div class="pri-num">6</div>
     <div class="pri-body">
-      <h4>Alerta visível para fallback de autenticação</h4>
-      <p>Substituir o <code>console.warn</code> silencioso por um aviso visível (banner ou notificação ao gestor) quando o login cair para modo local — hoje passa despercebido.</p>
+      <h4>Portal do Parceiro Indicador (<code>indicadorReferrals</code>) só local</h4>
+      <p>Indicações registradas pelo parceiro não saem do aparelho dele.</p>
+      <p><strong class="consq">Se não fizer:</strong> parceiro loga de outro celular e as indicações somem — comissão de indicação fica sem lastro nenhum, parceiro pode reclamar de indicação "não paga".</p>
     </div>
-    <div class="pri-badge pb-med">Alta</div>
+    <div class="pri-badge pb-mid">Média</div>
   </div>
-
-  <h3>P2 — Estrutural, sem pressa</h3>
 
   <div class="pri-item">
     <div class="pri-num">7</div>
     <div class="pri-body">
-      <h4>Remover tabelas mortas do Mural/Desafios do schema</h4>
-      <p><code>mural_config</code>, <code>challenges</code>, <code>sales_feed</code> não são mais usadas pelo <code>app.js</code>.</p>
+      <h4>Indicação e resgate do cliente (<code>clientReferrals</code>, <code>clientRedemptions</code>) só local</h4>
+      <p>Programa de indicação dentro do portal do cliente não persiste no servidor.</p>
+      <p><strong class="consq">Se não fizer:</strong> cliente indica alguém, ninguém no backend sabe que isso aconteceu — a recompensa prometida não tem como ser honrada de forma confiável.</p>
     </div>
-    <div class="pri-badge pb-low">Média</div>
+    <div class="pri-badge pb-mid">Média</div>
   </div>
 
   <div class="pri-item">
     <div class="pri-num">8</div>
     <div class="pri-body">
-      <h4>PWA — Progressive Web App</h4>
-      <p>Ainda não implementado. Service worker + manifest continuam sendo o investimento de menor custo com maior impacto pra vendedores em campo no celular.</p>
+      <h4>Corrigir as 3 notificações órfãs</h4>
+      <p>3 pontos usam <code>consultantId</code> em vez de <code>targetUserId</code> — a notificação é criada mas nunca aparece pra ninguém.</p>
+      <p><strong class="consq">Se não fizer:</strong> consultor não é avisado de 3 eventos específicos de envio de formulário. Baixo volume, mas é um aviso que simplesmente nunca chega.</p>
     </div>
-    <div class="pri-badge pb-low">Média</div>
+    <div class="pri-badge pb-mid">Média</div>
   </div>
 
   <div class="pri-item">
     <div class="pri-num">9</div>
     <div class="pri-body">
+      <h4>Implementar exclusão segura de usuário</h4>
+      <p>Plano já pronto de sessão anterior, adiado a seu pedido.</p>
+      <p><strong class="consq">Se não fizer:</strong> não dá pra desligar o acesso de um cliente/colaborador de forma limpa — vira risco só quando o primeiro offboarding acontecer, não antes.</p>
+    </div>
+    <div class="pri-badge pb-mid">Média</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">10</div>
+    <div class="pri-body">
+      <h4>Alerta visível pro fallback de autenticação</h4>
+      <p>Hoje, se o Supabase cair, o login volta pro modo local só com um <code>console.warn</code> — ninguém vê isso na tela.</p>
+      <p><strong class="consq">Se não fizer:</strong> numa instabilidade do Supabase, alguém pode logar em modo local sem perceber e trabalhar com dado que não vai sincronizar — só descobre depois, quando o dado "some".</p>
+    </div>
+    <div class="pri-badge pb-mid">Média</div>
+  </div>
+
+  <h3>🟢 Baixa — maturidade, sem risco de dado perdido ou errado</h3>
+
+  <div class="pri-item">
+    <div class="pri-num">11</div>
+    <div class="pri-body">
+      <h4>Decidir o destino do "Meu Link" do consultor</h4>
+      <p>Formulário público de captação de leads está desligado desde 26/07 (enganava o visitante). Código mantido pra retomar.</p>
+      <p><strong class="consq">Se não fizer:</strong> nada quebra — só continua sem essa via extra de captação de lead.</p>
+    </div>
+    <div class="pri-badge pb-low">Baixa</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">12</div>
+    <div class="pri-body">
+      <h4>PWA — Progressive Web App</h4>
+      <p>Service worker + manifest pra instalar o portal como app no celular do vendedor.</p>
+      <p><strong class="consq">Se não fizer:</strong> continua funcionando normalmente pelo navegador — só fica sem ícone na tela inicial e sem uso offline.</p>
+    </div>
+    <div class="pri-badge pb-low">Baixa</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">13</div>
+    <div class="pri-body">
+      <h4>Remover tabelas mortas do Mural/Desafios do schema</h4>
+      <p><code>mural_config</code>, <code>challenges</code>, <code>sales_feed</code> não são mais usadas pelo <code>app.js</code> desde a remoção da gamificação.</p>
+      <p><strong class="consq">Se não fizer:</strong> nenhum impacto funcional — só schema com tabela morta ocupando espaço mental de quem olhar o banco depois.</p>
+    </div>
+    <div class="pri-badge pb-low">Baixa</div>
+  </div>
+
+  <div class="pri-item">
+    <div class="pri-num">14</div>
+    <div class="pri-body">
       <h4>Testes automatizados e modularização do <code>app.js</code></h4>
-      <p>21 mil linhas em um arquivo só, zero testes. Sem urgência imediata, mas o custo de manutenção só cresce.</p>
+      <p>21 mil linhas em um arquivo só, zero testes.</p>
+      <p><strong class="consq">Se não fizer:</strong> nenhum risco imediato — mas cada nova mudança fica mais lenta e arriscada de revisar conforme o arquivo cresce.</p>
     </div>
     <div class="pri-badge pb-low">Baixa</div>
   </div>
 
   <div class="pg-footer">
-    <span>Tracktiv — Relatório Técnico Executivo — Agosto 2026</span>
-    <span>Seção 03 — Plano de Ação</span>
+    <span>Tracktiv — Relatório Técnico — Agosto 2026</span>
+    <span>Seção 03 — O Que Ainda Falta</span>
   </div>
 </div>
 
@@ -518,57 +488,57 @@ code { background: #f0f4f8; padding: 1px 6px; border-radius: 4px; font-size: .87
 <div class="page">
   <div class="sec-head">
     <div class="ch-num">Seção 04</div>
-    <h2>Conclusão & Recomendações Finais</h2>
-    <p class="lead">Síntese da avaliação e os 3 pontos de ação mais urgentes para a próxima semana.</p>
+    <h2>Conclusão & Veredito Final</h2>
+    <p class="lead">Resposta direta à pergunta que motivou esta revisão.</p>
   </div>
 
   <div class="box box-dark" style="margin-bottom:28px;">
-    <strong>Veredicto Geral</strong>
-    O maior risco estrutural do sistema — persistência exclusiva em localStorage — já foi resolvido. O Portal do Vendedor agora roda sobre um backend real, com autenticação, dados e documentos sincronizados no Supabase. A Edge Function de convite de usuário foi verificada em produção e está <strong>ativa</strong>. O que resta não é mais "construir o backend", é <strong>fechar as pontas soltas dessa migração</strong>: corrigir as notificações que se perdem no caminho, ligar o Realtime que o banco já suporta, e versionar no git o que já está deployado.
+    <strong>Veredicto</strong>
+    <strong style="font-size:1.05rem;display:block;margin-bottom:6px;opacity:1;">Sim, dá pra ligar os 5 clientes-base.</strong>
+    Os dois bugs que impediriam isso na prática — criação sem sync e RLS bloqueando dados — foram achados e corrigidos nesta própria sessão, com validação real de ponta a ponta (criar cliente → logar → ver os próprios dados, e só os próprios). Restam só 3 itens de ação manual rápida (Seção 02) antes de chamar os clientes de verdade — nenhum deles é trabalho de desenvolvimento, são decisões e confirmações suas.
   </div>
 
-  <h3>Os 3 Pontos de Ação Mais Urgentes</h3>
-
+  <h3>Os 3 Itens Antes de Chamar os Clientes</h3>
   <table class="tbl">
     <thead>
-      <tr><th>#</th><th>Ação</th><th>Risco se não feito</th><th>Esforço</th></tr>
+      <tr><th>#</th><th>Ação</th><th>Tipo</th><th>Esforço</th></tr>
     </thead>
     <tbody>
       <tr>
         <td><strong>1</strong></td>
-        <td>Corrigir 3 notificações com chave errada</td>
-        <td>Alertas importantes nunca chegam ao usuário certo</td>
-        <td>Baixo</td>
+        <td>Confirmar se o e-mail de teste do SMTP chegou</td>
+        <td>Verificação</td>
+        <td>1 minuto</td>
       </tr>
       <tr>
         <td><strong>2</strong></td>
-        <td>Versionar <code>supabase/functions/</code> no git</td>
-        <td>Function já ativa em produção, mas sem histórico — divergência futura passaria despercebida</td>
-        <td>Baixo</td>
+        <td>Decidir sobre o profile órfão <code>teste2@gmail.com</code></td>
+        <td>Decisão</td>
+        <td>2 minutos</td>
       </tr>
       <tr>
         <td><strong>3</strong></td>
-        <td>Ativar Supabase Realtime nas tabelas críticas</td>
-        <td>Dados desincronizados entre usuários simultâneos</td>
-        <td>Médio</td>
+        <td>1 teste manual no navegador (cadastrar + logar em outra aba)</td>
+        <td>Validação visual</td>
+        <td>10 minutos</td>
       </tr>
     </tbody>
   </table>
 
   <div class="box box-green">
-    <strong>Verificação feita nesta atualização</strong>
-    <code>supabase functions list --project-ref johywuxgohcwzkrzrjdq</code> confirmou a <code>invite-user</code> como <strong>ACTIVE</strong> (versão 2) — não há risco de cadastro de usuário quebrado. Item removido da lista de críticos.
+    <strong>O que essa revisão mudou</strong>
+    Antes de hoje, o sistema "parecia pronto" — login funcionava, backend existia. Mas ninguém tinha testado se um cliente novo, criado do zero depois da migração, conseguia efetivamente ver seus próprios dados. Esse é exatamente o tipo de falha que só aparece com uso real — e que agora foi fechada antes de acontecer com um cliente de verdade.
   </div>
 
   <div style="text-align:center;margin-top:48px;padding:36px;background:linear-gradient(135deg,#1a2e4a,#2d4a6e);border-radius:16px;color:#fff;">
     <div style="font-size:2.5rem;margin-bottom:16px;">🚀</div>
-    <h3 style="color:#f5820d;margin-bottom:10px;font-size:1.3rem;">Score Atual: 8.3 / 10</h3>
-    <p style="color:rgba(255,255,255,.75);max-width:480px;margin:0 auto;font-size:.95rem;">Subiu de 7.4 (junho) para 8.3 — o backend real já entrega a maior parte do ganho possível, e a verificação de deploy confirmou que não há riscos escondidos na criação de usuários. Fechando as urgências restantes, o sistema fica pronto pra operação em equipe sem os riscos silenciosos atuais.</p>
+    <h3 style="color:#f5820d;margin-bottom:10px;font-size:1.3rem;">Score Final: 8.6 / 10</h3>
+    <p style="color:rgba(255,255,255,.75);max-width:480px;margin:0 auto;font-size:.95rem;">Subiu de 7.4 (junho) → 8.3 (início de agosto) → 8.6 depois de fechar o bug de visibilidade de dados. O sistema está tecnicamente pronto pro piloto de 5 clientes-base.</p>
     <div style="margin-top:20px;font-size:.78rem;color:rgba(255,255,255,.4);">Tracktiv Portal do Vendedor &nbsp;·&nbsp; Relatório Técnico &nbsp;·&nbsp; Agosto 2026</div>
   </div>
 
   <div class="pg-footer" style="margin-top:32px;">
-    <span>Tracktiv — Relatório Técnico Executivo — Agosto 2026</span>
+    <span>Tracktiv — Relatório Técnico — Agosto 2026</span>
     <span>Seção 04 — Conclusão</span>
   </div>
 </div>

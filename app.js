@@ -3662,6 +3662,7 @@ function approveSale(approvalId) {
     if (approval.instaladorId) addNotification(approval.instaladorId, 'install_pending', `🔧 Novo veículo aprovado para instalação: ${client.name} — ${client.plates || 'placa a informar'}`, { section: 'instaladorFotos' });
     // Checar metas após aprovar venda
     if (approval.consultantId) checkMetaAlerts(approval.consultantId);
+    _sbSaveStateEntry('pending_approvals', app.state.pendingApprovals);
     saveState(); renderAppViews();
     showToast(`Venda de "${client.name}" aprovada com sucesso!`, 'success');
 }
@@ -3677,6 +3678,7 @@ function rejectSale(approvalId) {
     }
     app.state.pendingApprovals = (app.state.pendingApprovals || []).filter(a => a.id !== approvalId);
     if (approval.consultantId) addNotification(approval.consultantId, 'sale_rejected', `❌ Venda para ${client?.name || 'cliente'} foi recusada.${reason ? ' Motivo: ' + reason : ''}`, { section: 'consultorDashboard' });
+    _sbSaveStateEntry('pending_approvals', app.state.pendingApprovals);
     saveState(); renderAppViews();
     showToast(`Venda recusada.${reason ? ' Motivo registrado.' : ''}`, 'warning');
 }
@@ -5416,10 +5418,15 @@ function _mapNotifFromSB(row) {
 
 // Busca dados frescos do Supabase e hidrata app.state.
 // Chamado em background após login — não bloqueia a UI.
+// Chaves de app_state_entries já sincronizadas com o servidor (armazenamento
+// genérico chave/valor pra estado que não tem tabela dedicada própria).
+// Adicionar aqui + no _sbSaveStateEntry correspondente sincroniza mais um pedaço.
+const STATE_ENTRY_KEYS = ['pending_approvals'];
+
 async function loadSupabaseData(user) {
     if (!supabaseClient || app.demoMode) return;
     try {
-        const [clientsRes, profilesRes, installRes, chamadosRes, comunicadosRes, notifsRes, tecnicoClientsRes, clientDocsRes] = await Promise.all([
+        const [clientsRes, profilesRes, installRes, chamadosRes, comunicadosRes, notifsRes, tecnicoClientsRes, clientDocsRes, stateEntriesRes, chatEntriesRes] = await Promise.all([
             supabaseClient.from('clients').select('*'),
             supabaseClient.from('profiles').select('*'),
             supabaseClient.from('installations').select('*'),
@@ -5428,9 +5435,11 @@ async function loadSupabaseData(user) {
             supabaseClient.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
             supabaseClient.from('tecnico_clients').select('*'),
             supabaseClient.from('client_documents').select('*'),
+            supabaseClient.from('app_state_entries').select('*').in('key', STATE_ENTRY_KEYS),
+            supabaseClient.from('app_state_entries').select('*').like('key', 'chat_%'),
         ]);
 
-        const failedRes = [clientsRes, profilesRes, installRes, chamadosRes, comunicadosRes, notifsRes, tecnicoClientsRes, clientDocsRes].find(r => r.error);
+        const failedRes = [clientsRes, profilesRes, installRes, chamadosRes, comunicadosRes, notifsRes, tecnicoClientsRes, clientDocsRes, stateEntriesRes, chatEntriesRes].find(r => r.error);
         if (failedRes) {
             console.warn('[Supabase] loadSupabaseData retornou erro:', failedRes.error);
             showToast('Não foi possível buscar os dados mais recentes do servidor — mostrando os dados salvos neste aparelho, que podem estar desatualizados.', 'warning', 7000);
@@ -5446,6 +5455,17 @@ async function loadSupabaseData(user) {
                 (acc[row.tecnico_id] = acc[row.tecnico_id] || []).push(row.client_id);
                 return acc;
             }, {});
+        }
+        if (stateEntriesRes.data) {
+            stateEntriesRes.data.forEach(row => {
+                if (row.key === 'pending_approvals') app.state.pendingApprovals = row.value || [];
+            });
+        }
+        if (chatEntriesRes.data) {
+            app.state.chats = {};
+            chatEntriesRes.data.forEach(row => {
+                app.state.chats[row.key.slice('chat_'.length)] = row.value || [];
+            });
         }
         if (clientDocsRes.data) {
             const docs = clientDocsRes.data.map(_mapClientDocFromSB);
@@ -5599,6 +5619,19 @@ function _mapNotifToSB(n) {
 function _sbUpsertNotification(n) {
     if (!supabaseClient || app.demoMode) return;
     _sbRun(supabaseClient.from('notifications').upsert(_mapNotifToSB(n)), 'Não foi possível salvar a notificação no servidor.');
+}
+
+// Grava o array/objeto inteiro de uma chave de app_state_entries (ver STATE_ENTRY_KEYS).
+// Usado pra estado sem tabela dedicada — sobrescreve o valor todo, não faz merge.
+function _sbSaveStateEntry(key, value) {
+    if (!supabaseClient || app.demoMode) return;
+    _sbRun(supabaseClient.from('app_state_entries').upsert({ key, value }), `Não foi possível sincronizar "${key}" com o servidor.`);
+}
+
+// Uma linha por conversa (chat_<chatKey>) em vez de um blob único com todas as
+// conversas — evita que a escrita de uma conversa apague as demais no servidor.
+function _sbSaveChatConversation(chatKey, msgs) {
+    _sbSaveStateEntry('chat_' + chatKey, msgs);
 }
 
 // ─── Write-through: atribuição técnico ↔ cliente ──────────────────────────────
@@ -7055,6 +7088,7 @@ function submitForApproval(clientId) {
     // Notificar gestor
     const gestor_ = (app.state.users || []).find(u => u.role === 'gestor');
     if (gestor_) addNotification(gestor_.id, 'new_sale_pending', `💼 Nova venda pendente de aprovação: ${c.name} — ${c.product} (${c.plan})`, { section: 'gestorDashboard' });
+    _sbSaveStateEntry('pending_approvals', app.state.pendingApprovals);
     saveState(); renderAppViews(); closeModal();
     showToast('Venda enviada para aprovação do gestor! O gestor irá confirmar o fechamento em breve.', 'success', 5000);
 }
@@ -9414,6 +9448,13 @@ function getChatKey(uid1, uid2) {
     return [uid1, uid2].sort((a, b) => (a === 'gestor' ? -1 : b === 'gestor' ? 1 : a.localeCompare(b))).join('__');
 }
 
+// Resolve o sentinela 'gestor' (usado pelos nav items de equipe) pro id real
+// do gestor logado no Supabase — sem isso, contas de produção (id = UUID, não
+// a string literal "gestor" do modo demo) nunca encontram a mesma chave de chat.
+function getGestorUserId() {
+    return (app.state.users || []).find(u => u.role === 'gestor')?.id || 'gestor';
+}
+
 function getChatUnreadCount() {
     if (!app.currentUser || !app.state.chats) return 0;
     const uid = app.currentUser.id;
@@ -9434,6 +9475,7 @@ function sendChatMessage(targetUserId, text) {
     const sender = (app.state.users || []).find(u => u.id === fromId);
     const preview = text.trim().slice(0, 45) + (text.length > 45 ? '…' : '');
     addNotification(targetUserId, 'new_message', `💬 ${sender?.name || 'Mensagem'}: "${preview}"`, null);
+    _sbSaveChatConversation(key, app.state.chats[key]);
     saveState();
     updateNotifBadge();
 }
@@ -9443,7 +9485,7 @@ function markChatMessagesRead(otherUserId) {
     const msgs = (app.state.chats || {})[key] || [];
     let changed = false;
     msgs.forEach(m => { if (m.to === app.currentUser.id && !m.read) { m.read = true; changed = true; } });
-    if (changed) saveState();
+    if (changed) { saveState(); _sbSaveChatConversation(key, msgs); }
     updateNotifBadge();
 }
 
@@ -9557,7 +9599,7 @@ function openChatOverlay(targetUserIdOrNull) {
     if (app.currentUser.role === 'gestor') {
         renderGestorChatPanel('chatBody');
     } else {
-        const target = targetUserIdOrNull || 'gestor';
+        const target = (targetUserIdOrNull && targetUserIdOrNull !== 'gestor') ? targetUserIdOrNull : getGestorUserId();
         renderChatConversation(target, 'chatBody');
     }
 }
