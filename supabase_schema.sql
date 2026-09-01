@@ -273,6 +273,13 @@ create table if not exists public.clients (
 create index if not exists idx_clients_consultant on public.clients (consultant_id);
 create index if not exists idx_clients_instalador on public.clients (instalador_id);
 
+-- Fase 1 da migração pending_approvals/pending_installations -> derivado de
+-- clients: essas colunas substituem os campos que só existiam no blob de
+-- app_state_entries (que sofria sobrescrita cega em uso concorrente).
+alter table public.clients add column if not exists awaiting_approval boolean default false;
+alter table public.clients add column if not exists rejection_note text;
+alter table public.clients add column if not exists awaiting_approval_since timestamptz;
+
 -- ----------------------------------------------------------------
 -- Profiles (referencia clients via linked_client_id — funciona agora)
 -- ----------------------------------------------------------------

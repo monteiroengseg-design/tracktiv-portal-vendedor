@@ -5322,6 +5322,9 @@ function _mapClientFromSB(row) {
         stage:        row.stage          || 'Novo Lead',
         closedDate:   row.closed_date    || null,
         createdAt:    row.created_at ? row.created_at.substring(0, 10) : todayISO(),
+        awaitingApproval:      row.awaiting_approval || false,
+        rejectionNote:         row.rejection_note    || '',
+        awaitingApprovalSince: row.awaiting_approval_since ? row.awaiting_approval_since.substring(0, 10) : null,
     };
 }
 
@@ -5349,6 +5352,9 @@ function _mapClientToSB(c) {
         stage:         c.stage         || 'Novo Lead',
         closed_date:   c.closedDate    || null,
         created_at:    c.createdAt     || todayISO(),
+        awaiting_approval:        c.awaitingApproval      || false,
+        rejection_note:           c.rejectionNote         || null,
+        awaiting_approval_since:  c.awaitingApprovalSince || null,
     };
 }
 
