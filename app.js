@@ -3638,6 +3638,7 @@ function approveSale(approvalId) {
             const choice = prompt(`Selecionar instalador para ${client.name}:\n${opts}\n\nDigite o número:`);
             const idx = parseInt(choice) - 1;
             if (isNaN(idx) || idx < 0 || idx >= instaladores.length) { showToast('Seleção inválida. Aprovação cancelada.', 'error'); return; }
+            client.instaladorId = instaladores[idx].id;
             if (!app.state.pendingInstallations) app.state.pendingInstallations = [];
             app.state.pendingInstallations.push({
                 id: `pinst_${Date.now()}`,
@@ -3656,12 +3657,15 @@ function approveSale(approvalId) {
     client.stage = 'Fechado';
     client.closedDate = todayISO();
     delete client.awaitingApproval;
+    delete client.awaitingApprovalSince;
+    delete client.rejectionNote;
     app.state.pendingApprovals = (app.state.pendingApprovals || []).filter(a => a.id !== approvalId);
     // Notificações
     if (approval.consultantId) addNotification(approval.consultantId, 'sale_approved', `✅ Venda para ${client.name} aprovada! Comissão registrada.`, { section: 'consultorDashboard' });
     if (approval.instaladorId) addNotification(approval.instaladorId, 'install_pending', `🔧 Novo veículo aprovado para instalação: ${client.name} — ${client.plates || 'placa a informar'}`, { section: 'instaladorFotos' });
     // Checar metas após aprovar venda
     if (approval.consultantId) checkMetaAlerts(approval.consultantId);
+    _sbUpsertClient(client);
     _sbSaveStateEntry('pending_approvals', app.state.pendingApprovals);
     saveState(); renderAppViews();
     showToast(`Venda de "${client.name}" aprovada com sucesso!`, 'success');
@@ -3674,7 +3678,9 @@ function rejectSale(approvalId) {
     const reason = prompt('Motivo da recusa (opcional):') || '';
     if (client) {
         delete client.awaitingApproval;
+        delete client.awaitingApprovalSince;
         if (reason) client.rejectionNote = reason;
+        _sbUpsertClient(client);
     }
     app.state.pendingApprovals = (app.state.pendingApprovals || []).filter(a => a.id !== approvalId);
     if (approval.consultantId) addNotification(approval.consultantId, 'sale_rejected', `❌ Venda para ${client?.name || 'cliente'} foi recusada.${reason ? ' Motivo: ' + reason : ''}`, { section: 'consultorDashboard' });
@@ -7081,6 +7087,7 @@ function submitForApproval(clientId) {
     const c = (app.state.clients || []).find(c => c.id === clientId);
     if (!c) return;
     c.awaitingApproval = true;
+    c.awaitingApprovalSince = todayISO();
     if (!app.state.pendingApprovals) app.state.pendingApprovals = [];
     app.state.pendingApprovals.push({
         id: `approval_${Date.now()}`,
@@ -7094,6 +7101,7 @@ function submitForApproval(clientId) {
     // Notificar gestor
     const gestor_ = (app.state.users || []).find(u => u.role === 'gestor');
     if (gestor_) addNotification(gestor_.id, 'new_sale_pending', `💼 Nova venda pendente de aprovação: ${c.name} — ${c.product} (${c.plan})`, { section: 'gestorDashboard' });
+    _sbUpsertClient(c);
     _sbSaveStateEntry('pending_approvals', app.state.pendingApprovals);
     saveState(); renderAppViews(); closeModal();
     showToast('Venda enviada para aprovação do gestor! O gestor irá confirmar o fechamento em breve.', 'success', 5000);
