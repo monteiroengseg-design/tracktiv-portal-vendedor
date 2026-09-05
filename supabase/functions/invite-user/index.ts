@@ -93,10 +93,26 @@ Deno.serve(async (req) => {
       partner_type:     extraData.partnerType || null,
       linked_client_id: linkedClientId,
       data:             { active: true, invitePending: !password, ...extraData }
-    })
+    }, { onConflict: 'id' })
 
     if (profileErr) {
-      console.warn('Profile insert error:', profileErr.message)
+      // Profile não foi criado — reverte o usuário do Auth pra não deixar órfão
+      // (login sem profile == RLS bloqueia tudo, é exatamente o bug que gerou isso).
+      const { error: deleteErr } = await adminClient.auth.admin.deleteUser(userId)
+      if (deleteErr) {
+        console.error('CRÍTICO: falha ao reverter usuário órfão no Auth. userId:', userId, '—', deleteErr.message)
+      }
+
+      // 23505 = unique_violation no Postgres. Caso mais provável aqui é o índice
+      // único de email (profiles_email_idx) — sobra de um perfil órfão de um
+      // teste anterior a este rollback existir, ou e-mail já cadastrado mesmo.
+      const errText = `${profileErr.message} ${profileErr.details || ''}`
+      const isEmailConflict = profileErr.code === '23505' && /email/i.test(errText)
+      const message = isEmailConflict
+        ? 'Já existe um perfil com este e-mail. Se for uma sobra de teste anterior, apague a linha órfã em profiles (ou o usuário no Auth) antes de tentar de novo.'
+        : `Erro ao criar perfil: ${profileErr.message}`
+
+      return new Response(JSON.stringify({ error: message }), { status: 400, headers: CORS })
     }
 
     return new Response(
